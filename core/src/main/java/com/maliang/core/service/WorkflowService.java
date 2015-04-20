@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 
 import net.sf.json.JSONArray;
+
 import org.bson.types.ObjectId;
 
 public class WorkflowService {
@@ -433,6 +434,66 @@ public class WorkflowService {
 	 * **/
 	public static void search(){
 		
+	}
+	
+	/**
+	 * search_form:{view:form,type:search,prefix:product,
+	 * 		form:{name:searchForm},
+	 *      inputs:[{name:fid,type:hidden,value:request.fid},
+	 *            {name:name,type:text,label:名称,value:request.product.name},
+	 *            {name:brand,type:select,label:品牌,value:request.product.brand,
+	 *               	values:{list:brand_list,key:id,value:name}},
+	 *            {name:price,type:text,operator:between,label:价格,
+	 *            		value:[request.product.min_price,request.product.max_price]},
+	 *            {name:expiry_date,type:date,operator:between,
+	 *            		value:[request.product.min_expiry_date,request.product.max_expiry_date]}]}
+	 *            
+	 *
+	 *{"label":"名称","type":"text","info":{"name":"Product.name","value":"天气丹华泫平衡化妆水150ml"}}
+	 * **/
+	public static void responseForm(Map<String,Object> params){
+		String str = "{view:form,type:search,prefix:product,form:{name:searchForm},"
+				+ "inputs:[{name:fid,type:hidden,value:request.fid},"
+					+ "{name:name,type:text,label:名称,value:request.product.name},"
+					+ "{name:brand,type:select,label:品牌,value:request.product.brand,"
+						+ "values:{list:brand_list,key:id,value:name}},"
+					+ "{name:price,type:text,operator:between,label:价格,"
+						+ "value:[request.product.min_price,request.product.max_price]},"
+					+ "{name:expiry_date,type:date,operator:between,"
+						+ "value:[request.product.min_expiry_date,request.product.max_expiry_date]}]}";
+		
+		Map<String,Object> form = MapHelper.curlyToMap(str);
+		
+		Map<String,Object> formJson = new HashMap<String,Object>();
+		List<Map<String,Object>> inputsJson = new ArrayList<Map<String,Object>>();
+		
+		String prefix = (String)MapHelper.readValue(form,"prefix");
+		prefix = prefix == null?"":prefix;
+		
+		List<Map<String,Object>> inputs = (List<Map<String,Object>>)MapHelper.readValue(form,"prefix");
+		
+		for(Map<String,Object> input:inputs){
+			Map<String,Object> inputJson = new HashMap<String,Object>();
+			
+			String simpleName = (String)input.get("name");
+			String inputLabel = (String)input.get("label");
+			String inputType = (String)input.get("type");
+			String operator = (String)input.get("operator");
+			Object valueKey = input.get("value");
+			
+			String canonicalName = (prefix.isEmpty()?"":prefix+".")+simpleName;
+			Object value = null;
+			if(valueKey instanceof String[]){
+				value = MapHelper.readValue(params, (List<String>)valueKey);
+			}else {
+				value = MapHelper.readValue(params, (String)valueKey);
+			}
+
+			inputType = inputType==null?"text":inputType;
+			if("select".equals(inputType)){
+				
+			}
+		}
 	}
 	
 	/**
