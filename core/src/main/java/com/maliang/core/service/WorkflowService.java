@@ -393,12 +393,12 @@ public class WorkflowService {
 				+ "products:db.Product.search({id in request.product.id}),"
 				+ "orderItems:each(products){"
 					+ "product:this,"
-					+ "num:request.product.num[this.index],"
+					+ "num:request.product.num(this.index),"
 					+ "price:user.user_grade.discount*0.01*this.product.price},"
 				+ "order:{"
 					+ "sn:OrderUtil.newSn(),"
-					+ "total_price:sum(each(orderItems){this.product.price*this.num}),"
-					+ "total_num:sum(each(orderItems).product.num)}}";
+					+ "total_price:sum(each(orderItems){this.price*this.num}),"
+					+ "total_num:sum(each(orderItems){this.num})}}";
 		
 		List<Map<String,Object>> orderItems = new ArrayList<Map<String,Object>>();
 		Map<String,Object> struct = orderItems.get(0);

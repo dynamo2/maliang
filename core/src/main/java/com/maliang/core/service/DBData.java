@@ -145,7 +145,6 @@ public class DBData {
 					}catch(Exception e){}
 				}else if("object".equals(type)){
 					String related = (String)field.get("related");
-					
 					innerObject(data,fieldName,related);
 				}
 			}

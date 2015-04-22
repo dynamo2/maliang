@@ -27,6 +27,7 @@ public class Each {
 	
 	public static void main(String[] args) {
 		String str = "each(  products  ){product:this,"
+				+ "num:request.product.num(index),"
 				+ "price:user.user_grade.discount*0.01*this.price}";
 		
 		List<Map<String,Object>> products = DBData.list("Product");
@@ -37,13 +38,15 @@ public class Each {
 		params.put("user", user);
 		
 		Each e = new Each(str,params);
+		params.put("items", e.execute());
+		
+		str = "each(items){this.product.price*this.num}";
+		e = new Each(str,params);
 		
 		System.out.println("eachExpression : '" + e.eachExpression +"'");
 		System.out.println("eachNode: " + e.eachNode);
 		
 		System.out.println("each : " + e.execute());
-		
-		
 	}
 	
 	private void compile(){
@@ -88,7 +91,7 @@ public class Each {
 			int[] coors = MapHelper.matchCoordinate(this.sourceCode, '{', '}', currIndex);
 			
 			if(coors[0] >= 0 && coors[1] >= 0){
-				String str = this.sourceCode.substring(coors[0],coors[1]+1);
+				String str = this.sourceCode.substring(coors[0]+1,coors[1]);
 				Map<String,Object> map = MapHelper.curlyToMap(str);
 				if(map.isEmpty()){
 					this.eachNode = new ExpressionNode(str);
