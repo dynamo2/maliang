@@ -340,7 +340,74 @@ public class WorkflowService {
 	
 	
 	public static void main(String[] args) {
-		edit();
+		newOrder();
+	}
+	
+	
+	/***
+	 * String order = "{_id:objectId,name:Order,"
+				+ "fields:[{name:sn,type:string,label:订单编号},"
+					+ "{name:total_price,type:double,label:总价},"
+					+ "{name:user,type:object,related:User,label:会员},"
+					+ "{name:status,type:int,label:状态},"
+					+ "{name:pay_statys,type:int,label:支付状态},"
+					+ "{name:total_num,type:int,label:总数量},"
+					+ "{name:address,type:object,related:inner,label:收货地址},"
+					+ "{name:items,type:list,related:inner,label:订单明细}],"
+				+ "address:{"
+					+ "fields:[{name:address,type:string,label:详细地址},"
+						+ "{name:consignee,type:string,label:收货人},"
+						+ "{name:mobile,type:string,label:手机号码}]},"
+				+ "items:{"
+					+ "fields:[{name:product,type:object,related:Product,label:商品},"
+						+ "{name:num,type:int,label:订购数量},"
+						+ "{name:price,type:double,label:订购价格},"
+						+ "{name:status,type:int,label:状态}]}}";
+	 * 
+	 * 
+	 * NewOrder {
+	 * 		datas:{user:db.User.get(request.user.id),
+	 * 			products:db.Product.search({id in request.product.id}),
+	 * 			orderItems:[{
+	 * 				product:each(products),
+	 * 				num:each(request.product.num),
+	 * 				price:user.user_grade.discount*0.01*this.product.price
+	 * 			}],
+	 * 			order:{
+	 * 				sn:OrderUtil.newSn(),
+	 * 				total_price:sum(each(orderItems).product.price),
+	 * 				total_num:sum(each(orderItems).product.num)
+	 * 			}
+	 * 		}
+	 * }
+	 * **/
+	public static void newOrder() {
+		Map<String,Object> user = DBData.getRandom("User");
+		Map<String,Object> pro1 = DBData.getRandom("Product");
+		Map<String,Object> pro2 = DBData.getRandom("Product");
+		
+		String ps = "{request:{user:{id:"+user.get("id")+"},product:{id:["+pro1.get("id")+","+pro2.get("id")+"],num:[2,5]}}}";
+		
+		
+		String newOrder = "datas:{user:db.User.get(request.user.id),"
+				+ "products:db.Product.search({id in request.product.id}),"
+				+ "orderItems:each(products){"
+					+ "product:this,"
+					+ "num:request.product.num[this.index],"
+					+ "price:user.user_grade.discount*0.01*this.product.price},"
+				+ "order:{"
+					+ "sn:OrderUtil.newSn(),"
+					+ "total_price:sum(each(orderItems){this.product.price*this.num}),"
+					+ "total_num:sum(each(orderItems).product.num)}}";
+		
+		List<Map<String,Object>> orderItems = new ArrayList<Map<String,Object>>();
+		Map<String,Object> struct = orderItems.get(0);
+		
+		
+		System.out.println(user);
+		System.out.println(pro1);
+		System.out.println(pro2);
+		System.out.println(ps);
 	}
 	
 	/***

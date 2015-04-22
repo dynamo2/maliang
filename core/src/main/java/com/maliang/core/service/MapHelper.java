@@ -16,8 +16,19 @@ public class MapHelper {
 				+ "{name:expiry_date,type:date,label:有效期},"
 				+ "{name:picture,type:string,label:图片,edit:{type:file}},"
 				+ "{name:description,type:string,label:描述,edit:{type:html}}]}";
-		System.out.println(curlyToMap(str));
-		System.out.println(curlyToMap(" { id:  1  ,b:,c:{d:7,e:{g:,f:9}},y:[{aa:4,bb:5,tt:[{aaa:34,bbb:fda,ccc:98}]},{dd:45,ee:fda},{rr:45,hh:fda}] }  "));
+		//System.out.println(curlyToMap(str));
+		//System.out.println(curlyToMap(" { id:  1  ,b:,c:{d:7,e:{g:,f:9}},y:[{aa:4,bb:5,tt:[{aaa:34,bbb:fda,ccc:98}]},{dd:45,ee:fda},{rr:45,hh:fda}] }  "));
+		
+		str = " { id:  1  ,b:,c:{d:7,e:{g:,f:9}},y:[{aa:4,bb:5,tt:[{aaa:34,bbb:fda,ccc:98}]},{dd:45,ee:fda},{rr:45,hh:fda}] }  ";
+		int[] is = matchCoordinate(str,'[',']',0);
+		if(is[0] >= 0 && is[1] >= 0){
+			String ss = str.substring(is[0],is[1]+1);
+			System.out.println("["+is[0]+","+is[1]+"]="+ss);
+		}
+		
+		System.out.println(curlyToMap("{product:this,"
+					+ "num:request.product.num,"
+					+ "price:user.user_grade.discount*0.01*this.product.price}"));
 	}
 	
 	public static Object readValue(Map<String,Object> paramMap,String paramKey,Object defaultValue){
@@ -28,6 +39,54 @@ public class MapHelper {
 		
 		return value;
 	}
+	
+	public static int[] matchCoordinate(String source,char startChar,char endChar,int startIndex){
+		int[] coors = new int[]{-1,-1};
+		if(source == null || source.trim().isEmpty()){
+			return coors;
+		}
+		
+		List<Integer> lefts = new ArrayList<Integer>();
+		for(int i = startIndex; i< source.length(); i++){
+			char c = source.charAt(i);
+			
+			if(c == startChar){
+				if(coors[0] == -1){
+					coors[0] = i;
+				}
+				lefts.add(i);
+				continue;
+			}
+			
+			if(c == endChar){
+				if(lefts.size() > 0){
+					lefts.remove(lefts.size()-1);
+					if(lefts.size() == 0){
+						coors[1] = i;
+						break;
+					}
+				}
+				continue;
+			}
+		}
+		
+		return coors;
+	}
+	
+	public static Object[] readValue(Map<String,Object> paramMap,List<String> keys){
+		if(keys == null){
+			return null;
+		}
+		
+		Object[] values = new Object[keys.size()];
+		int index = 0;
+		for(String key:keys){
+			values[index++]= readValue(paramMap,key);
+		}
+		
+		return values;
+	}
+	
 	public static Object readValue(Map<String,Object> paramMap,String paramKey){
 		if(paramMap == null || paramMap.size() == 0 
 				|| paramKey == null || paramKey.trim().isEmpty()){
@@ -67,6 +126,14 @@ public class MapHelper {
 		
 		return new CurlyCompiler(str,start).getMap();
 	}
+	
+	public static Map<String,Object> curlyToMap(String str,int startIndex){
+		if(str == null && str.trim().isEmpty()){
+			return null;
+		}
+		return new CurlyCompiler(str.trim(),startIndex).getMap();
+	}
+	
 	private static class CurlyCompiler {
 		private int cursor = 0;
 		private String source = null;
