@@ -15,9 +15,11 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.maliang.core.service.MapHelper;
+
 public class ArithmeticExpression {
 	public static void main(String[] args) {
-		String source = "   D20031130 13:34:23  -   3d   ";
+		String source = "   D20031130 13:34:23 ";
 		Parentheses pt = Parentheses.compile(source,0);
 		
 		DateFormat df = new SimpleDateFormat("yyyy年MM月dd日 HH时mm分ss秒");
@@ -66,6 +68,16 @@ public class ArithmeticExpression {
 		} catch (ParseException e) {
 			e.printStackTrace();
 		}
+	}
+	
+	public static Object execute(String expre,Map<String,Object> params){
+		Object value = MapHelper.readValue(params, expre);
+		if(value == null){
+			Parentheses pt = Parentheses.compile(expre, 0);
+			value = pt.getValue(params);
+		}
+		
+		return value;
 	}
 
 	static class Node {
@@ -194,8 +206,12 @@ public class ArithmeticExpression {
 				sary[++arrayIndex] = sb.toString();
 			}
 			
-			Collections.sort(priorityOpts);
+			if(priorityOpts.isEmpty() && sary[0] != null){
+				parentheses.expression = new Operand(sary[0]);
+				return parentheses;
+			}
 			
+			Collections.sort(priorityOpts);
 			Expression root = null;
 			for(Operator op:priorityOpts){
 				int opIndex = op.getIndex();
@@ -282,6 +298,10 @@ public class ArithmeticExpression {
 		}
 		
 		public Object getValue(Map<String,Object> paramsMap){
+			if(this.right == null){
+				return this.left.getValue(paramsMap);
+			}
+			
 			Object valueLeft = this.left.getValue(paramsMap);
 			Object valueRight = this.right.getValue(paramsMap);
 			
@@ -460,9 +480,10 @@ public class ArithmeticExpression {
 				}catch(NumberFormatException e1){}
 			}
 			
-			return readValue(paramsMap);
+			return MapHelper.readValue(paramsMap,this.operand);
 		}
 		
+		/*
 		private Object readValue(Map<String,Object> paramMap){
 			String[] keys = this.operand.split("\\.");
 			
@@ -479,7 +500,7 @@ public class ArithmeticExpression {
 				}
 			}
 			return value;
-		}
+		}*/
 		
 		public boolean isString(){
 			return this.operand.startsWith("'") && this.operand.endsWith("'");
