@@ -15,6 +15,7 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.maliang.core.arithmetic.function.Function;
 import com.maliang.core.service.MapHelper;
 
 public class ArithmeticExpression {
@@ -68,6 +69,42 @@ public class ArithmeticExpression {
 		} catch (ParseException e) {
 			e.printStackTrace();
 		}
+	}
+	
+	public static void testFunction() {
+		String str = "sum(each(items){this.price*this.num})";
+		
+		List<Object> ds = new ArrayList<Object>();
+		ds.add(9d);
+		ds.add(78d);
+		ds.add(9);
+		//ds.add("fdaf");
+		
+		Map<String,Object> params = new HashMap<String,Object>();
+		params.put("datas", ds);
+		
+		List<Map<String,Object>> items = new ArrayList<Map<String,Object>>();
+		Map<String,Object> item = new HashMap<String,Object>();
+		items.add(item);
+		item.put("price", 2d);
+		item.put("num", 2);
+		
+		item = new HashMap<String,Object>();
+		items.add(item);
+		item.put("price", 3d);
+		item.put("num", 3);
+		
+		params.put("items", items);
+		
+		Object[] datas = new Object[]{1,2};
+		params.put("datas", datas);
+		
+		str = "items(0)";
+		Object v = ArithmeticExpression.execute(str, params);
+		System.out.println(v);
+		
+		v = ArithmeticExpression.execute("datas(1)", params);
+		System.out.println(v);
 	}
 	
 	public static Object execute(String expre,Map<String,Object> params){
@@ -132,6 +169,18 @@ public class ArithmeticExpression {
 		}
 	}
 	
+	static class FunctionNode extends Node {
+		private Function function;
+		
+		public FunctionNode(Function fun){
+			this.function = fun;
+		}
+		
+		public Object getValue(Map<String,Object> paramsMap){
+			return this.function.execute(paramsMap);
+		}
+	}
+	
 	static class Parentheses extends Node{
 		private final String source;
 		private final int startIndex;
@@ -181,6 +230,22 @@ public class ArithmeticExpression {
 				}
 				
 				if(ch == '('){
+					if(sb != null){
+						String key = sb.toString().trim();
+						if(!key.isEmpty() && !Operator.isOperator(key)){
+							Function fun = new Function(key,source,i);
+							
+							sary[++arrayIndex] = fun.toString();
+							indexSet = new HashSet<Integer>();
+							indexSet.add(arrayIndex);
+							expreMap.put(new FunctionNode(fun), indexSet);
+							
+							i = fun.getEndIndex();
+							sb = null;
+							continue;
+						}
+					}
+					
 					Parentheses pt = Parentheses.compile(source,i);
 					i = pt.endIndex;
 					sary[++arrayIndex] = pt.expressionStr();
@@ -207,6 +272,13 @@ public class ArithmeticExpression {
 			}
 			
 			if(priorityOpts.isEmpty() && sary[0] != null){
+				if(expreMap.size() > 0){
+					for(Map.Entry<Node, Set<Integer>> entry:expreMap.entrySet()){
+						parentheses.expression = entry.getKey();
+						return parentheses;
+					}
+				}
+				
 				parentheses.expression = new Operand(sary[0]);
 				return parentheses;
 			}
@@ -582,6 +654,10 @@ public class ArithmeticExpression {
 		
 		public static boolean isOperator(char c){
 			return c == '+' || c == '-' || c == '*' || c == '/';
+		}
+		
+		public static boolean isOperator(String s){
+			return "+".equals(s) || "-".equals(s) || "*".equals(s) || "/".equals(s);
 		}
 	}
 	
