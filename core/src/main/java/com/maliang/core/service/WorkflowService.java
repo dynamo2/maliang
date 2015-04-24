@@ -367,16 +367,34 @@ public class WorkflowService {
 	 * 
 	 * NewOrder {
 	 * 		datas:{user:db.User.get(request.user.id),
-	 * 			products:db.Product.search({id in request.product.id}),
-	 * 			orderItems:[{
-	 * 				product:each(products),
-	 * 				num:each(request.product.num),
-	 * 				price:user.user_grade.discount*0.01*this.product.price
-	 * 			}],
+	 * 			products:db.Product.search(),
+	 * 			userAddress:db.UserAddress.search({user.id $eq user.id and default $eq 1}),
+	 * 			orderItems:each(products){
+	 * 				product:this,
+	 * 				num:request.product.num(EACH_CURRENT_INDEX),
+	 * 				price:user.user_grade.discount*0.01*this.price
+	 * 			},
 	 * 			order:{
 	 * 				sn:OrderUtil.newSn(),
-	 * 				total_price:sum(each(orderItems).product.price),
-	 * 				total_num:sum(each(orderItems).product.num)
+	 * 				total_price:sum(each(orderItems){this.price*this.num}),
+	 * 				total_num:sum(each(orderItems){this.num})
+	 * 			}
+	 * 		}
+	 * }
+	 * 
+	 * SendOrder {
+	 * 		datas:{order:db.Order.get(request.order.id),
+	 * 			products:db.Product.search(),
+	 * 			userAddress:db.UserAddress.search({user.id $eq user.id and default $eq 1}),
+	 * 			orderItems:each(products){
+	 * 				product:this,
+	 * 				num:request.product.num(EACH_CURRENT_INDEX),
+	 * 				price:user.user_grade.discount*0.01*this.price
+	 * 			},
+	 * 			order:{
+	 * 				sn:OrderUtil.newSn(),
+	 * 				total_price:sum(each(orderItems){this.price*this.num}),
+	 * 				total_num:sum(each(orderItems){this.num})
 	 * 			}
 	 * 		}
 	 * }
