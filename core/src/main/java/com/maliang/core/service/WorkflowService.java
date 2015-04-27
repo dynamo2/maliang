@@ -382,7 +382,8 @@ public class WorkflowService {
 	 * 		}
 	 * }
 	 * 
-	 * SendOrder {
+	 * 发货单
+	 * Invoice  {
 	 * 		datas:{order:db.Order.get(request.order.id),
 	 * 			products:db.Product.search(),
 	 * 			userAddress:db.UserAddress.search({user.id $eq user.id and default $eq 1}),
@@ -397,6 +398,18 @@ public class WorkflowService {
 	 * 				total_num:sum(each(orderItems){this.num})
 	 * 			}
 	 * 		}
+	 * 		validate:{
+	 * 			each(order.items){
+	 * 				
+	 * 			}
+	 * 		}
+	 * 
+	 * 		function:{
+	 * 			orderStatus:{status:2},
+	 * 			code1:db.Invoice.save(invoice),
+	 * 			code2:db.Order.update(orderStatus)
+	 * 		}
+	 * 		response:[]
 	 * }
 	 * **/
 	public static void newOrder() {
