@@ -22,20 +22,15 @@ public class Operator implements Comparable<Operator> {
 	private void readOperator() {
 		int i = startIndex;
 		char ch = source.charAt(i);
-		StringBuffer sb = new StringBuffer(ch);
-
+		this.operatorKey = ch+"";
 		if (ch == '<' || ch == '>') {
 			char next = source.charAt(++i);
 			if (next == '=') {
-				sb.append(ch).append(next);
-				this.operatorKey = sb.toString();
-
+				this.operatorKey += ""+next;
 			} else {
-				this.operatorKey = sb.toString();
 				this.optChar = ch;
 			}
 		} else {
-			this.operatorKey = sb.toString();
 			this.optChar = ch;
 		}
 
