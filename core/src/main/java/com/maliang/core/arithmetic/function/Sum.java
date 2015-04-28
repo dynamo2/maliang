@@ -32,6 +32,18 @@ public class Sum {
 		return resultValue;
 	}
 	
+	public static void main(String[] args) {
+		boolean i = true;
+		boolean ii = false;
+		
+		if(i){
+			System.out.println("is if");
+			i = true;
+		}else    if(i){
+			System.out.println("is else if");
+		}
+	}
+	
 	private static String checkDataType(Object data){
 		boolean isDouble = false;
 		boolean isString = false;

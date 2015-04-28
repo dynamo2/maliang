@@ -34,6 +34,15 @@ public class WorkflowService {
 	 *   ]
 	 * }
 	 * 
+	 * EditProduct {
+	 * 		code:{
+	 * 			product:db.Product.get(request.product.id)
+	 * 		}
+	 * 		edit_form {
+	 * 			inputs:[{name:name,type:text,label:名称,},
+	 * 				{}]
+	 * 		}
+	 * }
 	 * 
 	 * EditProduct {
 	 *   _id:objectId,
@@ -384,6 +393,10 @@ public class WorkflowService {
 	 * 
 	 * 发货单
 	 * Invoice  {
+	 * 		code:{
+	 * 			order:db.Order.get(request.order.id),
+	 * 			
+	 * 		}
 	 * 		datas:{order:db.Order.get(request.order.id),
 	 * 			products:db.Product.search(),
 	 * 			userAddress:db.UserAddress.search({user.id $eq user.id and default $eq 1}),
