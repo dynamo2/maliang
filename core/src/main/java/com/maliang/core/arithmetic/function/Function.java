@@ -38,6 +38,10 @@ public class Function {
 			return Each.execute(this, params);
 		}
 		
+		if("if".equals(key)){
+			return If.execute(this, params);
+		}
+		
 		if(key.startsWith("db.")){
 			return DBFunction.execute(this, params);
 		}

@@ -17,6 +17,16 @@ import com.maliang.core.service.MapHelper;
 
 public class ArithmeticExpression {
 	public static void main(String[] args) {
+		testComparion();
+	}
+	public static void testComparion(){
+		String str = "9+8 > 13 & 9 > 12";
+		
+		Object v = execute(str,null);
+		System.out.println("v = " + v);
+	}
+	
+	public static void testMath() {
 		String source = "   D20031130 13:34:23 ";
 		Parentheses pt = Parentheses.compile(source,0);
 		

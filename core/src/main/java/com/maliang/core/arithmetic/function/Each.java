@@ -25,8 +25,6 @@ public class Each {
 	}
 	
 	public static List<Object> execute(Function function,Map<String,Object> params){
-		EachNode enode = readEachNode(function);
-		
 		List<Object> resultList = new ArrayList<Object>();
 		Object value = function.executeExpression(params);
 		if(value == null){
@@ -39,13 +37,14 @@ public class Each {
 			throw new RuntimeException("Error parameter to each() function");
 		}
 
+		FunctionBody body = FunctionBody.readBody(function);
 		Object[] dataList = (Object[])value;
 		int i = 0;
 		for(Object data : dataList){
 			params.put("this", data);
 			params.put("EACH_CURRENT_INDEX", i++);
 			
-			resultList.add(enode.execute(params));
+			resultList.add(body.execute(params));
 		}
 		
 		params.remove("this");
@@ -53,6 +52,7 @@ public class Each {
 		return resultList;
 	}
 	
+	/*
 	private static EachNode readEachNode(Function fun){
 		if(fun == null || fun.getBody() == null || fun.getBody().isEmpty()){
 			return new EmptyNode();
@@ -116,5 +116,5 @@ public class Each {
 		public String toString(){
 			return this.expression;
 		}
-	}
+	}*/
 }
