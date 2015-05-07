@@ -29,6 +29,7 @@ public class Operator implements Comparable<Operator> {
 				this.operatorKey += ""+next;
 			} else {
 				this.optChar = ch;
+				i--;
 			}
 		} else {
 			this.optChar = ch;
