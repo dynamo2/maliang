@@ -41,6 +41,10 @@ public class Each {
 		Object[] dataList = (Object[])value;
 		int i = 0;
 		for(Object data : dataList){
+			if(data == null){
+				continue;
+			}
+			
 			params.put("this", data);
 			params.put("EACH_CURRENT_INDEX", i++);
 			

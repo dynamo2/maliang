@@ -6,7 +6,7 @@ import com.maliang.core.arithmetic.ArithmeticExpression;
 
 public class If {
 	public static void main(String[] args) {
-		String str = "if(2<=3){product:'雪花秀',price:345.90}";
+		String str = "if(2<3){product:'雪花秀',price:345.90}";
 		
 //		List<Map<String,Object>> products = DBData.list("Product");
 //		Map<String,Object> params = new HashMap<String,Object>();
@@ -15,7 +15,7 @@ public class If {
 //		params.put("products", products);
 //		params.put("user", user);
 		
-		//str = "2<=3";
+		//str = "2<3";
 		Object v = ArithmeticExpression.execute(str,null);
 		System.out.println(v);
 	}
