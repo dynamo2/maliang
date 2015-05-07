@@ -27,7 +27,7 @@ public class FunctionBody {
 
 class EmptyBody extends FunctionBody {
 	Object execute(Map<String,Object> params){
-		return params.get("this");
+		return MapHelper.readValue(params, "this");
 	}
 }
 
