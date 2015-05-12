@@ -8,6 +8,11 @@
         http://www.springframework.org/schema/context
         http://www.springframework.org/schema/context/spring-context.xsd">
 
-	<context:component-scan base-package="com.maliang" />
-
+	<context:component-scan base-package="com.maliang.core.ui.controller" />
+	
+	
+	<bean class="org.springframework.web.servlet.view.InternalResourceViewResolver">  
+       <property name="prefix" value="/html/"/>  
+       <property name="suffix" value=".jsp"></property>  
+    </bean>  
 </beans>
