@@ -34,15 +34,23 @@ public class ObjectMetadataDao  extends AbstractDao {
 	public void save(ObjectMetadata om) {
 		BasicDBObject doc = encode(om);
 		this.dbColl.save(doc);
+		
+		if(om.getId() == null){
+			om.setId(doc.getObjectId("_id"));
+		}
 	}
 	
-	public BasicDBObject getByID(String oid){
+	public ObjectMetadata getByID(String oid){
 		DBCursor cursor = this.dbColl.find(this.getObjectId(oid));
 		while(cursor.hasNext()){
-			return (BasicDBObject)cursor.next();
+			return this.decode((BasicDBObject)cursor.next(), ObjectMetadata.class) ;
 		}
 		
 		return null;
+	}
+	
+	public void remove(String oid){
+		this.dbColl.remove(this.getObjectId(oid));
 	}
 	
 	public ObjectMetadata getByUniqueMark(String mark){
