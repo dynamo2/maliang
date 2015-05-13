@@ -5,6 +5,7 @@ import java.util.List;
 public class ObjectMetadata extends MongodbModel {
 	private String name;
 	private String uniqueMark;
+	private String label;
 	private List<ObjectField> fields;
 	
 	public String getName() {
@@ -24,5 +25,11 @@ public class ObjectMetadata extends MongodbModel {
 	}
 	public void setFields(List<ObjectField> fields) {
 		this.fields = fields;
+	}
+	public String getLabel() {
+		return label;
+	}
+	public void setLabel(String label) {
+		this.label = label;
 	}
 }

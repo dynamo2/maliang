@@ -6,6 +6,7 @@ public class ObjectField extends MongodbModel {
 	private String uniqueMark;
 	private int type;
 	private String linkedObject;
+	private String label;
 	
 	public String getName() {
 		return name;
@@ -30,5 +31,11 @@ public class ObjectField extends MongodbModel {
 	}
 	public void setLinkedObject(String linkedObject) {
 		this.linkedObject = linkedObject;
+	}
+	public String getLabel() {
+		return label;
+	}
+	public void setLabel(String label) {
+		this.label = label;
 	}
 }
