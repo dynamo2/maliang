@@ -51,15 +51,6 @@ public class ObjectMetadataController {
 		List<ObjectField> fields = modelList(request,"field",ObjectField.class);
 		data.setFields(fields);
 		
-		/*
-		System.out.println("data.name : "+data.getName());
-		System.out.println("data.getLabel : "+data.getLabel());
-		
-		System.out.println("field.size: "+fields.size());
-		for(ObjectField field:fields){
-			System.out.println(field.getName()+"-"+field.getLabel()+"-" + field.getLinkedObject());
-		}*/
-		
 		metadataDao.save(data);
 		
 		return list(model);
