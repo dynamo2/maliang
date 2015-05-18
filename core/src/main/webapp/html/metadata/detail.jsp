@@ -1,3 +1,4 @@
+<%@ page pageEncoding="utf-8" %>
 <html>
     <head>
 		<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
@@ -17,7 +18,7 @@
 		clear:both;
 	}
 	.div-detail div {
-		width:400px;
+		width:1000px;
 		float:left;
 		padding:6px;
 		text-align:left;
@@ -47,6 +48,7 @@
 		padding:5px;
 	}
 	</style>
+	<div style="margin:20px;"><a href="list.htm">列表</a>&nbsp;&nbsp;&nbsp;&nbsp;<a href="edit.htm">新增集合</a></div>
 	<div id="detail"></div>
 	
 	<script>

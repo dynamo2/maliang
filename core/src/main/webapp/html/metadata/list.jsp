@@ -48,6 +48,7 @@
 		padding:5px;
 	}
 	</style>
+	<div style="margin:20px;"><a href="list.htm">列表</a>&nbsp;&nbsp;&nbsp;&nbsp;<a href="edit.htm">新增集合</a></div>
 	<div id="detail"></div>
 	
 	<script>

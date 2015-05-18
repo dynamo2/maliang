@@ -5,6 +5,7 @@
 		<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
         <script src="../js/angular.js"></script>
 		<script src="../js/jquery-2.1.3.min.js"></script>
+		<script src="../js/tianma.js"></script>
     </head>
     <body>
     	<style>
@@ -17,6 +18,11 @@
     	}
     	
     	form input[type=text] {
+    		border:1px solid #cccccc;
+    		margin:5px;
+    	}
+    	
+    	form select {
     		border:1px solid #cccccc;
     		margin:5px;
     	}
@@ -38,14 +44,13 @@
 		
 		.ul-list {
 			clear:both;
-			width:500px;
+			width:1000px;
 			margin:0px;
 			padding:0px;
 		}
 		
 		.header li{
 			font-weight:bold;
-			text-align:center;
 		}
 		
 		.ul-list li {
@@ -54,39 +59,88 @@
 			border-bottom:1px dashed #ccc;
 			list-style:none;
 			padding:5px;
+			text-align:center;
+			height:25px;
 		}
     	</style>
 		<script>
 		var resultModel = ${resultJson};
-		var emptyField = {name:"",label:"",type:""};
+		var emptyField = {};
 		var fieldsDivObj = null;
-		
-		$(function(){
-			fieldsDivObj = $("#fieldsDiv");
-			initFields(resultModel.metadata.fields);
-			resetChange();
-		});
 		
 		function initFields(fields){
 			for(var i in fields){
 				var field = fields[i];
 				fieldsDivObj.append(buildField(field,"ul-field-"+i));
+				
+				if(i == 0){
+					initEmptyField(field);
+				}
 			}
 			fieldsDivObj.append(buildField(emptyField,"newField"));
 		}
 		
+		function initEmptyField(field){
+			emptyField.name = field.name;
+			emptyField.name.info.value = "";
+			
+			emptyField.label = field.label;
+			emptyField.label.info.value = "";
+			
+			emptyField.type = field.type;
+			emptyField.type.info.value = "";
+			
+			emptyField.linkedObject = field.linkedObject;
+			emptyField.linkedObject.info.value = "";
+			
+			emptyField.relationship = field.relationship;
+			emptyField.relationship.info.value = "";
+		}
+		
 		function buildField(field,ulId){
 			var ulObj = $("<ul></ul>").addClass("ul-list").attr("id",ulId);
-			for(var fname in field){
-				var fvalue = field[fname];
-				
-				var liObj = $("<li></li>");
-				var inputObj = $("<input />").attr("type","text").attr("name","field."+fname).attr("value",fvalue);
-					
-				liObj.append(inputObj);
-				ulObj.append(liObj);
+			
+			ulObj.append(buildLi(field.name));
+			ulObj.append(buildLi(field.label));
+			ulObj.append(buildLi(field.type));
+			
+			if(field.type.info.value == 7 || field.type.info.value == 8){
+				ulObj.append(buildLi(field.linkedObject));
+				ulObj.append(buildLi(field.relationship));
+			}else {
+				ulObj.append($("<li></li>"));
+				ulObj.append($("<li></li>"));
 			}
+			if(ulId != "newField"){
+				ulObj.append(buildDeleteLi());
+			}else {
+				ulObj.append($("<li></li>"));
+			}
+			
 			return ulObj;
+		}
+		
+		function buildLi(fieldItem){
+			var liObj = $("<li></li>");
+			var inputObj = TM_formBuilder.newInput(fieldItem.info);
+			if(fieldItem.info.name == "field.type"){
+				inputObj.change(changeType);
+			}
+			
+			liObj.append(inputObj);
+			return liObj;
+		}
+		
+		function buildDeleteLi(){
+			var liObj = $("<li></li>");
+			var inputObj = $("<input type='button' value='删除'>");
+			inputObj.click(function(event){
+				$(event.delegateTarget).parent().parent().remove();
+				shouldSave();
+			});
+			
+			liObj.append(inputObj);
+			return liObj;
 		}
 						
 		function addField(){
@@ -105,10 +159,34 @@
 			fieldsDivObj.on("change","ul#newField > li > :input",addField);
 			fieldsDivObj.on("change","ul > li > :input",shouldSave);
 		}
+		
+		function changeType(event){
+			var typeValue = event.delegateTarget.value;
+			var objectLi = $(event.delegateTarget).parent().next();
+			var relationshipLi = objectLi.next();
+
+			if(typeValue == 7 || typeValue == 8){
+				objectLi.append(TM_formBuilder.newInput(emptyField.linkedObject.info));
+				relationshipLi.append(TM_formBuilder.newInput(emptyField.relationship.info));
+			}else {
+				objectLi.html("");
+				relationshipLi.html("");
+			}
+		}
+
+		$(function(){
+			fieldsDivObj = $("#fieldsDiv");
+			initFields(resultModel.metadata.fields);
+			resetChange();
+			$("#metadataForm").submit(function(){
+				$("#newField").remove();
+			});
+		});
 		</script>
+		<div style="margin:20px;"><a href="list.htm">列表</a>&nbsp;&nbsp;&nbsp;&nbsp;<a href="edit.htm">新增集合</a></div>
     	<div id="editTitle">新增数据结构</div>
     	<div id="editDiv">
-    		<form action="/metadata/save.htm" method="post">
+    		<form id="metadataForm" action="/metadata/save.htm" method="post">
 				<input type="hidden" name="metadata.id" value="${metadata.id}" />
     			<div><label>名称</label><input type="text" name="metadata.name" value="${metadata.name}" /></div>
     			<div><label>标签</label><input type="text" name="metadata.label" value="${metadata.label}" /></div>
@@ -120,6 +198,9 @@
 						<li>名称</li>
 						<li>标签</li>
 						<li>类型</li>
+						<li>关联对象</li>
+						<li>关联类型</li>
+						<li>操作</li>
 					</ul>
 				</div>
 			</form>
