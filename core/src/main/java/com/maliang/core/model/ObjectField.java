@@ -7,6 +7,7 @@ public class ObjectField extends MongodbModel {
 	private int type;
 	private String linkedObject;
 	private String label;
+	private String relationship;
 	
 	public String getName() {
 		return name;
@@ -37,5 +38,11 @@ public class ObjectField extends MongodbModel {
 	}
 	public void setLabel(String label) {
 		this.label = label;
+	}
+	public String getRelationship() {
+		return relationship;
+	}
+	public void setRelationship(String relationship) {
+		this.relationship = relationship;
 	}
 }
