@@ -17,7 +17,22 @@ import com.maliang.core.service.MapHelper;
 
 public class ArithmeticExpression {
 	public static void main(String[] args) {
-		testComparion();
+		//testComparion();
+		//testMath();
+		
+		String form = "{type:'form',action:'',name:'product.edit.form',"
+				+ "inputs:[{name:'product.id',type:'hidden',value:product.id},"
+					+ "{name:'product.name',type:'text',value:product.name},"
+					+ "{name:'product.brand',type:'select',value:product.brand,"
+						+ "options:each(brands){key:this.id,value:this.name}},"
+					+ "{name:'product.price',type:'double',value:product.price},"
+					+ "{name:'product.expiry_date',type:'date',value:product.expiry_date},"
+					+ "{name:'product.picture',type:'file',value:product.picture}]}";
+		
+		String s = "{name:'product.price',type:'date',options:each(brands){key:this.id,value:this.name}+2,action:''}";
+		Parentheses pt = Parentheses.compile(s,42,new char[]{',','}'});
+		
+		System.out.println(pt);
 	}
 	public static void testComparion(){
 		String str = "9+8 > 13 & 9 > 12";
@@ -60,6 +75,8 @@ public class ArithmeticExpression {
 		//{name $eq 'wmx'} $and {age $eq 10}
 		String s = "{name $eq (goods.create_date+1m)} $and {age $eq (goods.num+goods.price*(3+2*(user.age-user.address.no))*(8-4)+8-98+72/(3*3))}";
 		pt = Parentheses.compile(s,10);
+		
+		System.out.println(pt);
 		System.out.println("age eq:"+Parentheses.compile(s, 49).getValue(params));
 		//System.out.println("age eq:"+Parentheses.compile(s, 49).expressionStr());
 		System.out.println("pt : " + pt.expressionStr());
@@ -142,7 +159,7 @@ public class ArithmeticExpression {
 		}
 	}
 	
-	static class Parentheses extends Node{
+	public static class Parentheses extends Node{
 		private final String source;
 		private final int startIndex;
 		private int endIndex;
@@ -151,6 +168,10 @@ public class ArithmeticExpression {
 		public Parentheses(String source,int index){
 			this.source = source;
 			this.startIndex = index;
+		}
+		
+		public String toString(){
+			return this.expressionStr();
 		}
 		
 		public Object getValue(Map<String,Object> paramsMap){
@@ -162,6 +183,193 @@ public class ArithmeticExpression {
 		}
 		
 		public static Parentheses compile(String source,int index) {
+			return compile(source,index,null);
+		}
+		
+		static class Compiler {
+			private String source;
+			private int startIndex;
+			private char[] endChars;
+			private String[] sary;
+			private int arrayIndex = -1;
+			private StringBuffer sb = null;
+			Map<Node,Set<Integer>> expreMap = new HashMap<Node,Set<Integer>>();
+			List<Operator> priorityOpts = new ArrayList<Operator>();
+			private int cursor;
+			
+			Compiler(String str,int idx,char[] eds){
+				this.source = str;
+				this.startIndex = idx;
+				this.endChars = eds;
+				
+				sary = new String[source.length()-this.startIndex];
+			}
+			
+			private String readSbf(){
+				if(sb == null)return null;
+				
+				return sb.toString().trim();
+			}
+			
+			public Parentheses compile() {
+				Parentheses parentheses = new Parentheses(source,this.startIndex);
+				if(source.charAt(this.startIndex) == '('){
+					this.startIndex++;
+				}
+
+				this.cursor = this.startIndex;
+				for(;this.cursor< source.length(); this.cursor++){
+					char ch = readChar();
+					
+					if(Operator.isOperator(ch)){
+						addOperator();
+						continue;
+					}
+					
+					if(ch == '('){
+						if(sb != null){
+							String key = readSbf();
+							if(isFunctionKey(key)){
+								addFunction(key);
+								continue;
+							}
+						}
+						
+						addParentheses();
+						continue;
+					}
+					
+					if(ch == '{'){
+						addFunction('{','}');
+						continue;
+					}
+					
+					if(ch == '\''){
+						Substring sbs = new Substring(source,'\'',this.cursor);
+						if(sb == null){
+							sb = new StringBuffer();
+						}
+						sb.append(sbs.getCompleteContent());
+						
+						System.out.println(source);
+						System.out.println("content: "+sbs.getCompleteContent());
+						
+						this.cursor = sbs.getEndIndex();
+						continue;
+					}
+					
+					if(ch == '['){
+						addFunction('[',']');
+						continue;
+					}
+					
+					if(ch == ')' ){
+						parentheses.endIndex = this.cursor;
+						break;
+					}
+					
+					if(isEndChar(ch)){
+						parentheses.endIndex = this.cursor-1;
+						break;
+					}
+					
+					if(sb == null){
+						sb = new StringBuffer(ch);
+					}
+					sb.append(ch);
+				}
+				
+				if(sb != null){
+					sary[++arrayIndex] = readSbf();
+				}
+				
+				parentheses.expression = buildExpression(priorityOpts,expreMap,sary);
+				return parentheses;
+			}
+			
+			private boolean isFunctionKey(String key){
+				return !key.isEmpty() && !Operator.isOperator(key);
+			}
+			
+			private boolean isEndChar(char ch){
+				if(endChars != null && endChars.length > 0){
+					for(char ec : endChars){
+						if(ch == ec){
+							return true;
+						}
+					}
+				}
+				
+				return false;
+			}
+			
+			private char readChar(){
+				return source.charAt(this.cursor);
+			}
+			
+			private void addOperator(){
+				if(sb != null){
+					String k = readSbf();
+					if(!k.isEmpty()){
+						sary[++arrayIndex] = k;
+					}
+					sb = null;
+				}
+				
+				Operator opt = new Operator(source,this.cursor);
+				sary[++arrayIndex] = opt.getOperatorKey();
+				opt.setArrayIndex(arrayIndex);
+				priorityOpts.add(opt);
+				this.cursor = opt.getEndIndex();
+			}
+			
+			private void addFunction(char startChar,char endChar){
+				Substring sbs = new Substring(source,startChar,endChar,this.cursor);
+				Function fun = new Function(sbs.getCompleteContent());
+				addFunctionNode(fun);
+				
+				this.cursor = sbs.getEndIndex();
+				sb = null;
+			}
+			
+			private void addFunction(String key){
+				Function fun = new Function(key,source,this.cursor);
+				addFunctionNode(fun);
+				
+				this.cursor = fun.getEndIndex();
+				sb = null;
+			}
+			
+			private void addFunctionNode(Function fun){
+				sary[++arrayIndex] = fun.toString();
+				Set<Integer> indexSet = new HashSet<Integer>();
+				indexSet.add(arrayIndex);
+				expreMap.put(new FunctionNode(fun), indexSet);
+			}
+			
+			private void addParentheses(){
+				Parentheses pt = new Compiler(source,this.cursor,this.endChars).compile();
+				this.cursor = pt.endIndex;
+				sary[++arrayIndex] = pt.expressionStr();
+				Set<Integer> indexSet = new HashSet<Integer>();
+				indexSet.add(arrayIndex);
+				
+				expreMap.put(pt.expression, indexSet);
+			}
+			
+			private void addNode(Node node){
+				sary[++arrayIndex] = node.toString();
+				Set<Integer> indexSet = new HashSet<Integer>();
+				indexSet.add(arrayIndex);
+				expreMap.put(node, indexSet);
+			}
+		}
+		
+		public static Parentheses compile(String source,int index,char[] endChars) {
+			return new Compiler(source,index,endChars).compile();
+		}
+		
+		public static Parentheses compile2(String source,int index,char[] endChars) {
 			Parentheses parentheses = new Parentheses(source,index);
 			if(source.charAt(index) == '('){
 				index++;
@@ -220,9 +428,52 @@ public class ArithmeticExpression {
 					continue;
 				}
 				
-				if(ch == ')'){
+				if(ch == '{'){
+					Substring sbs = new Substring(source,'{','}',i);
+					Function fun = new Function(sbs.getCompleteContent());
+					
+					sary[++arrayIndex] = fun.toString();
+					indexSet = new HashSet<Integer>();
+					indexSet.add(arrayIndex);
+					expreMap.put(new FunctionNode(fun), indexSet);
+					
+					i = sbs.getEndIndex();
+					sb = null;
+					continue;
+				}
+				
+				if(ch == '['){
+					Substring sbs = new Substring(source,'[',']',i);
+					Function fun = new Function(sbs.getCompleteContent());
+					
+					sary[++arrayIndex] = fun.toString();
+					indexSet = new HashSet<Integer>();
+					indexSet.add(arrayIndex);
+					expreMap.put(new FunctionNode(fun), indexSet);
+					
+					i = sbs.getEndIndex();
+					sb = null;
+					continue;
+				}
+				
+				if(ch == ')' ){
 					parentheses.endIndex = i;
 					break;
+				}
+				
+				if(endChars != null && endChars.length > 0){
+					boolean isBreak = false;
+					for(char ec : endChars){
+						if(ch == ec){
+							parentheses.endIndex = i-1;
+							isBreak = true;
+							break;
+						}
+					}
+					
+					if(isBreak){
+						break;
+					}
 				}
 				
 				if(sb == null){
@@ -308,6 +559,30 @@ public class ArithmeticExpression {
 			}
 			
 			return null;
+		}
+
+		public int getEndIndex() {
+			return endIndex;
+		}
+
+		public void setEndIndex(int endIndex) {
+			this.endIndex = endIndex;
+		}
+
+		public Node getExpression() {
+			return expression;
+		}
+
+		public void setExpression(Node expression) {
+			this.expression = expression;
+		}
+
+		public String getSource() {
+			return source;
+		}
+
+		public int getStartIndex() {
+			return startIndex;
 		}
 	}
 	
