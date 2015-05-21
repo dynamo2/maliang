@@ -7,7 +7,7 @@ import java.util.Calendar;
 import java.util.Date;
 
 public class DateCalculator {
-	public final static DateFormat dateFormat = new SimpleDateFormat("yyyyMMdd HH:mm:ss");
+	public final static DateFormat dateFormat = new SimpleDateFormat("yyyy年MM月dd日HH时mm分ss秒");
 	
 	public static Date calculate(Date date,String increment,Operator operator){
 		if(!operator.isPlus() && !operator.isSubstruction()){
@@ -50,12 +50,23 @@ public class DateCalculator {
 		if(source.startsWith("D")){
 			try {
 				String ds = source.substring(1,source.length());
-				
+				ds = readString(ds);
 				return dateFormat.parse(ds);
-			} catch (ParseException e) {}
+			} catch (Exception e) {}
 		}
 
 		return null;
+	}
+	
+	private static String readString(String str){
+		if(str == null)return null;
+		if(str.trim().isEmpty())return "";
+		
+		str = str.trim();
+		if(str.startsWith("'") && str.endsWith("'")){
+			return str.substring(1,str.length()-1);
+		}
+		return str;
 	}
 	
 	public static boolean isDateIncrement(String source){

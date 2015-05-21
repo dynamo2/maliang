@@ -25,11 +25,32 @@ public class Function {
 		readOthers();
 	}
 	
+	public Function(String body){
+		this.source = null;
+		this.startIndex = -1;
+		
+		if(body != null){
+			this.body = body.trim();
+		}
+	}
+	
 	public Object executeExpression(Map<String,Object> params){
 		return ArithmeticExpression.execute(this.expression, params);
 	}
 	
+	boolean isMap(){
+		return key == null && this.body.startsWith("{") && this.body.endsWith("}");
+	}
+	
+	boolean isList(){
+		return key == null && this.body.startsWith("[") && this.body.endsWith("]");
+	}
+	
 	public Object execute(Map<String,Object> params){
+		if(this.isMap()){
+			return MapFunction.execute(this, params);
+		}
+		
 		if("sum".equals(key)){
 			return Sum.execute(this, params);
 		}
@@ -42,7 +63,7 @@ public class Function {
 			return If.execute(this, params);
 		}
 		
-		if(key.startsWith("db.")){
+		if(key != null && key.startsWith("db.")){
 			return DBFunction.execute(this, params);
 		}
 		
