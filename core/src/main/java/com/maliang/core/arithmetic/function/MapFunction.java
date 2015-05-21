@@ -15,12 +15,12 @@ public class MapFunction {
 	}
 	
 	public static void main(String[] args) {
-		/*
-		String paramStr = "{product:{id:'111111',name:'Product',brand:'aaaa',price:335.8,expiry_date:'2015年03月26'},"
+		
+		String paramStr = "{product:{id:'111111',name:'Product',brand:'aaaa',price:335.8,expiry_date:'2015-03-26日23时33分23秒'},"
 				+ "brands:[{id:'aaaa',name:'雪花秀'},{id:'bbbb',name:'希思黎'},{id:'cccc',name:'Pola'}]}";
 		Map<String,Object> params = MapHelper.buildAndExecuteMap(paramStr, null);
 		//System.out.println(params);
-		*/
+		
 		String form = "{type:'form',action:'',name:'product.edit.form',"
 				+ "inputs:[{name:'product.id',type:'hidden',value:product.id},"
 					+ "{name:'product.name',type:'text',value:product.name},"
@@ -37,11 +37,11 @@ public class MapFunction {
 						+ "action:'edit.html',price:{name:'product.price',type:'double',value:product.price}}";
 						*/
 		
-		form = "{name:'2009-3-9'}";
-		Object formMap = ArithmeticExpression.execute(form, null);
+		//form = "{expiry_date:D'20150326 23:33:23'}";
+		Object formMap = ArithmeticExpression.execute(form, params);
 		System.out.println(formMap);
 		
-		Substring sbs = new Substring("{name:'2009-3-9'}",'\'',0);
+		//Substring sbs = new Substring("{name:'2009-3-9'}",'\'',0);
 		//System.out.println(sbs.getCompleteContent());
 	}
 }
