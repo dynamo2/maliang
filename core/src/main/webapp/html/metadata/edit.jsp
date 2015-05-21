@@ -176,7 +176,12 @@
 
 		$(function(){
 			fieldsDivObj = $("#fieldsDiv");
+			
+			if(resultModel.metadata != "undefined"){
+				
+			}
 			initFields(resultModel.metadata.fields);
+			//fieldsDivObj.append(buildField(emptyField,"newField"));
 			resetChange();
 			$("#metadataForm").submit(function(){
 				$("#newField").remove();
