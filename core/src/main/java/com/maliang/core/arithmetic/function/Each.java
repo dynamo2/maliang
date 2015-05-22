@@ -37,18 +37,24 @@ public class Each {
 			throw new RuntimeException("Error parameter to each() function");
 		}
 
-		FunctionBody body = FunctionBody.readBody(function);
+		//FunctionBody body = FunctionBody.readBody(function);
 		Object[] dataList = (Object[])value;
 		int i = 0;
 		for(Object data : dataList){
 			if(data == null){
 				continue;
 			}
+
+			Object v = data;
+			if(!function.isEmptyBody()){
+				params.put("this", data);
+				params.put("EACH_CURRENT_INDEX", i++);
+				
+				v = ArithmeticExpression.execute(function.getBody(), params);
+			}
+			resultList.add(v);
 			
-			params.put("this", data);
-			params.put("EACH_CURRENT_INDEX", i++);
-			
-			resultList.add(body.execute(params));
+			//resultList.add(body.execute(params));
 		}
 		
 		params.remove("this");
