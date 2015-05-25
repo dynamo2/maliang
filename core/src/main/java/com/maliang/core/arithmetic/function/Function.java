@@ -90,6 +90,14 @@ public class Function {
 		return this.body;
 	}
 	
+	public boolean isEmptyBody(){
+		if(body == null || this.body.trim().isEmpty()){
+			return true;
+		}
+		
+		return false;
+	}
+	
 	private void readOthers(){
 		int i = this.startIndex;
 		
