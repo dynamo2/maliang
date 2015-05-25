@@ -16,8 +16,6 @@ public class FunctionBody {
 			return new EmptyBody();
 		}
 		
-		System.out.println("FunctionBody.readBody : " + fun.getBody());
-		
 		Map<String,Object> map = MapHelper.curlyToMap(fun.getBody());
 		if(map.isEmpty()){
 			return new ExpressionBody(fun.getBody());
