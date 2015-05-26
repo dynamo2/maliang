@@ -53,12 +53,15 @@ public class ObjectMetadataController {
 
 	@RequestMapping(value = "save.htm")
 	public String save(HttpServletRequest request, Model model) {
+		System.out.println("maxIndex : " + request.getParameter("maxIndex"));
 		ObjectMetadata data = modelObject(request, "metadata",
 				ObjectMetadata.class);
 		List<ObjectField> fields = modelList(request, "field",
 				ObjectField.class);
 		data.setFields(fields);
 		data.setUniqueMark(data.getName());
+		
+		System.out.println(data);
 
 		metadataDao.save(data);
 
@@ -327,16 +330,48 @@ public class ObjectMetadataController {
 
 		System.out.println(toEditJson(metadata));
 	}
+	
+	private static Integer getInt(HttpServletRequest request,String reqName,int dev){
+		try {
+			return Integer.valueOf(request.getParameter(reqName));
+		}catch(Exception e){
+			return dev;
+		}
+	}
 
 	private static <T> List<T> modelList(HttpServletRequest request,
 			String objName, Class<T> cls) {
 		Enumeration<String> paramNames = request.getParameterNames();
-
+		
+		Integer maxIndex = getInt(request,"maxIndex",-1);
 		try {
 			List<T> resultList = new ArrayList<T>();
 
 			BeanInfo beanInfo = Introspector.getBeanInfo(cls);
 			PropertyDescriptor[] pds = beanInfo.getPropertyDescriptors();
+			
+			if(maxIndex > 0){
+				for(int i = 0; i <= maxIndex; i++){
+					T result = null;
+					for(PropertyDescriptor pd : pds){
+						if(pd.getName().equals("class"))continue;
+						
+						String reqName = i+"."+objName+"."+pd.getName();
+						String reqValue = request.getParameter(reqName);
+						if(reqValue != null){
+							if(result == null){
+								result = cls.newInstance();
+								resultList.add(result);
+							}
+							
+							setFieldValue(pd,reqValue,result);
+						}
+					}
+				}
+			}
+			
+			
+			/*
 			while (paramNames.hasMoreElements()) {
 				String pname = paramNames.nextElement().trim();
 				if (!pname.startsWith(objName + "."))
@@ -365,7 +400,7 @@ public class ObjectMetadataController {
 					setFieldValue(pds, fieldName, fvalue, result);
 					i++;
 				}
-			}
+			}*/
 
 			return resultList;
 		} catch (Exception e) {
@@ -413,6 +448,42 @@ public class ObjectMetadataController {
 				return;
 			}
 		}
+	}
+	
+	private static void setFieldValue(PropertyDescriptor pd,String fieldValue, Object obj) {
+		Object value = fieldValue;
+		String propertyTypeName = pd.getPropertyType().getSimpleName();
+
+		if (pd.getName().equals("id")) {
+			try {
+				value = new ObjectId(fieldValue);
+			}catch(Exception e){
+				value = null;
+			}
+			
+		} else if (propertyTypeName.equals("Integer")
+				|| propertyTypeName.equals("int")) {
+			try {
+				value = new Integer(fieldValue);
+			} catch (Exception e) {
+				value = null;
+			}
+		} else if (propertyTypeName.equals("Double")
+				|| propertyTypeName.equals("double")) {
+			try {
+				value = new Double(fieldValue);
+			} catch (Exception e) {
+				value = null;
+			}
+		}
+
+		try {
+			pd.getWriteMethod().invoke(obj, value);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
+		return;
 	}
 
 	private static <T> T modelObject(HttpServletRequest request,

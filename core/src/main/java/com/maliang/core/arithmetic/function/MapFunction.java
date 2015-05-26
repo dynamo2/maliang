@@ -54,11 +54,21 @@ class MapCompiler {
 	private StringBuffer sbf = null;
 	private Map<String,Object> params;
 	private char[] endChars = new char[]{',','}'};
+	private boolean addToParams = false;
 	
 	MapCompiler(String source,int s,Map<String,Object> params){
 		this.cursor = s;
 		this.source = source;
 		this.params = params;
+		
+		this.map = readToMap();
+	}
+	
+	MapCompiler(String source,int s,Map<String,Object> params,boolean isAddToParams){
+		this.cursor = s;
+		this.source = source;
+		this.params = params;
+		this.addToParams = isAddToParams;
 		
 		this.map = readToMap();
 	}
@@ -100,6 +110,10 @@ class MapCompiler {
 				ArithmeticExpression.Parentheses pt = ArithmeticExpression.Parentheses.compile(source, this.cursor-1, endChars);
 				Object value = pt.getValue(this.params);
 				map.put(key, value);
+				
+				if(addToParams && params != null){
+					params.put(key, value);
+				}
 				
 				this.cursor = pt.getEndIndex()+1;
 				this.clearCache();

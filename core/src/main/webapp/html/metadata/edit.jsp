@@ -67,8 +67,11 @@
 		var resultModel = ${resultJson};
 		var emptyField = {};
 		var fieldsDivObj = null;
+		var fieldIndex = 0;
 		
 		function initFields(fields){
+			
+			
 			for(var i in fields){
 				var field = fields[i];
 				fieldsDivObj.append(buildField(field,"ul-field-"+i));
@@ -76,6 +79,7 @@
 				if(i == 0){
 					initEmptyField(field);
 				}
+				fieldIndex++;
 			}
 			fieldsDivObj.append(buildField(emptyField,"newField"));
 		}
@@ -122,10 +126,13 @@
 		
 		function buildLi(fieldItem){
 			var liObj = $("<li></li>");
+			var oldName = fieldItem.info.name;
+			fieldItem.info.name = fieldIndex+"."+oldName;
 			var inputObj = TM_formBuilder.newInput(fieldItem.info);
 			if(fieldItem.info.name == "field.type"){
 				inputObj.change(changeType);
 			}
+			fieldItem.info.name = oldName;
 			
 			liObj.append(inputObj);
 			return liObj;
@@ -184,6 +191,7 @@
 			//fieldsDivObj.append(buildField(emptyField,"newField"));
 			resetChange();
 			$("#metadataForm").submit(function(){
+				$("#maxIndex").val(fieldIndex);
 				$("#newField").remove();
 			});
 		});
@@ -192,6 +200,7 @@
     	<div id="editTitle">新增数据结构</div>
     	<div id="editDiv">
     		<form id="metadataForm" action="/metadata/save.htm" method="post">
+    			<input type="hidden" name="maxIndex" id="maxIndex" value="" />
 				<input type="hidden" name="metadata.id" value="${metadata.id}" />
     			<div><label>名称</label><input type="text" name="metadata.name" value="${metadata.name}" /></div>
     			<div><label>标签</label><input type="text" name="metadata.label" value="${metadata.label}" /></div>

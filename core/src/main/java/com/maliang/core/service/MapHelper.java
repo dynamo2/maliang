@@ -5,6 +5,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.maliang.core.arithmetic.ArithmeticExpression;
+
 public class MapHelper {
 	public static void main(String[] args) {
 		String str = "{_id:objectId,name:Product,"
@@ -113,6 +115,20 @@ public class MapHelper {
 		return value;
 	}
 	
+	public static Map<String,Object> buildAndExecuteMap(String str,Map<String,Object> params){
+		if(str == null && str.trim().isEmpty()){
+			return null;
+		}
+		
+		str = str.trim();
+		int start = 0;
+		if(str.startsWith("{")){
+			start = 1;
+		}
+		
+		return new CurlyCompiler(str,start,params).getMap();
+	}
+	
 	public static Map<String,Object> curlyToMap(String str){
 		if(str == null && str.trim().isEmpty()){
 			return null;
@@ -140,10 +156,21 @@ public class MapHelper {
 		private Map<String,Object> map = null;
 		private String key = null;
 		private StringBuffer sbf = null;
+		private Map<String,Object> params;
+		private boolean isExecute = false;
 		
 		public CurlyCompiler(String source,int s){
 			this.cursor = s;
 			this.source = source;
+			
+			this.map = readToMap();
+		}
+		
+		public CurlyCompiler(String source,int s,Map<String,Object> params){
+			this.cursor = s;
+			this.source = source;
+			this.params = params;
+			this.isExecute = true;
 			
 			this.map = readToMap();
 		}
@@ -160,9 +187,20 @@ public class MapHelper {
 			return sbf.toString().trim();
 		}
 		
+		private Object readValue(StringBuffer sbf){
+			String expression = this.read(sbf);
+			if(this.isExecute){
+				Object v = ArithmeticExpression.execute(expression, params);
+				
+				//System.out.println(expression +"=" + v);
+				return v;
+			}
+			return expression;
+		}
+		
 		private Map<String,Object> readToMap(){
 			Map<String,Object> map = new HashMap<String,Object>();
-			String value = null;
+			Object value = null;
 			char c = 0;
 			this.clearCache();
 			for(; cursor < this.source.length();){
@@ -170,7 +208,7 @@ public class MapHelper {
 				
 				if(c == '}'){
 					if(key != null){
-						map.put(key, read(sbf));
+						map.put(key, this.readValue(sbf));
 					}
 					
 					return map;
@@ -182,8 +220,7 @@ public class MapHelper {
 				}
 				if(c == ','){
 					if(key != null){
-						value = read(sbf);
-						map.put(key, value);
+						map.put(key, this.readValue(sbf));
 					}
 					
 					this.clearCache();
@@ -207,7 +244,7 @@ public class MapHelper {
 			}
 			
 			if(key != null){
-				map.put(key, read(sbf));
+				map.put(key, readValue(sbf));
 			}
 			return map;
 		}

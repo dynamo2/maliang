@@ -1,0 +1,32 @@
+form div {
+	clear: both;
+}
+
+.ul-list {
+	width: 1000px;
+}
+
+.ul-list ul {
+	clear: both;
+	width: 1000px;
+	margin: 0px;
+	padding: 0px;
+}
+
+.ul-list .header li {
+	font-weight: bold;
+}
+
+.ul-list li {
+	float: left;
+	width: 180px;
+	border-bottom: 1px dashed #ccc;
+	list-style: none;
+	padding: 5px;
+	height: 25px;
+	text-align: center;
+}
+
+.ul-list li img {
+	height: 23px;
+}

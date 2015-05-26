@@ -62,6 +62,15 @@ public class ObjectMetadataDao  extends AbstractDao {
 		return null;
 	}
 	
+	public ObjectMetadata getByName(String name){
+		DBCursor cursor = this.dbColl.find(new BasicDBObject("name",name));
+		while(cursor.hasNext()){
+			return this.decode((BasicDBObject)cursor.next(), ObjectMetadata.class);
+		}
+		
+		return null;
+	}
+	
 	public List<DBObject> find(BasicDBObject query){
 		DBCursor cursor = this.dbColl.find(query);
 		return cursor.toArray();

@@ -63,6 +63,10 @@ public class Function {
 			return If.execute(this, params);
 		}
 		
+		if("addToParams".equals(key)){
+			return AddToParams.execute(this, params);
+		}
+		
 		if(key != null && key.startsWith("db.")){
 			return DBFunction.execute(this, params);
 		}
