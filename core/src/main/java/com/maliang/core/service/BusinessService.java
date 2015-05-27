@@ -3,12 +3,18 @@ package com.maliang.core.service;
 import java.util.List;
 import java.util.Map;
 
-import com.maliang.core.dao.BusinessDao;
+import org.bson.types.ObjectId;
+
+import com.maliang.core.dao.CollectionDao;
+import com.maliang.core.dao.ObjectMetadataDao;
+import com.maliang.core.model.FieldType;
+import com.maliang.core.model.ObjectField;
+import com.maliang.core.model.ObjectMetadata;
 
 public class BusinessService {
 	private String collection;
-	private List<Map<String,Object>> collections = null;
-	private BusinessDao businessDao = new BusinessDao();
+	private CollectionDao collectionDao = new CollectionDao();
+	protected ObjectMetadataDao metaDao = new ObjectMetadataDao();
 	
 	public BusinessService(String coll) {
 		this.collection = coll;
@@ -20,11 +26,55 @@ public class BusinessService {
 		}
 		
 		id = id.trim();
-		return this.businessDao.getByID(id, this.collection);
+		return this.collectionDao.getByID(id, this.collection);
 	}
 	
 	public List<Map<String,Object>> query(){
-		return this.businessDao.find(null, this.collection);
+		return this.collectionDao.find(null, this.collection);
+	}
+	
+	public Map<String,Object> save(Object obj){
+		if(obj == null || !(obj instanceof Map))return null;
+		
+		Map<String,Object> dataMap = (Map<String,Object>)obj;
+		System.out.println("BusinessService save : " + dataMap);
+		
+		this.correctData(dataMap);
+		this.collectionDao.save(dataMap, this.collection);
+		return dataMap;
+	}
+	
+	private void correctData(Map<String,Object> dataMap){
+		if(dataMap == null)return;
+		
+		ObjectMetadata metadata = this.metaDao.getByName(this.collection);
+		for(ObjectField of : metadata.getFields()){
+			String fieldName = of.getName();
+			Object fieldValue = dataMap.get(fieldName);
+			if(fieldValue == null)continue;
+			
+			dataMap.put(fieldName, correctFieldValue(of,fieldValue));
+		}
+	}
+	
+	private Object correctFieldValue(ObjectField of,Object fieldValue){
+		if(FieldType.DOUBLE.is(of.getType())){
+			try {
+				return Double.valueOf(fieldValue.toString().trim());
+			}catch(Exception e){
+				return null;
+			}
+		}
+		
+		if(FieldType.INT.is(of.getType())){
+			try {
+				return Integer.valueOf(fieldValue.toString().trim());
+			}catch(Exception e){
+				return null;
+			}
+		}
+		
+		return fieldValue;
 	}
 	
 	public static void main(String[] args) {
@@ -41,6 +91,10 @@ public class BusinessService {
 		
 		if("query".equals(method) || "search".equals(method)){
 			return this.query();
+		}
+		
+		if("save".equals(method)){
+			return this.save(value);
 		}
 		
 		/*

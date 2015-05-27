@@ -11,15 +11,64 @@ import net.sf.json.JSONObject;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
 
 import com.maliang.core.arithmetic.ArithmeticExpression;
+import com.maliang.core.dao.BusinessDao;
+import com.maliang.core.model.Business;
+import com.maliang.core.model.WorkFlow;
 import com.maliang.core.service.MapHelper;
 
 @Controller
 @RequestMapping(value = "business")
-public class BusinessController {
-
+public class BusinessController extends BasicController {
+	BusinessDao businessDao = new BusinessDao();
+	
+	@RequestMapping(value = "edit.htm")
+	public String edit(Model model,HttpServletRequest request) {
+		WorkFlow workFlow = readWorkFlow(request);
+		String resultJson = executeWorkFlow(workFlow,request);
+		
+		model.addAttribute("resultJson", resultJson);
+		return "/business/edit";
+	}
+	
+	private void toInputsMap(Object obj){
+		
+	}
+	
+	@RequestMapping(value = "business.htm")
+	public String business(Model model,HttpServletRequest request) {
+		WorkFlow workFlow = readWorkFlow(request);
+		String resultJson = executeWorkFlow(workFlow,request);
+		
+		model.addAttribute("resultJson", resultJson);
+		return "/business/business";
+	}
+	
+	private WorkFlow readWorkFlow(HttpServletRequest request){
+		String businessId = request.getParameter("bid");
+		String businessName = request.getParameter("bn");
+		int flowStep = this.getInt(request, "fid",-1);
+		
+		Business business = businessDao.getByID(businessId);
+		if(business == null){
+			business = businessDao.getByName(businessName);
+		}
+		
+		if(business == null){
+			return null;
+		}
+		
+		return business.workFlow(flowStep);
+	}
+	
+	private String executeWorkFlow(WorkFlow flow,HttpServletRequest request){
+		Map<String,Object> params = readRequestParameters(flow.getRequestType(),request);
+		ArithmeticExpression.execute(flow.getCode(), params);
+		Object responseMap = ArithmeticExpression.execute(flow.getResponse(), params);
+		
+		return JSONObject.fromObject(responseMap).toString();
+	}
 	
 	/**
 	 *  EditProduct {
@@ -45,7 +94,7 @@ public class BusinessController {
 	 *   ]
 	 * }
 	 * **/
-	@RequestMapping(value = "edit.htm", method = RequestMethod.GET)
+	@RequestMapping(value = "edit.htm")
 	public String edit(String id, Model model,HttpServletRequest request) {
 
 		String str = "EditProduct {_id:objectId,name:'发布商品',"
@@ -72,10 +121,86 @@ public class BusinessController {
 				+ "response:{}"
 				+ "}]}";
 		
-		String requestType = "{id:'string'}";
-		Map<String,Object> params = readRequestParameters(requestType,request);
+		String resultJson = null;//product(request);
 		
-		String code = "addToParams({product:db.Product.get(request.id),brands:db.Brand.search()}})";
+		//System.out.println();
+		model.addAttribute("resultJson", resultJson);
+
+		return "/business/edit";
+	}
+	
+	
+	
+	@RequestMapping(value = "product.htm")
+	public String product(Model model,HttpServletRequest request) {
+		Map<String,String> businessMap = new HashMap<String,String>();
+		
+		
+		Map<String,String> editProduct = new HashMap<String,String>();
+		editProduct.put("step", "1");
+		editProduct.put("request_type", "{fid:'int',bid:'int'}");
+		editProduct.put("code", "addToParams({p2:db.Product.save(request.product),brands:db.Brand.search(),products:db.Product.search()})");
+		editProduct.put("response", "{html_template:'<div id='edit_form'></div>',"
+				+ "contents:[{type:'form',html_parent:'edit_form',action:'',name:'product.edit.form',"
+				+ "children:{"
+				+ "inputs:["
+				+ "{name:'fid',type:'hidden',value:2},"
+				+ "{name:'product.id',type:'hidden'},"
+				+ "{name:'product.name',label:'名称',type:'text'},"
+				+ "{name:'product.brand',label:'品牌',type:'select',options:each(brands){{key:this.id,label:this.name}}},"
+				+ "{name:'product.price',label:'价格',type:'number'}],"
+				+ "ul-list:{header:[{name:'name',label:'名称'},{name:'brand',label:'品牌'},{name:'price',label:'价格'},{name:'picture',label:'图片'},{name:'operator',label:'操作'}],"
+				+ "data:each(products){{name:{type:'a',href:'/detail.htm?id='+this.id,text:this.name},"
+				+ "brand:{type:'a',href:'/detail.htm?id='+this.brand.id,text:this.brand.name},price:{type:'label',text:this.price},picture:{type:'img',src:this.picture},"
+				+ "operator:[{type:'a',href:'/edit.htm?id='+this.id,text:'编辑'},{type:'a',href:'/delete.htm?id='+this.id,text:'删除'}]}}}"
+				+ "}}]}");
+		
+		String resultJson = executeBusiness(editProduct,request);
+		model.addAttribute("resultJson", resultJson);
+		
+		return "/business/edit";
+	}
+	
+	@RequestMapping(value = "brand.htm")
+	public String brand(Model model,HttpServletRequest request) {
+		Map<String,String> editBrand = new HashMap<String,String>();
+		editBrand.put("step", "1");
+		editBrand.put("request_type", "{fid:'int',bid:'int'}");
+		editBrand.put("code", "addToParams({p2:db.Brand.save(request.brand),brands:db.Brand.search()})");
+		editBrand.put("response", "{html_template:'<div id='edit_form'></div>',"
+				+ "contents:[{type:'form',html_parent:'edit_form',action:'',name:'brand.edit.form',"
+				+ "children:{"
+				+ "inputs:["
+				+ "{name:'fid',type:'hidden',value:2},"
+				+ "{name:'brand.id',type:'hidden'},"
+				+ "{name:'brand.name',label:'名称',type:'text'}],"
+				+ "ul-list:{header:[{name:'name',label:'名称'},{name:'operator',label:'操作'}],"
+				+ "data:each(brands){{name:{type:'a',href:'/detail.htm?id='+this.id,text:this.name},"
+				+ "operator:[{type:'a',href:'/edit.htm?id='+this.id,text:'编辑'},{type:'a',href:'/delete.htm?id='+this.id,text:'删除'}]}}}"
+				+ "}}]}");
+
+		String resultJson = executeBusiness(editBrand,request);
+		model.addAttribute("resultJson", resultJson);
+		
+		return "/business/edit";
+	}
+	
+	private String executeBusiness(Map<String,String> businessMap,HttpServletRequest request){
+		Map<String,Object> params = readRequestParameters(businessMap.get("request_type"),request);
+		ArithmeticExpression.execute(businessMap.get("code"), params);
+		
+		System.out.println(params);
+		
+		Object responseMap = ArithmeticExpression.execute(businessMap.get("response"), params);
+		return JSONObject.fromObject(responseMap).toString();
+	}
+	
+	private String step1(HttpServletRequest request){
+		String requestType = "{fid:'int',bid:'int'}";
+		Map<String,Object> params = readRequestParameters(requestType,request);
+		//System.out.println();
+		
+		String code = "addToParams({product:db.Product.get(request.id),brands:db.Brand.search(),products:db.Product.search()})";
 		ArithmeticExpression.execute(code, params);
 		
 		String response = "{html_template:'<div id='edit_form'></div>',"
@@ -89,20 +214,77 @@ public class BusinessController {
 				+ "{name:'product.price',label:'价格',type:'number',value:product.price}],"
 				+ "ul-list:{header:[{name:'name',label:'名称'},{name:'brand',label:'品牌'},{name:'price',label:'价格'},{name:'picture',label:'图片'},{name:'operator',label:'操作'}],"
 				+ "data:each(products){{name:{type:'a',href:'/detail.htm?id='+this.id,text:this.name},"
-				+ "brand:{type:'label',text:this.brand},price:{type:'label',text:this.price},picture:{type:'img',src:this.picture},"
+				+ "brand:{type:'a',href:'/detail.htm?id='+this.brand.id,text:this.brand.name},price:{type:'label',text:this.price},picture:{type:'img',src:this.picture},"
 				+ "operator:[{type:'a',href:'/edit.htm?id='+this.id,text:'编辑'},{type:'a',href:'/delete.htm?id='+this.id,text:'删除'}]}}}"
 				+ "}}]}";
 		
-		Object responseMap = ArithmeticExpression.execute(response, null);
-		String resultJson = JSONObject.fromObject(responseMap).toString();
-		
-		//System.out.println();
-		model.addAttribute("resultJson", resultJson);
-
-		return "/business/edit";
+		Object responseMap = ArithmeticExpression.execute(response, params);
+		return JSONObject.fromObject(responseMap).toString();
 	}
 	
 	private Map<String,Object> readRequestParameters(String requestType,HttpServletRequest request){
+		Object value = ArithmeticExpression.execute(requestType,null);
+		Map<String,Object> typeMap = null;
+		if(value != null && value instanceof Map){
+			typeMap = (Map<String,Object>)value;
+		}else {
+			typeMap = new HashMap<String,Object>();
+		}
+		
+		Enumeration<String> requestParamNames = request.getParameterNames();
+		Map<String,Object> resultMap = new HashMap<String,Object>();
+		Object reqValue = null;
+		while(requestParamNames.hasMoreElements()){
+			String reqName = requestParamNames.nextElement();
+			
+			String type = typeMap.containsKey(reqName)?typeMap.get(reqName).toString():"string";
+			if(type.startsWith("array.")){
+				reqValue = this.correctParamType(type, request.getParameterValues(reqName));
+			}else {
+				reqValue = this.correctParamType(type, request.getParameter(reqName));
+			}
+			
+			//resultMap.put(reqName, reqValue);
+			
+			writeValue(reqName,reqValue,resultMap);
+		}
+		
+		Map<String,Object> params = new HashMap<String,Object>();
+		params.put("request", resultMap);
+		
+		System.out.println("readRequestParameters : " + params);
+		return params;
+	}
+	
+	private static void writeValue(String reqName,Object reqValue,Map<String,Object> resultMap){
+		if(reqName == null || !reqName.contains(".")){
+			resultMap.put(reqName, reqValue);
+			return;
+		}
+		
+		String[] reqs = reqName.split("\\.");
+		Map<String,Object> parentMap = resultMap;
+		for(int i = 0; i < reqs.length-1; i++){
+			String reqKey = reqs[i];
+			Object value = parentMap.get(reqKey);
+			if(value != null && value instanceof Map){
+				parentMap = (Map<String,Object>)value;
+				continue;
+			}
+			
+			Map<String,Object> newMap = new HashMap<String,Object>();
+			if(value != null){
+				newMap.put(reqKey, value);
+			}
+			parentMap.put(reqKey, newMap);
+			parentMap = newMap;
+		}
+		
+		parentMap.put(reqs[reqs.length-1], reqValue);
+	}
+	
+	
+	private Map<String,Object> readRequestParameters2(String requestType,HttpServletRequest request){
 		Object value = ArithmeticExpression.execute(requestType,null);
 		Map<String,Object> typeMap = null;
 		if(value != null && value instanceof Map){
@@ -131,19 +313,6 @@ public class BusinessController {
 		params.put("request", resultMap);
 		
 		return params;
-		
-//		for(Map.Entry<String, String[]> entry : requestParamMap.entrySet()){
-//			String key = entry.getKey();
-//			String[] vs = entry.getValue();
-//			
-//			Object type = typeMap.containsKey(key)?typeMap.get(key):"string";
-//			if("string".equals(type)){
-//				String v = null;
-//				if(vs != null && vs.length > 0){
-//					
-//				}
-//			}
-//		}
 	}
 	
 	private Object correctParamType(String type,String value){

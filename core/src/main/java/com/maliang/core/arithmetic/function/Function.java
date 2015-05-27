@@ -35,6 +35,9 @@ public class Function {
 	}
 	
 	public Object executeExpression(Map<String,Object> params){
+		if(this.expression == null || this.expression.trim().isEmpty()){
+			return null;
+		}
 		return ArithmeticExpression.execute(this.expression, params);
 	}
 	

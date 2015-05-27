@@ -1,111 +1,115 @@
 package com.maliang.core.dao;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
-import com.maliang.core.model.FieldType;
-import com.maliang.core.model.ObjectField;
+import com.maliang.core.model.Business;
 import com.maliang.core.model.ObjectMetadata;
+import com.maliang.core.model.WorkFlow;
 import com.mongodb.BasicDBObject;
+import com.mongodb.DBCollection;
 import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
 
-public class BusinessDao extends BasicDao {
-	public void save(Map value,String collName) {
-		BasicDBObject doc = new BasicDBObject(value);
-		this.getDBCollection(collName).save(doc);
-		
-		value.put("id", doc.getObjectId("_id").toByteArray());
-		System.out.println("id : " + doc.getObjectId("_id"));
+public class BusinessDao extends AbstractDao {
+	protected static String COLLECTION_NAME = "Business";
+	protected DBCollection dbColl = null;
+	static {
+		INNER_TYPE.put("Business.workFlows",WorkFlow.class);
 	}
 	
-	public Map<String,Object> getByID(String oid,String collName){
-		DBCursor cursor = this.getDBCollection(collName).find(this.getObjectId(oid));
+	public BusinessDao(){
+		dbColl = this.getDBCollection();
+	}
+	
+	private DBCollection getDBCollection(){
+		return this.getDBCollection(COLLECTION_NAME);
+	}
+	
+	public void save(Business om) {
+		BasicDBObject doc = encode(om);
+		this.dbColl.save(doc);
 		
+		if(om.getId() == null){
+			om.setId(doc.getObjectId("_id"));
+		}
+	}
+	
+	public Business getByID(String oid){
+		DBCursor cursor = this.dbColl.find(this.getObjectId(oid));
 		while(cursor.hasNext()){
-			BasicDBObject doc = (BasicDBObject)cursor.next();
-			
-			Map<String,Object> map = doc.toMap();
-			map.put("id", oid);
-			
-			mergeLinkedObject(map,collName);
-			
-			return map;
+			return this.decode((BasicDBObject)cursor.next(), Business.class) ;
 		}
 		
 		return null;
 	}
 	
-	public List<Map<String,Object>> find(BasicDBObject query,String collName){
-		DBCursor cursor = this.getDBCollection(collName).find(query);
-		
-		List<Map<String,Object>> results = new ArrayList<Map<String,Object>>();
-		for(DBObject dob : cursor.toArray()){
-			Map<String,Object> dataMap = dob.toMap();
-			mergeLinkedObject(dataMap,collName);
-			
-			results.add(dataMap);
+	public Business getByName(String name){
+		DBCursor cursor = this.dbColl.find(new BasicDBObject("name",name));
+		while(cursor.hasNext()){
+			return this.decode((BasicDBObject)cursor.next(), Business.class);
 		}
 		
-		return results;
-	}
-	
-	private void list(){
-		
-	}
-	
-	private void mergeLinkedObject(Map<String,Object> dataMap,String collName){
-		ObjectMetadata metedata = this.metaDao.getByName(collName);
-		
-		for(ObjectField of : metedata.getFields()){
-			String fieldName = of.getName();
-			if(of.getType() == FieldType.LINK_COLLECTION.getCode()){
-				String linkCollName = getLinkedCollectionName(of.getLinkedObject());
-				if(linkCollName == null)continue;
-				
-				Object fieldValue = dataMap.get(fieldName);
-				if(fieldValue != null && fieldValue instanceof String && !((String)fieldValue).trim().isEmpty()){
-					String linkOid = ((String)fieldValue).trim();
-					fieldValue = this.getByID(linkOid, linkCollName);
-				}
-				dataMap.put(fieldName, fieldValue);
-			}
-		}
-	}
-	
-	private String getLinkedCollectionName(String linkedObjectId){
-		ObjectMetadata linkMeta = this.metaDao.getByID(linkedObjectId);
-		if(linkMeta != null){
-			return linkMeta.getName();
-		}
 		return null;
 	}
 	
-	private void correct(Map value){
-		BasicDBObject d = null;
-		d.toMap();
+	public List<Business> list(){
+		DBCursor cursor = this.dbColl.find();
+		
+		return readCursor(cursor,Business.class);
+	}
+	
+	public void remove(String oid){
+		this.dbColl.remove(this.getObjectId(oid));
+	}
+	
+	public List<DBObject> find(BasicDBObject query){
+		DBCursor cursor = this.dbColl.find(query);
+		return cursor.toArray();
 	}
 	
 	public static void main(String[] args) {
 		BusinessDao dao = new BusinessDao();
 		
-		Map m = new HashMap();
-		m.put("name", "雪花秀");
+		List<WorkFlow> wfs = new ArrayList<WorkFlow>();
 		
-		//dao.save(m, "Brand");
+		WorkFlow wf = new WorkFlow();
+		wf.setCode("addToParams({p2:db.Product.save(request.product),brands:db.Brand.search(),products:db.Product.search()})");
+		wf.setRequestType("{fid:'int',bid:'int'}");
+		wf.setResponse("{html_template:'<div id='edit_form'></div>',"
+				+ "contents:[{type:'form',html_parent:'edit_form',action:'',name:'product.edit.form',"
+				+ "children:{"
+				+ "inputs:["
+				+ "{name:'fid',type:'hidden',value:2},"
+				+ "{name:'product.id',type:'hidden'},"
+				+ "{name:'product.name',label:'名称',type:'text'},"
+				+ "{name:'product.brand',label:'品牌',type:'select',options:each(brands){{key:this.id,label:this.name}}},"
+				+ "{name:'product.price',label:'价格',type:'number'}],"
+				+ "ul-list:{header:[{name:'name',label:'名称'},{name:'brand',label:'品牌'},{name:'price',label:'价格'},{name:'picture',label:'图片'},{name:'operator',label:'操作'}],"
+				+ "data:each(products){{name:{type:'a',href:'/detail.htm?id='+this.id,text:this.name},"
+				+ "brand:{type:'a',href:'/detail.htm?id='+this.brand.id,text:this.brand.name},price:{type:'label',text:this.price},picture:{type:'img',src:this.picture},"
+				+ "operator:[{type:'a',href:'/edit.htm?id='+this.id,text:'编辑'},{type:'a',href:'/delete.htm?id='+this.id,text:'删除'}]}}}"
+				+ "}}]}");
+		wf.setStep(1);
+		wfs.add(wf);
 		
-		Map bdc = dao.getByID("5562fd11bd77137b45adcb44", "Brand");
-		System.out.println(bdc);
+		Business bs = new Business();
+		bs.setName("editProduct");
+		bs.setWorkFlows(wfs);
 		
-		m = new HashMap();
-		m.put("name", "珍雪面霜60ml");
-		m.put("brand", "5562fd11bd77137b45adcb44");
-		m.put("price", "2285.00");
+		System.out.println(bs.getWorkFlows());
+		//dao.save(bs);
 		
-		//dao.save(m, "Product");
-		bdc = dao.getByID("5563e32cbd779fb4ab91984c", "Product");
-		System.out.println(bdc);
+		//55657643bd77ce55499002c8
+		//556576fdbd773acdc6a0c3d1
+//		Business bs2 = dao.getByID(bs.getId().toString());
+//		System.out.println(bs2);
+//		System.out.println(bs2.getWorkFlows().get(0).getResponse());
+		
+		System.out.println(dao.getByID("dd"));
+//		Business bbs = dao.list();
+//		System.out.println(bbs.getId());
 	}
+
 }
+ 

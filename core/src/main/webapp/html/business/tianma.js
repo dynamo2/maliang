@@ -70,7 +70,7 @@ function HtmlBuilder(){
 		//imgObj.attr("src",imgData.src);
 		imgObj.attr("src","http://img4.douban.com/view/commodity_story/imedium/public/p6668828.jpg");
 		return imgObj;
-	}
+	};
 	
 	this.newRadio = function(data){
 		var radioSpan = $("<span></span>");
@@ -208,6 +208,7 @@ function FormBuilder(){
 				.append($("<input type='submit' value='保存'>"));
 		formObj.append(bntDiv);*/
 		
+		
 		return formObj;
 	};
 	
@@ -219,7 +220,7 @@ function FormBuilder(){
 		}
 		
 		return divObj;
-	}
+	};
 	
 	this.newItem = function(inputData){
 		var divObj = $("<div></div>");
@@ -266,7 +267,7 @@ function FormBuilder(){
 			
 			return spanObj;
 		}
-	}
+	};
 	
 	this.newLabel = function(data){
 		var labelObj = $("<label></label>");
@@ -290,7 +291,7 @@ function UIListBuilder(){
 			divObj.append(uls[idx]);
 		}
 		return divObj;
-	}
+	};
 	
 	this.newListData = function(listData){
 		var headerIndex = [];
@@ -328,7 +329,7 @@ function UIListBuilder(){
 		}
 		
 		return ulAry;
-	}
+	};
 	
 	this.newListHeader = function(headers){
 		var ulObj = $("<ul></ul>");
@@ -342,7 +343,7 @@ function UIListBuilder(){
 			ulObj.append(liObj);
 		}
 		return ulObj;
-	}
+	};
 }
 var TM_formBuilder =  new FormBuilder();
 var TM_htmlBuilder =  new HtmlBuilder();

@@ -24,6 +24,14 @@ public enum FieldType {
 		return this.code;
 	}
 	
+	public boolean is(int c){
+		return this.code == c;
+	}
+	
+	public boolean is(String s){
+		return this.name.equals(s);
+	}
+	
 	public static String getName(int code){
 		for(FieldType type:FieldType.values()){
 			if(type.code == code){

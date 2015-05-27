@@ -42,7 +42,11 @@ public class AbstractDao  {
 	}
 	
 	protected BasicDBObject getObjectId(String oid){
-		return new BasicDBObject("_id",new ObjectId(oid));
+		try {
+			return new BasicDBObject("_id",new ObjectId(oid));
+		}catch(IllegalArgumentException e){
+			return new BasicDBObject("_id",new ObjectId());
+		}
 	}
 	
 	protected <T> List<T> readCursor(DBCursor cursor,Class<T> cls){
@@ -54,6 +58,7 @@ public class AbstractDao  {
 		return result;
 	}
 	
+	@SuppressWarnings({ "rawtypes", "unchecked" })
 	protected <T> T decode(BasicDBObject dbObj,Class<T> cls) {
 		try {
 			BeanInfo beanInfo = Introspector.getBeanInfo(cls);
