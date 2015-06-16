@@ -1,14 +1,15 @@
 package com.maliang.core.model;
 
 public class WorkFlow extends MongodbModel {
-	private int step;
+	private Integer step;
 	private String requestType;
 	private String code;
 	private String response;
-	public int getStep() {
+	
+	public Integer getStep() {
 		return step;
 	}
-	public void setStep(int step) {
+	public void setStep(Integer step) {
 		this.step = step;
 	}
 	public String getRequestType() {

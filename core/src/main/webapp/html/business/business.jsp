@@ -38,8 +38,6 @@
 				
 				$("#"+htmlData.html_parent).append(formObj);
 			}
-			
-			
 		}
 		</script>
 		<div id="main"></div>

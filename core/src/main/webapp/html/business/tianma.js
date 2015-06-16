@@ -48,7 +48,7 @@ function HtmlBuilder(){
 	
 	this.newSelect = function(data){
 		var selObj = $("<select></select>");
-		selObj.attr("name",data.name);
+		selObj.attr("name",builder.addPrefix(data.prefix)+data.name);
 		var defaultValue = data.value;
 		
 		for(var i = 0; i < data.options.length;i++){
@@ -79,7 +79,7 @@ function HtmlBuilder(){
 			var option = data.options[idx];
 			
 			var radioObj = $("<input type='radio'>");
-			radioObj.attr("name",data.name);
+			radioObj.attr("name",builder.addPrefix(data.prefix)+data.name);
 			radioObj.attr("value",option.key);
 			
 			var radioText = $("<label></label>");
@@ -103,7 +103,8 @@ function HtmlBuilder(){
 			var option = data.options[idx];
 			
 			var checkboxObj = $("<input type='checkbox'>");
-			checkboxObj.attr("name",data.name);
+			
+			checkboxObj.attr("name",builder.addPrefix(data.prefix)+data.name);
 			checkboxObj.attr("value",option.key);
 			checkboxObj.attr("checked",false);
 			if(option.key == data.value){
@@ -124,16 +125,23 @@ function HtmlBuilder(){
 		var txtObj = $("<input />");
 
 		txtObj.attr("value",data.value);
-		txtObj.attr("name",data.name);
+		txtObj.attr("name",builder.addPrefix(data.prefix)+data.name);
 		
 		return txtObj;
 	};
+	
+	this.addPrefix = function(prefix){
+		if(prefix != "undefined" && prefix != null && prefix != ""){
+			return prefix+".";
+		}
+		return '';
+	}
 	
 	this.newTextarea = function(data){
 		var txtObj = $("<textarea />");
 
 		txtObj.text(data.value);
-		txtObj.attr("name",data.name);
+		txtObj.attr("name",builder.addPrefix(data.prefix)+data.name);
 		
 		return txtObj;
 	};
@@ -170,7 +178,7 @@ function HtmlBuilder(){
 	
 	this.newLabel = function(data){
 		var labelObj = $("<label></label>");
-		labelObj.attr("name",data.name);
+		labelObj.attr("name",builder.addPrefix(data.prefix)+data.name);
 		labelObj.text(data.text);
 		return labelObj;
 	};
@@ -187,6 +195,7 @@ function FormBuilder(){
 	
 	this.newForm = function(formData){
 		var formObj = $("<form />");
+		formObj.attr("method","post");
 		formObj.attr("action",formData.action);
 		formObj.attr("enctype",formData.enctype);
 		formObj.attr("name",formData.name);
@@ -266,6 +275,8 @@ function FormBuilder(){
 			spanObj.append(minObj).append(speObj).append(maxObj);
 			
 			return spanObj;
+		}else if(inputData.type == "list"){
+			return TM_ulListBuilder.newInputs(inputData);
 		}
 	};
 	
@@ -279,6 +290,93 @@ function FormBuilder(){
 };
 function UIListBuilder(){
 	var builder = this;
+	
+	this.newInputs = function(itemData){
+		var divObj = $("<div></div>");
+		divObj.addClass("ul-list");
+		
+		var addBntObj = $("<input type='button' />");
+		addBntObj.val('添加新'+itemData.label);
+		divObj.append(addBntObj);
+		
+		var subBntObj = $("<input type='submit' />");
+		subBntObj.val('保存');
+		divObj.append(subBntObj);
+		
+		var itemHeaders = [];
+		var hidx = 0;
+		for(var idx in itemData["item-labels"]){
+			var header = {};
+			header.name = idx;
+			header.label = itemData["item-labels"][idx];
+			
+			itemHeaders[hidx++] = header;
+		}
+		var header = {};
+		header.name = 'operator';
+		header.label = '操作';
+		itemHeaders[hidx+1] = header;
+		
+		divObj.append(builder.newListHeader(itemHeaders));
+
+		var options = {};
+		options.maxIndex = {};
+		options.emptyItem = {};
+		options.headers = itemData["item-labels"];
+		options.maxIndex.value = 0;
+		options.maxIndex.type = "hidden";
+		options.maxIndex.prefix = itemData["item-prefix"];
+		options.maxIndex.name = "maxIndex";
+		
+		for(var idx in itemData.value){
+			var ulObj = builder.newItemInputs(itemData.value[idx],options);
+			divObj.append(ulObj);
+		}
+		
+		var maxIndexObj = TM_formBuilder.newInputElement(options.maxIndex);
+		divObj.append(maxIndexObj);
+		
+		addBntObj.click(function(){
+			var ulObj = builder.newItemInputs(options.emptyItem,options);
+			divObj.append(ulObj);
+		});
+		
+		return divObj;
+	};
+	
+	this.newItemInputs = function(inputItem,options){
+		var ulObj = $("<ul></ul>");
+		
+		for(var idx in options.headers){
+			var fieldInput = inputItem[idx];
+			var oldName = fieldInput.name;
+			fieldInput.name = options.maxIndex.value+'.'+fieldInput.name;
+			
+			var inputObj = TM_formBuilder.newInputElement(fieldInput);
+			var liObj = $("<li></li>");
+			
+			liObj.append(inputObj);
+			ulObj.append(liObj);
+			
+			fieldInput.name = oldName;
+			options.emptyItem[idx] = fieldInput;
+			options.emptyItem[idx].value = null;
+		}
+		builder.addDeleteButton(ulObj);
+		options.maxIndex.value++;
+		
+		return ulObj;
+	};
+	
+	this.addDeleteButton = function(ulObj){
+		var delBntObj = $("<input type='button' value='删除' />");
+		delBntObj.click(function(){
+			ulObj.remove();
+		});
+		var liObj = $("<li></li>");
+		liObj.append(delBntObj);
+		ulObj.append(liObj);
+	}
 	
 	this.newUIList = function(listData){
 		var divObj = $("<div></div>");

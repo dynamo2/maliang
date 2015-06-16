@@ -4,6 +4,8 @@ import java.util.List;
 
 public class Business extends MongodbModel {
 	private String name;
+	
+	@Mapped(type=WorkFlow.class)
 	private List<WorkFlow> workFlows;
 	
 	public String getName() {

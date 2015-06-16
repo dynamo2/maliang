@@ -1,6 +1,14 @@
+body {
+	font-size:12px;
+}
+form input[type=text] {
+	border: 1px solid #cccccc;
+	margin: 5px;
+}
+
 form div {
 	clear: both;
-	font-size:12px;
+	font-size: 12px;
 }
 
 .ul-list {
@@ -30,4 +38,12 @@ form div {
 
 .ul-list li img {
 	height: 23px;
+}
+
+#enlargedEditerDialog {
+	font-size:12px;
+}
+#enlargedEditerDialog textarea {
+	width:470px;
+	height:280px;
 }
