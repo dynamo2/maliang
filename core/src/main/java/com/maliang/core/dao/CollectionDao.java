@@ -12,6 +12,7 @@ import com.maliang.core.arithmetic.DateCalculator;
 import com.maliang.core.model.FieldType;
 import com.maliang.core.model.ObjectField;
 import com.maliang.core.model.ObjectMetadata;
+import com.maliang.core.ui.controller.Pager;
 import com.mongodb.AggregationOutput;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
@@ -20,9 +21,12 @@ import com.mongodb.DBObject;
 
 public class CollectionDao extends BasicDao {
 	public void save(Map value,String collName) {
-		BasicDBObject doc = new BasicDBObject(value);
-		this.getDBCollection(collName).save(doc);
+		BasicDBObject doc = this.build(value);
+		if(doc == null){
+			return;
+		}
 		
+		this.getDBCollection(collName).save(doc);
 		value.put("id", doc.getObjectId("_id").toByteArray());
 	}
 	
@@ -30,7 +34,7 @@ public class CollectionDao extends BasicDao {
 		DBCollection db = this.getDBCollection(collName);
 		String id = (String)value.remove("id");
 		
-		BasicDBObject doc = new BasicDBObject(value);
+		BasicDBObject doc = this.build(value);
 		db.update(this.getObjectId(id), new BasicDBObject("$set",doc));
 	}
 	
@@ -46,7 +50,37 @@ public class CollectionDao extends BasicDao {
 			return map;
 		}
 		
-		return null;
+		return this.emptyResult();
+	}
+	
+	/***
+	 * 分页查询
+	 * **/
+	public List<Map<String,Object>> findByMap(Map<String,Object> query,Map<String,Object> sort,Pager pg,String collName){
+		return this.find(build(query), build(sort),pg,collName);
+	}
+	
+	/***
+	 * 分页查询
+	 * **/
+	public List<Map<String,Object>> find(BasicDBObject query,BasicDBObject sort,Pager pg,String collName){
+		if(pg == null){
+			pg = new Pager();
+		}
+		
+		int limit = pg.getPageSize();
+		int skip = (pg.getCurPage()-1)*pg.getPageSize();
+		
+		DBCursor cursor = this.getDBCollection(collName).find(query).sort(sort).skip(skip).limit(limit);
+		
+		int totalRow = cursor.count();
+		pg.setTotalRow(totalRow);
+		
+		return this.readCursor(cursor, collName);
+	}
+	
+	public List<Map<String,Object>> findByMap(Map<String,Object> query,String collName){
+		return this.find(build(query), collName);
 	}
 	
 	public List<Map<String,Object>> find(BasicDBObject query,String collName){
@@ -67,7 +101,34 @@ public class CollectionDao extends BasicDao {
 		return results;
 	}
 	
+	public List<Map<String,Object>> aggregateByMap(List<Map<String,Object>> query,String collName){
+		if(query == null || query.isEmpty()){
+			return this.emptyResults();
+		}
+		
+		List<DBObject> pipeline = new ArrayList<DBObject>();
+		for(Map<String,Object> map : query){
+			if(map.isEmpty())continue;
+			
+			pipeline.add(new BasicDBObject(map));
+		}
+
+		return this.aggregate(pipeline, collName);
+	}
+	
+	private Map<String,Object> emptyResult(){
+		return new HashMap<String,Object>();
+	}
+	
+	private List<Map<String,Object>> emptyResults(){
+		return new ArrayList<Map<String,Object>>();
+	}
+	
 	public List<Map<String,Object>> aggregate(List<DBObject> pipeline,String collName){
+		if(pipeline == null || pipeline.isEmpty()){
+			return this.emptyResults();
+		}
+		
 		DBCollection db = this.getDBCollection(collName);
 		AggregationOutput aout = db.aggregate(pipeline);
 		Iterator<DBObject> ie = aout.results().iterator();
@@ -115,77 +176,8 @@ public class CollectionDao extends BasicDao {
 		}
 		return null;
 	}
-	
-	
-	
-	private void correct(Map value){
-		BasicDBObject d = null;
-		d.toMap();
-	}
-	
-	static class Pager {
-	    private int curPage = 1; // 当前页
-	    private int pageSize = 3; // 每页多少行
-	    private int totalRow; // 共多少行
-	    private int start;// 当前页起始行
-	    private int end;// 结束行
-	    private int totalPage; // 共多少页
 
-	    public int getCurPage() {
-	        return curPage;
-	    }
-
-	    public void setCurPage(int curPage) {
-	        if (curPage < 1) {
-	            curPage = 1;
-	        } else {
-	            start = pageSize * (curPage - 1);
-	        }
-	        
-	        end = start + pageSize > totalRow ? totalRow : start + pageSize;
-	        this.curPage = curPage;
-	    }
-
-	    public int getStart() {
-	        return start;
-	    }
-
-	    public int getEnd() {
-
-	        return end;
-	    }
-
-	    public int getPageSize() {
-	        return pageSize;
-	    }
-
-	    public void setPageSize(int pageSize) {
-	        this.pageSize = pageSize;
-	    }
-
-	    public int getTotalRow() {
-	        return totalRow;
-	    }
-
-	    public void setTotalRow(int totalRow) {
-	        totalPage = (totalRow + pageSize - 1) / pageSize;
-	        this.totalRow = totalRow;
-	        if (totalPage < curPage) {
-	            curPage = totalPage;
-	            start = pageSize * (curPage - 1);
-	            end = totalRow;
-	        }
-	        end = start + pageSize > totalRow ? totalRow : start + pageSize;
-	    }
-
-	    public int getTotalPage() {
-	        return this.totalPage;
-	    }
-
-	}
-	
-	
-	
+	/********************** Test ****************************/
 	public static void printList(List<Map<String,Object>> ps){
 		for(Map<String,Object> md : ps){
 			for(Map.Entry<String, Object> me: md.entrySet()){
@@ -202,17 +194,7 @@ public class CollectionDao extends BasicDao {
 	static String collName = "TBrand";
 	static CollectionDao dao = new CollectionDao();
 	
-	public List<Map<String,Object>> test(Pager pg){
-		BasicDBObject dbo = new BasicDBObject();
-		dbo.put("name",1);
-		dbo.put("create_date",1);
-		DBCursor cursor = this.getDBCollection(collName).find().sort(dbo);//.sort(new BasicDBObject("create_date",1)).sort(new BasicDBObject("name",1));
-		int totalRow = cursor.count();//.size();
-		pg.setTotalRow(totalRow);
-		
-		cursor.skip((pg.getCurPage()-1)*pg.getPageSize()).limit(pg.getPageSize());
-		return this.readCursor(cursor, collName);
-	}
+	
 	
 	
 	public static void testUpdate(){
@@ -382,32 +364,12 @@ public class CollectionDao extends BasicDao {
 	}
 	
 	private static void mapQuery(){
-		DBCollection db = dao.getDBCollection("TOrder");
-		List<DBObject> pipeline = new ArrayList<DBObject>();
-		
-		String query = "{$project:{name:1,_id:0,totalPay:{$add:['$age','$price']}}}";
-		Map<String,Object> params = new HashMap();
-		Object map = ArithmeticExpression.execute(query,params);
-		BasicDBObject qo = new BasicDBObject((Map)map);
-		pipeline.add(qo);
-		
-		query = "{$group:{_id:'$name',sumTotalPay:{$sum:'$totalPay'}}}";
-		map = ArithmeticExpression.execute(query,params);
-		qo = new BasicDBObject((Map)map);
-		pipeline.add(qo);
+		String query = "[{$project:{name:1,_id:0,totalPay:{$add:['$age','$price']}}},"
+				+ "{$group:{_id:'$name',sumTotalPay:{$sum:'$totalPay'}}}]";
+		List<Map<String,Object>> list = (List<Map<String,Object>>)ArithmeticExpression.execute(query,null);
 
-		AggregationOutput aout = db.aggregate(pipeline);//.find(qo).;
-		Iterable<DBObject> ie = aout.results();
-		Iterator<DBObject> iee = ie.iterator();
-		while(iee.hasNext()){
-			System.out.println(iee.next());
-			//iee.next();
-		}
-		
-		//List<Map<String,Object>> ps = dao.readCursor(aout., "TOrder");
-		
-		//System.out.println(ps.size());
-		//System.out.println(ps);
+		List<Map<String,Object>> results = dao.aggregateByMap(list,"TOrder");
+		System.out.println(results);
 	}
 	
 	public static void main(String[] args) {
