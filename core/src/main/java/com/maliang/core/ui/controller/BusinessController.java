@@ -3,6 +3,7 @@ package com.maliang.core.ui.controller;
 import java.beans.BeanInfo;
 import java.beans.Introspector;
 import java.beans.PropertyDescriptor;
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -17,6 +18,9 @@ import net.sf.json.JSONObject;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 import com.maliang.core.arithmetic.ArithmeticExpression;
 import com.maliang.core.dao.BusinessDao;
@@ -41,6 +45,8 @@ public class BusinessController extends BasicController {
 		wfMap.put("requestType", "requestType");
 		wfMap.put("code", "code");
 		wfMap.put("response", "response");
+		wfMap.put("javaScript", "javaScript");
+		wfMap.put("ajax", "ajax");
 		CLASS_LABELS.put(WorkFlow.class.getCanonicalName(), wfMap);
 	}
 	
@@ -71,6 +77,34 @@ public class BusinessController extends BasicController {
 		return "/business/list";
 	}
 	
+	@RequestMapping(value = "save.htm")
+	public String save(Model model,HttpServletRequest request) {
+		Map<String,Object> reqMap = this.readRequestMap(request);
+		Map<String,Object> busMap = (Map<String,Object>)reqMap.get("business");
+		Business busi = buildToObject(busMap,Business.class);
+
+		businessDao.save(busi);
+		
+		return this.list(model, request);
+	}
+	
+	@RequestMapping(value = "business.htm")
+	public String business(Model model,HttpServletRequest request) {
+		WorkFlow workFlow = readWorkFlow(request);
+		String resultJson = executeWorkFlow(workFlow,request);
+		
+		model.addAttribute("resultJson", resultJson);
+		return "/business/business";
+	}
+	
+	@RequestMapping(value = "ajax.htm")
+	@ResponseBody
+	public String ajaxBusiness(HttpServletRequest request) {
+		WorkFlow workFlow = readWorkFlow(request);
+		
+		return this.executeAjaxWorkFlow(workFlow,request);
+	}
+	
 	@SuppressWarnings("rawtypes")
 	private Map buildULListMap(List<Business> list,Map<String,String> labels){
 		
@@ -98,6 +132,13 @@ public class BusinessController extends BasicController {
 				om.put("type", "a");
 				om.put("href","/business/edit.htm?id="+obj.getId());
 				om.put("text", "编辑");
+				ol.add(om);
+				
+				om = new HashMap();
+				om.put("type", "a");
+				om.put("href","/business/business.htm?bid="+obj.getId());
+				om.put("text", "执行");
+				om.put("target", "_blank");
 				ol.add(om);
 				bdm.put("operator", ol);
 				
@@ -129,41 +170,7 @@ public class BusinessController extends BasicController {
 			return null;
 		}
 	}
-	
-	@RequestMapping(value = "save.htm")
-	public String save(Model model,HttpServletRequest request) {
-		Map<String,Object> reqMap = this.readRequestMap(request);
-		Map<String,Object> busMap = (Map<String,Object>)reqMap.get("business");
-		Business busi = buildToObject(busMap,Business.class);
 
-		businessDao.save(busi);
-		
-		return this.list(model, request);
-	}
-
-	public static void main(String[] args) throws Exception {
-		
-		/*
-		List<Business> bs = businessDao.list();
-		
-		Business business = bs.get(0);
-		business = new Business();
-		Map<String,Object> bMap = buildInputsMap(business,CLASS_LABELS,"business");
-		String json = JSONObject.fromObject(bMap).toString();
-		System.out.println(json);*/
-		
-		readForm(null);
-	}
-	
-	@RequestMapping(value = "business.htm")
-	public String business(Model model,HttpServletRequest request) {
-		WorkFlow workFlow = readWorkFlow(request);
-		String resultJson = executeWorkFlow(workFlow,request);
-		
-		model.addAttribute("resultJson", resultJson);
-		return "/business/business";
-	}
-	
 	private WorkFlow readWorkFlow(HttpServletRequest request){
 		String businessId = request.getParameter("bid");
 		String businessName = request.getParameter("bn");
@@ -181,11 +188,155 @@ public class BusinessController extends BasicController {
 	}
 	
 	private String executeWorkFlow(WorkFlow flow,HttpServletRequest request){
-		Map<String,Object> params = readRequestParameters(flow.getRequestType(),request);
-		ArithmeticExpression.execute(flow.getCode(), params);
+		Map<String,Object> params = executeCode(flow,request);
 		Object responseMap = ArithmeticExpression.execute(flow.getResponse(), params);
 		
 		return JSONObject.fromObject(responseMap).toString();
+	}
+	
+	private String executeAjaxWorkFlow(WorkFlow flow,HttpServletRequest request){
+		Map<String,Object> params = executeCode(flow,request);
+		
+		
+		Object ajaxMap = ArithmeticExpression.execute(flow.getAjax(), params);
+		
+		return JSONObject.fromObject(ajaxMap).toString();
+	}
+	
+	private Map<String,Object> executeCode(WorkFlow flow,HttpServletRequest request){
+		Map<String,Object> params = readRequestParameters(flow.getRequestType(),request);
+		
+		System.out.println("********** params **************");
+		System.out.println(params);
+		
+		ArithmeticExpression.execute(flow.getCode(), params);
+		
+		return params;
+	}
+	
+	private Map<String,Object> readRequestParameters(String requestType,HttpServletRequest request){
+		Object value = ArithmeticExpression.execute(requestType,null);
+		Map<String,Object> typeMap = null;
+		if(value != null && value instanceof Map){
+			typeMap = (Map<String,Object>)value;
+		}else {
+			typeMap = new HashMap<String,Object>();
+		}
+		
+		Enumeration<String> requestParamNames = request.getParameterNames();
+		Map<String,Object> resultMap = new HashMap<String,Object>();
+		Object reqValue = null;
+		while(requestParamNames.hasMoreElements()){
+			String reqName = requestParamNames.nextElement();
+			
+			String type = typeMap.containsKey(reqName)?typeMap.get(reqName).toString():"string";
+			if(type.startsWith("array.")){
+				reqValue = this.correctParamType(type, request.getParameterValues(reqName));
+			}else {
+				reqValue = this.correctParamType(type, request.getParameter(reqName));
+			}
+			
+			//resultMap.put(reqName, reqValue);
+			
+			writeValue(reqName,reqValue,resultMap);
+		}
+		
+		Map<String,Object> params = new HashMap<String,Object>();
+		params.put("bid", request.getParameter("bid"));
+		params.put("request", resultMap);
+		
+		//System.out.println("readRequestParameters : " + params);
+		return params;
+	}
+	
+	private Object correctParamType(String type,String value){
+		if("string".equals(type)){
+			return value;
+		}else if("int".equals(type)){
+			try {
+				return Integer.valueOf(value);
+			}catch(Exception e){
+				return null;
+			}
+		}else if("double".equals(type)){
+			try {
+				return Double.valueOf(value);
+			}catch(Exception e){
+				return null;
+			}
+		}
+		
+		return value;
+	}
+	
+	private Object[] correctParamType(String type,String[] values){
+		if(type == null || !type.startsWith("array.")){
+			return values;
+		}
+		
+		type = type.substring(6);
+		Object[] vary = new Object[values.length];
+		int idx = 0;
+		for(String v : values){
+			vary[idx++] = correctParamType(type,v);
+		}
+		
+		return vary;
+	}
+	
+	private static void writeValue(String reqName,Object reqValue,Map<String,Object> resultMap){
+		if(reqName == null || !reqName.contains(".")){
+			resultMap.put(reqName, reqValue);
+			return;
+		}
+		
+		String[] reqs = reqName.split("\\.");
+		Map<String,Object> parentMap = resultMap;
+		for(int i = 0; i < reqs.length-1; i++){
+			String reqKey = reqs[i];
+			Object value = parentMap.get(reqKey);
+			if(value != null && value instanceof Map){
+				parentMap = (Map<String,Object>)value;
+				continue;
+			}
+			
+			Map<String,Object> newMap = new HashMap<String,Object>();
+			if(value != null){
+				newMap.put(reqKey, value);
+			}
+			parentMap.put(reqKey, newMap);
+			parentMap = newMap;
+		}
+		
+		parentMap.put(reqs[reqs.length-1], reqValue);
+	}
+	
+	public static void main(String[] args) throws Exception {
+		
+		/*
+		List<Business> bs = businessDao.list();
+		
+		Business business = bs.get(0);
+		business = new Business();
+		Map<String,Object> bMap = buildInputsMap(business,CLASS_LABELS,"business");
+		String json = JSONObject.fromObject(bMap).toString();
+		System.out.println(json);*/
+		
+		//readForm(null);
+		
+		String str = "{components:[{htmlProps:{tag:'form',id:'product.search.form'},"
+				+ "components:[{type:'formInputs',inputs:["
+				+ "{name:'product.name',label:'名称',type:'text'},"
+				+ "{name:'product.brand',label:'品牌',type:'select',options:each(brands){{value:this.id,text:this.name}}},"
+				+ "{name:'product.price',label:'价格',type:'number'}]}]},"
+				+ "{type:'datatables',"
+				+ "htmlProps:{id:'productsTable'},"
+				+ "ajax:'/business/ajax.htm?bid=2',"
+				+ "header:['名称','品牌','价格','图片','操作']}]}";
+		
+		Object ov = ArithmeticExpression.execute(str, null);
+		
+		System.out.println(ov);
 	}
 	
 	/**
@@ -211,7 +362,7 @@ public class BusinessController extends BasicController {
 	 *       {step:2,code{c1:db.Product.save(request.product)}}
 	 *   ]
 	 * }
-	 * **/
+	 * **
 	//@RequestMapping(value = "edit.htm")
 	public String edit( Model model,HttpServletRequest request) {
 
@@ -340,66 +491,9 @@ public class BusinessController extends BasicController {
 		return JSONObject.fromObject(responseMap).toString();
 	}
 	
-	private Map<String,Object> readRequestParameters(String requestType,HttpServletRequest request){
-		Object value = ArithmeticExpression.execute(requestType,null);
-		Map<String,Object> typeMap = null;
-		if(value != null && value instanceof Map){
-			typeMap = (Map<String,Object>)value;
-		}else {
-			typeMap = new HashMap<String,Object>();
-		}
-		
-		Enumeration<String> requestParamNames = request.getParameterNames();
-		Map<String,Object> resultMap = new HashMap<String,Object>();
-		Object reqValue = null;
-		while(requestParamNames.hasMoreElements()){
-			String reqName = requestParamNames.nextElement();
-			
-			String type = typeMap.containsKey(reqName)?typeMap.get(reqName).toString():"string";
-			if(type.startsWith("array.")){
-				reqValue = this.correctParamType(type, request.getParameterValues(reqName));
-			}else {
-				reqValue = this.correctParamType(type, request.getParameter(reqName));
-			}
-			
-			//resultMap.put(reqName, reqValue);
-			
-			writeValue(reqName,reqValue,resultMap);
-		}
-		
-		Map<String,Object> params = new HashMap<String,Object>();
-		params.put("request", resultMap);
-		
-		System.out.println("readRequestParameters : " + params);
-		return params;
-	}
 	
-	private static void writeValue(String reqName,Object reqValue,Map<String,Object> resultMap){
-		if(reqName == null || !reqName.contains(".")){
-			resultMap.put(reqName, reqValue);
-			return;
-		}
-		
-		String[] reqs = reqName.split("\\.");
-		Map<String,Object> parentMap = resultMap;
-		for(int i = 0; i < reqs.length-1; i++){
-			String reqKey = reqs[i];
-			Object value = parentMap.get(reqKey);
-			if(value != null && value instanceof Map){
-				parentMap = (Map<String,Object>)value;
-				continue;
-			}
-			
-			Map<String,Object> newMap = new HashMap<String,Object>();
-			if(value != null){
-				newMap.put(reqKey, value);
-			}
-			parentMap.put(reqKey, newMap);
-			parentMap = newMap;
-		}
-		
-		parentMap.put(reqs[reqs.length-1], reqValue);
-	}
+	
+	
 	
 	
 	private Map<String,Object> readRequestParameters2(String requestType,HttpServletRequest request){
@@ -433,40 +527,7 @@ public class BusinessController extends BasicController {
 		return params;
 	}
 	
-	private Object correctParamType(String type,String value){
-		if("string".equals(type)){
-			return value;
-		}else if("int".equals(type)){
-			try {
-				return Integer.valueOf(value);
-			}catch(Exception e){
-				return null;
-			}
-		}else if("double".equals(type)){
-			try {
-				return Double.valueOf(value);
-			}catch(Exception e){
-				return null;
-			}
-		}
-		
-		return value;
-	}
 	
-	private Object[] correctParamType(String type,String[] values){
-		if(type == null || !type.startsWith("array.")){
-			return values;
-		}
-		
-		type = type.substring(6);
-		Object[] vary = new Object[values.length];
-		int idx = 0;
-		for(String v : values){
-			vary[idx++] = correctParamType(type,v);
-		}
-		
-		return vary;
-	}
 	
 	/***
 	 * edit_from:{type:form,action:'',name:'product.edit.form',inputs:[
@@ -482,7 +543,7 @@ public class BusinessController extends BasicController {
 	 *            {name:'product.expiryh_date',type:'text',value:product.expiry_date},
 	 *            {name:'product.picture',type:'text',value:product.picture}]}
 	 *           }
-	 * **/
+	 * **
 	private static String readForm(String form){
 		String paramStr = "{product:{id:'111111',name:'Product',brand:'aaaa',price:335.8,expiry_date:'2015-03-26'},"
 				+ "brands:[{id:'aaaa',name:'雪花秀'},{id:'bbbb',name:'希思黎'},{id:'cccc',name:'Pola'}],"
@@ -560,6 +621,12 @@ public class BusinessController extends BasicController {
 				+ "operator:[{type:'a',href:'/edit.htm?id='+this.id,text:'编辑'},{type:'a',href:'/delete.htm?id='+this.id,text:'删除'}]}}}"
 				+ "}}]}";
 		
+		form = "{columnTemplate:['<a href=\"/detail.htm?id=${id}\">${name}</a>',"
+				+ "'<a href=\"/detail.htm?id=${brand.id}\">${brand.name}</a>',"
+				+ "'${price}',"
+				+ "'<img src=\"${picture}\" />',"
+				+ "'<a href=\"#\">编辑</a>&nbsp;&nbsp;<a href=\"#\">删除</a>']}";
+		
 		System.out.println(form);
 		
 		System.out.println("==============");
@@ -570,5 +637,5 @@ public class BusinessController extends BasicController {
 		System.out.println("".getClass().getCanonicalName());
 		
 		return json;
-	}
+	}*/
 }

@@ -2,7 +2,7 @@ package com.maliang.core.arithmetic.function;
 
 import java.util.Map;
 
-import com.maliang.core.service.BusinessService;
+import com.maliang.core.service.CollectionService;
 
 public class DBFunction {
 	public static Object execute(Function function,Map<String,Object> params){
@@ -12,6 +12,8 @@ public class DBFunction {
 		String method = keys[2];
 		
 		Object value = function.executeExpression(params);
-		return new BusinessService(collection).invoke(method, value);
+		
+		System.out.println(function.getBody());
+		return new CollectionService(collection).invoke(method, value);
 	}
 }

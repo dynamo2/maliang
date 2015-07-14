@@ -5,6 +5,8 @@ public class WorkFlow extends MongodbModel {
 	private String requestType;
 	private String code;
 	private String response;
+	private String ajax;
+	private String javaScript;
 	
 	public Integer getStep() {
 		return step;
@@ -29,5 +31,17 @@ public class WorkFlow extends MongodbModel {
 	}
 	public void setResponse(String response) {
 		this.response = response;
+	}
+	public String getJavaScript() {
+		return javaScript;
+	}
+	public void setJavaScript(String javaScript) {
+		this.javaScript = javaScript;
+	}
+	public String getAjax() {
+		return ajax;
+	}
+	public void setAjax(String ajax) {
+		this.ajax = ajax;
 	}
 }

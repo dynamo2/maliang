@@ -4,8 +4,11 @@ import java.util.Map;
 
 import com.maliang.core.arithmetic.ArithmeticExpression;
 import com.maliang.core.arithmetic.Substring;
+import com.maliang.core.service.BusinessService;
 
 public class Function {
+	BusinessService businessService = new BusinessService();
+	
 	//key(expression){body}
 	private String key;
 	private String expression;
@@ -70,11 +73,25 @@ public class Function {
 			return AddToParams.execute(this, params);
 		}
 		
+		if("business".equals(key)){
+			return business(params);
+		}
+		
 		if(key != null && key.startsWith("db.")){
 			return DBFunction.execute(this, params);
 		}
 		
 		return ListFunction.execute(this, params);
+	}
+	
+	private Object business(Map<String,Object> params){
+		Object value = this.executeExpression(params);
+		if(value != null && value instanceof Map){
+			Map<String,Object> map = (Map<String,Object>)value;
+
+			return this.businessService.business(map);
+		}
+		return null;
 	}
 	
 	public void setBody(String bd){

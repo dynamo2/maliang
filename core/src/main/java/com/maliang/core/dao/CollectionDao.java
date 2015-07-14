@@ -95,6 +95,7 @@ public class CollectionDao extends BasicDao {
 			Map<String,Object> dataMap = dob.toMap();
 			mergeLinkedObject(dataMap,collName);
 			
+			//dataMap.remove("_id");
 			results.add(dataMap);
 		}
 		
@@ -149,7 +150,7 @@ public class CollectionDao extends BasicDao {
 	}
 	
 	private void mergeLinkedObject(Map<String,Object> dataMap,String collName){
-		dataMap.put("id",dataMap.get("_id").toString());
+		dataMap.put("id",dataMap.remove("_id").toString());
 		
 		ObjectMetadata metedata = this.metaDao.getByName(collName);
 		if(metedata == null)return;

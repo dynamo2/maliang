@@ -14,6 +14,12 @@
 		
     </head>
     <body>
+    	<style>
+    	#businessForm textarea {
+    		width:160px;
+    		height:25px;
+    	}
+    	</style>
 		<script>
 		
 		$(function(){
@@ -27,8 +33,8 @@
 			dialogObj = $("#enlargedEditerDialog").dialog({
 				autoOpen: false,
 				modal:true,
-				width:500,
-				height:400,
+				width:800,
+				height:650,
 				buttons: {
 					"确定": function() {
 					  $(this).dialog("close");

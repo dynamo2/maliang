@@ -23,4 +23,12 @@ public class BasicDao extends AbstractDao{
 		
 		return null;
 	}
+	
+	protected BasicDBObject build(Map<String,Object> query){
+		if(query == null || query.isEmpty()){
+			return null;
+		}
+		
+		return new BasicDBObject(query);
+	}
 }

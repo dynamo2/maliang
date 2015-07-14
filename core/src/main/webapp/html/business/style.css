@@ -4,11 +4,37 @@ body {
 form input[type=text] {
 	border: 1px solid #cccccc;
 	margin: 5px;
+	width:300px;
 }
 
-form div {
-	clear: both;
-	font-size: 12px;
+form input[type=submit]{
+	margin-left:8px;
+}
+
+form ul{
+	margin-right:10px;
+	width:850px;
+}
+
+form li {
+	border-bottom: 1px dashed #ccc;
+	list-style: none;
+	padding: 5px;
+}
+
+form li label{
+	margin-right:10px;
+}
+
+form .hidden{
+	height:0px;
+	border:0px;
+	padding:0px;
+}
+
+.dataTable img{
+	width:30px;
+	height:30px;
 }
 
 .ul-list {
@@ -17,7 +43,7 @@ form div {
 
 .ul-list ul {
 	clear: both;
-	width: 1000px;
+	width: 1500px;
 	margin: 0px;
 	padding: 0px;
 }
@@ -32,7 +58,7 @@ form div {
 	border-bottom: 1px dashed #ccc;
 	list-style: none;
 	padding: 5px;
-	height: 25px;
+	height: 35px;
 	text-align: center;
 }
 
@@ -44,6 +70,6 @@ form div {
 	font-size:12px;
 }
 #enlargedEditerDialog textarea {
-	width:470px;
-	height:280px;
+	width:750px;
+	height:500px;
 }
