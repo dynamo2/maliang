@@ -6,6 +6,9 @@ import java.util.List;
 import java.util.Map;
 
 import com.maliang.core.arithmetic.ArithmeticExpression;
+import com.maliang.core.model.ObjectField;
+import com.maliang.core.util.BeanUtil;
+import com.maliang.core.util.StringUtil;
 
 public class MapHelper {
 	public static void main(String[] args) {
@@ -33,6 +36,16 @@ public class MapHelper {
 					+ "price:user.user_grade.discount*0.01*this.product.price}"));
 	}
 	
+	public static Object readValue(Object obj,String fname,Object defaultValue){
+		Object value = readValue(obj,fname);
+		if(value == null){
+			return defaultValue;
+		}
+		
+		return value;
+	}
+	
+	/*
 	public static Object readValue(Map<String,Object> paramMap,String paramKey,Object defaultValue){
 		Object value = readValue(paramMap,paramKey);
 		if(value == null){
@@ -40,7 +53,7 @@ public class MapHelper {
 		}
 		
 		return value;
-	}
+	}*/
 	
 	public static int[] matchCoordinate(String source,char startChar,char endChar,int startIndex){
 		int[] coors = new int[]{-1,-1};
@@ -89,6 +102,30 @@ public class MapHelper {
 		return values;
 	}
 	
+	public static Object readValue(Object obj,String fname){
+		if(obj == null  || StringUtil.isEmpty(fname)){
+			return null;
+		}
+		
+		String[] keys = fname.split("\\.");
+		Object value = obj;
+		for(String k:keys){
+			value = readBeanValue(value,k);
+		}
+		return value;
+	}
+	
+	@SuppressWarnings("rawtypes")
+	private static Object readBeanValue(Object obj,String fname){
+		if(obj == null)return null;
+		
+		if(obj instanceof Map){
+			return ((Map)obj).get(fname);
+		}
+		return BeanUtil.readValue(obj, fname);
+	}
+	
+	/*
 	public static Object readValue(Map<String,Object> paramMap,String paramKey){
 		if(paramMap == null || paramMap.size() == 0 
 				|| paramKey == null || paramKey.trim().isEmpty()){
@@ -113,10 +150,12 @@ public class MapHelper {
 			}
 		}
 		return value;
-	}
+	}*/
+	
+	
 	
 	public static Map<String,Object> buildAndExecuteMap(String str,Map<String,Object> params){
-		if(str == null && str.trim().isEmpty()){
+		if(StringUtil.isEmpty(str)){
 			return null;
 		}
 		

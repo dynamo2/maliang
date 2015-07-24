@@ -14,9 +14,13 @@ import javax.servlet.http.HttpServletRequest;
 
 import org.bson.types.ObjectId;
 
+import com.maliang.core.dao.ObjectMetadataDao;
 import com.maliang.core.model.Mapped;
+import com.maliang.core.model.ObjectField;
 
 public class BasicController {
+	protected ObjectMetadataDao metadataDao = new ObjectMetadataDao();
+	
 	public Integer getInt(String v){
 		try {
 			return Integer.valueOf(v);
@@ -60,12 +64,14 @@ public class BasicController {
 			BeanInfo beanInfo = Introspector.getBeanInfo(cls);
 			PropertyDescriptor[] pds = beanInfo.getPropertyDescriptors();
 			T result = cls.newInstance();
+
 			for(PropertyDescriptor pd:pds){
 				String fieldName = pd.getName();
 				Object fieldValue = objMap.get(fieldName);
 				if("class".equals(fieldName))continue;
 				if(fieldValue == null)continue;
 				
+				String canonicalType = pd.getPropertyType().getCanonicalName();
 				if(fieldValue instanceof List) {
 					Mapped anno = cls.getDeclaredField(fieldName).getAnnotation(Mapped.class);
 					Class linkClass = anno.type();
@@ -77,17 +83,17 @@ public class BasicController {
 					}
 					
 					fieldValue = vlist;
-				}else if("java.lang.Integer".equals(pd.getPropertyType().getCanonicalName())){
+				}else if("int".equals(canonicalType) || "java.lang.Integer".equals(canonicalType)){
 					fieldValue = this.getInt(fieldValue.toString());
-				}else if("java.lang.Double".equals(pd.getPropertyType().getCanonicalName())){
+				}else if("double".equals(canonicalType) || "java.lang.Double".equals(canonicalType)){
 					fieldValue = this.getDouble(fieldValue.toString());
-				}else if("org.bson.types.ObjectId".equals(pd.getPropertyType().getCanonicalName())){
+				}else if("org.bson.types.ObjectId".equals(canonicalType)){
 					fieldValue = this.getObjectId(fieldValue.toString());
 				}
-				
+
 				pd.getWriteMethod().invoke(result, fieldValue);
 			}
-			
+
 			return result;
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -245,15 +251,8 @@ public class BasicController {
 				
 				fieldMap.put("type",inputType);
 				fieldMap.put("value",fieldValue);
-				
-				String label = null;
-				if(labelMap != null){
-					Map<String,String> map = (Map<String,String>)labelMap.get(obj.getClass().getCanonicalName());
-					if(map != null){
-						label = map.get(fieldName);
-					}
-				}
-				fieldMap.put("label",label);
+
+				fieldMap.put("label",readLabel(obj, labelMap, fieldName));
 				fieldMap.put("prefix",prefix);
 				fieldMap.put("name",fieldName);
 				
@@ -264,5 +263,16 @@ public class BasicController {
 		} catch (Exception e) {
 			return null;
 		}
+	}
+
+	private static String readLabel(Object obj,
+			Map<String, Map<String, String>> labelMap, String fieldName) {
+		if(labelMap != null){
+			Map<String,String> map = (Map<String,String>)labelMap.get(obj.getClass().getCanonicalName());
+			if(map != null){
+				return map.get(fieldName);
+			}
+		}
+		return null;
 	}
 }

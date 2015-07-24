@@ -1,6 +1,7 @@
 package com.maliang.core.arithmetic.function;
 
 import java.util.Map;
+import java.util.Stack;
 
 import com.maliang.core.arithmetic.ArithmeticExpression;
 import com.maliang.core.arithmetic.Substring;
@@ -11,7 +12,7 @@ public class Function {
 	
 	//key(expression){body}
 	private String key;
-	private String expression;
+	public String expression;
 	private String body;
 	
 	private final String source;
@@ -42,6 +43,25 @@ public class Function {
 			return null;
 		}
 		return ArithmeticExpression.execute(this.expression, params);
+	}
+	
+	public static void pushThis(Map<String,Object> params){
+		if(params == null || !params.containsKey("this"))return;
+		
+		if(!params.containsKey("these")){
+			params.put("these", new Stack());
+		}
+		((Stack)params.get("these")).push(params.get("this"));
+	}
+	
+	public static void popThis(Map<String,Object> params){
+		if(params == null || !params.containsKey("these"))return;
+		
+		Stack these = (Stack)params.get("these");
+		params.put("this", these.pop());
+		if(these.size() == 0){
+			params.remove("these");
+		}
 	}
 	
 	boolean isMap(){

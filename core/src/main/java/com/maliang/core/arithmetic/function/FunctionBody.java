@@ -41,6 +41,8 @@ class MapBody extends FunctionBody {
 		Map<String,Object> newObj = new HashMap<String,Object>();
 		
 		for(Map.Entry<String, Object> entry : this.eachMap.entrySet()){
+			
+			System.out.println(entry.getValue());
 			String expre = (String)entry.getValue();
 			Object value = ArithmeticExpression.execute(expre, params);
 

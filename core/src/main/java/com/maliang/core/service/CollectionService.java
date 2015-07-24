@@ -103,11 +103,6 @@ public class CollectionService {
 	}
 	
 	public static void main(String[] args) {
-		//CollectionService db = new CollectionService("ProductType");
-		
-		//System.out.println("query = "+db.invoke("query", null));
-		
-		//String page = "{brands:db.Brand.search(),products:db.Product.page({page:{curPage:request.draw}})}";
 		String page = "{brands:db.Brand.search(),page:{start:1},pros:db.Product.page({page:page})}";
 		
 		Object ov = ArithmeticExpression.execute(page, null);
@@ -125,8 +120,6 @@ public class CollectionService {
 			if(value != null && value instanceof Map){
 				v = (Map)value;
 			}
-			
-			System.out.println(v);
 			return this.find(v);
 		}
 		

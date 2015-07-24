@@ -1,11 +1,13 @@
 package com.maliang.core.ui.controller;
 
 import java.beans.BeanInfo;
+import java.beans.IntrospectionException;
 import java.beans.Introspector;
 import java.beans.PropertyDescriptor;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -20,31 +22,83 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 
+import com.maliang.core.arithmetic.ArithmeticExpression;
 import com.maliang.core.dao.ObjectMetadataDao;
+import com.maliang.core.model.Business;
 import com.maliang.core.model.FieldType;
 import com.maliang.core.model.ObjectField;
 import com.maliang.core.model.ObjectMetadata;
+import com.maliang.core.model.WorkFlow;
+import com.maliang.core.service.MapHelper;
 
 @Controller
 @RequestMapping(value = "metadata")
-public class ObjectMetadataController {
+public class ObjectMetadataController extends BasicController {
+	static Map<String,Map<String,String>> CLASS_LABELS = new HashMap<String,Map<String,String>>();
+	static final String EDIT_CODE;
+	
+	static {
+		Map<String,String> blMap = new LinkedHashMap<String,String>();
+		blMap.put("name", "名称");
+		blMap.put("label", "标签");
+		blMap.put("fields", "字段");
+		CLASS_LABELS.put(ObjectMetadata.class.getCanonicalName(), blMap);
+		
+		Map<String,String> wfMap = new LinkedHashMap<String,String>();
+		wfMap.put("name", "名称");
+		wfMap.put("label", "标签");
+		
+		/*
+		wfMap.put("type", "字段类型");
+		wfMap.put("linkedObject", "关联对象");
+		wfMap.put("relationship", "关联方式");
+		wfMap.put("elementType", "元素类型");*/
+		CLASS_LABELS.put(ObjectField.class.getCanonicalName(), wfMap);
+		
+		EDIT_CODE = "{name:{prefix:'objectMetadata',name:'name',label:'名称',type:'text',value:metadata.name},"
+				+ "id:{prefix:'objectMetadata',name:'id',label:null,type:'hidden',value:metadata.id+''},"
+				+ "label:{prefix:'objectMetadata',name:'label',label:'标签',type:'text',value:metadata.label},"
+				+ "fields:{item-labels:{name:'名称',label:'标签',type:'字段类型'},prefix:'objectMetadata',"
+					+ "name:'fields',label:'字段',type:'list',item-prefix:'objectMetadata.fields',"
+					+ "value:each(metadata.fields){{"
+						+ "name:{prefix:'objectMetadata.fields',name:'name',type:'text',value:this.name},"
+						+ "label:{prefix:'objectMetadata.fields',name:'label',type:'text',value:this.label},"
+						+ "type:[{prefix:'objectMetadata.fields',name:'type',type:'select',value:this.type,"
+							+ "options:each(fieldTypes){{key:this.code,label:this.name}}},"
+						+ "if(this.type=8 | this.type = 7){{prefix:'objectMetadata.fields',name:'linkedObject',type:'select',"
+							+ "value:this.linkedObject,options:each(allMetadatas){{key:this.id+'',label:this.name}}}},"
+						+ "if(this.type = 9){{prefix:'objectMetadata.fields',name:'elementType',type:'select',value:this.elementType,"
+							+ "options:each(fieldTypes){{key:this.code,label:this.name}}}},"
+						+ "if(this.type = 9 & (this.elementType=8 | this.elementType = 7)){{prefix:'objectMetadata.fields',name:'linkedObject',type:'select',"
+							+ "value:this.linkedObject,options:each(allMetadatas){{key:this.id+'',label:this.name}}}}"
+						+ "]"
+				+ "}}}}";
+	}
 
-	private ObjectMetadataDao metadataDao = new ObjectMetadataDao();
-
-	// @RequestMapping(value = "/core/test.json", headers =
-	// "Accept=application/json")
 	@RequestMapping(value = "edit.htm", method = RequestMethod.GET)
 	public String edit(String id, Model model) {
 
 		String resultJson = "";
+		ObjectMetadata metadata = null;
 		if (id != null && !id.trim().isEmpty()) {
-			ObjectMetadata metadata = metadataDao.getByID(id);
-			model.addAttribute("metadata", metadata);
-
-			resultJson = toEditJson(metadata);
+			metadata = metadataDao.getByID(id);
 		}else {
-			resultJson = toEditJson();
+			metadata = new ObjectMetadata();
+			
+			ObjectField ofield = new ObjectField();
+			metadata.setFields(new ArrayList<ObjectField>());
+			metadata.getFields().add(ofield);
 		}
+		
+		Map<String,Object> params = new HashMap<String,Object>();
+		params.put("metadata",metadata);
+		params.put("fieldTypes",FieldType.values());
+		
+		List<ObjectMetadata> metadataList = metadataDao.list();
+		params.put("allMetadatas",metadataList);
+		
+		Object editMap = ArithmeticExpression.execute(EDIT_CODE, params);
+		resultJson = JSONObject.fromObject(editMap).toString();
 		
 		model.addAttribute("resultJson", resultJson);
 
@@ -53,18 +107,11 @@ public class ObjectMetadataController {
 
 	@RequestMapping(value = "save.htm")
 	public String save(HttpServletRequest request, Model model) {
-		System.out.println("maxIndex : " + request.getParameter("maxIndex"));
-		ObjectMetadata data = modelObject(request, "metadata",
-				ObjectMetadata.class);
-		List<ObjectField> fields = modelList(request, "field",
-				ObjectField.class);
-		data.setFields(fields);
-		data.setUniqueMark(data.getName());
+		Map<String,Object> reqMap = this.readRequestMap(request);
+		Map<String,Object> busMap = (Map<String,Object>)reqMap.get("objectMetadata");
+		ObjectMetadata mt = buildToObject(busMap,ObjectMetadata.class);
 		
-		System.out.println(data);
-
-		metadataDao.save(data);
-
+		metadataDao.save(mt);
 		return list(model);
 	}
 
@@ -105,6 +152,89 @@ public class ObjectMetadataController {
 		metadataDao.remove(id);
 
 		return list(model);
+	}
+	
+	@RequestMapping(value = "linkedObject.htm")
+	@ResponseBody
+	public String linkedObject() {
+		String desc = "{prefix:'objectMetadata.fields',name:'linkedObject',label:'关联对象',value:null,"
+				+ "type:'select',options:each(metadatas){{key:this.name,label:this.name}}}";
+		
+		List<ObjectMetadata> metadataList = metadataDao.list();
+		
+		Map<String,Object> params = new HashMap<String,Object>();
+		params.put("metadatas",metadataList);
+		
+		Map<String,Object> linkedMap = (Map<String,Object>)ArithmeticExpression.execute(desc, params);
+		return JSONObject.fromObject(linkedMap).toString();
+	}
+	
+	@RequestMapping(value = "elementType.htm")
+	@ResponseBody
+	public String elementType() {
+		String desc = "{prefix:'objectMetadata.fields',name:'elementType',"
+				+ "type:'select',options:each(fieldTypes){{key:this.code,label:this.name}}}";
+		
+		Map<String,Object> params = new HashMap<String,Object>();
+		params.put("fieldTypes",FieldType.values());
+		
+		Map<String,Object> map = (Map<String,Object>)ArithmeticExpression.execute(desc, params);
+		return JSONObject.fromObject(map).toString();
+	}
+	
+	public static void main(String[] args) {
+		String typeDes = "{name:{prefix:'objectMetadata',name:'name',label:'名称',type:'text',value:metadata.name},"
+				+ "id:{prefix:'objectMetadata',name:'id',label:null,type:'hidden',value:metadata.id},"
+				+ "label:{prefix:'objectMetadata',name:'label',label:'标签',type:'text',value:metadata.label},"
+				+ "fields:{item-labels:{name:'名称',label:'标签',type:'字段类型'},prefix:'objectMetadata',"
+					+ "name:'fields',label:'字段',type:'list',item-prefix:'objectMetadata.fields',"
+					+ "value:[each(metadata.fields){{name:{prefix:'objectMetadata.fields',name:'name',label:'名称',type:'text',value:this.name},"
+						+ "id:{prefix:'objectMetadata.fields',name:'id',label:null,type:'hidden',value:this.id},"
+						+ "label:{prefix:objectMetadata.fields,name:'label',label:'标签',type:'text',value:this.label},"
+						+ "type:{prefix:'objectMetadata.fields',name:'type',label:'字段类型',type:'select',value:this.type,"
+							+ "options:each(fieldTypes){{key:this.code,label:this.name}}},"
+						+ "linkedObjected:if(metadata.type==8){{prefix:'objectMetadata.fields',name:'linkedObject',"
+							+ "type:'select',value:this.linkedObject,"
+							+ "options:each(allMetadatas){{key:this.id,label:this.name}}}}}}]}}";
+		
+		ObjectMetadata metadata = new ObjectMetadata();
+		ObjectField ofield = new ObjectField();
+		metadata.setFields(new ArrayList<ObjectField>());
+		metadata.getFields().add(ofield);
+		
+		Map<String,Object> params = new HashMap<String,Object>();
+		params.put("metadata",metadata);
+		params.put("fieldTypes",FieldType.values());
+		
+		Object v = ArithmeticExpression.execute(typeDes, params);
+		System.out.println(v);
+		//System.out.println(MapHelper.readValue(params,"field.type"));
+	}
+	
+	@SuppressWarnings("unchecked")
+	public static Map<String, Object> fieldTypeMap(ObjectField ofield) {
+		
+		//{"uniqueMark":{"prefix":"objectMetadata","name":"uniqueMark","label":null,"type":"textarea","value":null},"name":{"prefix":"objectMetadata","name":"name","label":"名称","type":"textarea","value":null},"id":{"prefix":"objectMetadata","name":"id","label":null,"type":"hidden","value":null},"label":{"prefix":"objectMetadata","name":"label","label":"标签","type":"textarea","value":null},"fields":{"item-labels":{"name":"名称","label":"标签"},"prefix":"objectMetadata","name":"fields","label":"字段","type":"list","item-prefix":"objectMetadata.fields","value":[{"uniqueMark":{"prefix":"objectMetadata.fields","name":"uniqueMark","label":null,"type":"textarea","value":null},"name":{"prefix":"objectMetadata.fields","name":"name","label":"名称","type":"textarea","value":null},"id":{"prefix":"objectMetadata.fields","name":"id","label":null,"type":"hidden","value":null},"label":{"prefix":"objectMetadata.fields","name":"label","label":"标签","type":"textarea","value":null},"linkedObject":{"prefix":"objectMetadata.fields","name":"linkedObject","label":null,"type":"textarea","value":null},"relationship":{"prefix":"objectMetadata.fields","name":"relationship","label":null,"type":"textarea","value":null},"type":{"prefix":"objectMetadata.fields","name":"type","label":null,"type":"textarea","value":0},"elementType":{"prefix":"objectMetadata.fields","name":"elementType","label":null,"type":"textarea","value":0}}]}};
+		//"name":{"prefix":"objectMetadata.fields","name":"name","label":"名称","type":"textarea","value":null}
+		//{type:{prefix:'objectMetadata.fields',name:'type',label:'字段类型',type:'select'}}
+		String typeDes = "{type:{prefix:'objectMetadata.fields',name:'type',label:'字段类型',value:field.type,"
+					+ "type:'select',options:each(fieldTypes){key:this.code,label:this.name}}}";
+		
+		Map<String,Object> params = new HashMap<String,Object>();
+		params.put("field",ofield);
+		params.put("fieldTypes",FieldType.values());
+		
+		String str = "name:{prefix:'objectMetadata',name:'name',label:'名称',type:'text',value:metadata.name},"
+				+ "id:{prefix:'objectMetadata',name:'id',label:null,type:'hidden',value:metadata.id},"
+				+ "label:{prefix:'objectMetadata',name:'label',label:'标签',type:'text',value:metadata.label},"
+				+ "fields:{item-labels:{name:'名称',label:'标签',type:'字段类型'},prefix:'objectMetadata',"
+					+ "name:'fields',label:'字段',type:'list',item-prefix:'objectMetadata.fields',"
+					+ "value:[each(metadata.fields){{name:{prefix:'objectMetadata.fields',name:'name',label:'名称',type:'text',value:this.name},"
+						+ "id:{prefix:'objectMetadata.fields',name:'id',label:null,type:'hidden',value:this.id},"
+						+ "label:{prefix:objectMetadata.fields,name:'label',label:'标签',type:'text',value:this.label},"
+						+ "type:{prefix:'objectMetadata.fields',name:'type',label:'字段类型',type:'select',value:this.type}}}}]}}";
+		
+		 return (Map<String,Object>)ArithmeticExpression.execute(typeDes, params);
 	}
 
 	public static Map<String, Object> linkedObjectMap(
@@ -324,22 +454,14 @@ public class ObjectMetadataController {
 		return JSONObject.fromObject(model).toString();
 	}
 
-	public static void main(String[] args) {
-		ObjectMetadata metadata = new ObjectMetadataDao()
-				.getByID("55504baad277e12f364ffb40");
-
-		System.out.println(toEditJson(metadata));
-	}
+////	public static void main(String[] args) {
+//		ObjectMetadata metadata = new ObjectMetadataDao()
+//				.getByID("55504baad277e12f364ffb40");
+//
+//		System.out.println(toEditJson(metadata));
+//	}
 	
-	private static Integer getInt(HttpServletRequest request,String reqName,int dev){
-		try {
-			return Integer.valueOf(request.getParameter(reqName));
-		}catch(Exception e){
-			return dev;
-		}
-	}
-
-	private static <T> List<T> modelList(HttpServletRequest request,
+	private <T> List<T> modelList(HttpServletRequest request,
 			String objName, Class<T> cls) {
 		Enumeration<String> paramNames = request.getParameterNames();
 		

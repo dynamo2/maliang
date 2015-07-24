@@ -6,7 +6,8 @@ public enum FieldType {
 	FILE(5,"file"),//文件
 	DICT(6,"dict"), //数据字典
 	INNER_COLLECTION(7,"inner"),//内嵌集合
-	LINK_COLLECTION(8,"link");//关联集合
+	LINK_COLLECTION(8,"link"),
+	ARRAY(9,"array");//关联集合
 	
 	private int code = -1;
 	private String name;

@@ -194,10 +194,7 @@ public class CollectionDao extends BasicDao {
 	
 	static String collName = "TBrand";
 	static CollectionDao dao = new CollectionDao();
-	
-	
-	
-	
+
 	public static void testUpdate(){
 		Map m = new HashMap();
 		m.put("name", "pola");
@@ -374,22 +371,7 @@ public class CollectionDao extends BasicDao {
 	}
 	
 	public static void main(String[] args) {
-		mapQuery();
-		//testUpdateOperator();
-		
-		//initTBrand();
-		
-//		Pager pg = new Pager();
-//		pg.setCurPage(1);
-//		pg.setPageSize(30);
-//		
-//		List<Map<String,Object>> ps = dao.test(pg);
-//		printList(ps);
-//		
-//		System.out.println("=====================");
-//		testUpdate();
-//		
-//		printList(dao.test(pg));
+		String str = "{type:{code:9,next:{code:9}}}";
 	}
 	
 	public static void initTBrand(){

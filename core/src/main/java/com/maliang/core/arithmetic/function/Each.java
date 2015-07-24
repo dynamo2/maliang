@@ -5,10 +5,10 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Stack;
 
 import com.maliang.core.arithmetic.ArithmeticExpression;
 import com.maliang.core.service.DBData;
-import com.maliang.core.service.MapHelper;
 
 public class Each {
 	public static void main(String[] args) {
@@ -37,6 +37,7 @@ public class Each {
 			throw new RuntimeException("Error parameter to each() function");
 		}
 
+		Function.pushThis(params);
 		//FunctionBody body = FunctionBody.readBody(function);
 		Object[] dataList = (Object[])value;
 		int i = 0;
@@ -49,16 +50,16 @@ public class Each {
 			if(!function.isEmptyBody()){
 				params.put("this", data);
 				params.put("EACH_CURRENT_INDEX", i++);
-				
+
 				v = ArithmeticExpression.execute(function.getBody(), params);
 			}
 			resultList.add(v);
-			
-			//resultList.add(body.execute(params));
 		}
 		
 		params.remove("this");
 		params.remove("EACH_CURRENT_INDEX");
+		
+		Function.popThis(params);
 		return resultList;
 	}
 	

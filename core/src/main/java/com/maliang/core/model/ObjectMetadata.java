@@ -6,6 +6,8 @@ public class ObjectMetadata extends MongodbModel {
 	private String name;
 	private String uniqueMark;
 	private String label;
+	
+	@Mapped(type=ObjectField.class)
 	private List<ObjectField> fields;
 	
 	public String getName() {

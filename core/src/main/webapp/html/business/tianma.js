@@ -292,31 +292,19 @@ function UIListBuilder(){
 	var builder = this;
 	
 	this.newInputs = function(itemData){
-		var divObj = $("<div></div>");
-		divObj.addClass("ul-list");
+		var divObj = $("<div></div>").addClass("ul-list");
 		
-		var addBntObj = $("<input type='button' />");
-		addBntObj.val('添加新'+itemData.label);
-		divObj.append(addBntObj);
+		var addBntObj = $("<input type='button' id='addNewItemRow' />").val('添加新'+itemData.label).appendTo(divObj);
+		$("<input type='submit' />").val('保存').appendTo(divObj);
 		
-		var subBntObj = $("<input type='submit' />");
-		subBntObj.val('保存');
-		divObj.append(subBntObj);
-		
+		/***
+		 * Build list header
+		 * ***/
 		var itemHeaders = [];
-		var hidx = 0;
-		for(var idx in itemData["item-labels"]){
-			var header = {};
-			header.name = idx;
-			header.label = itemData["item-labels"][idx];
-			
-			itemHeaders[hidx++] = header;
-		}
-		var header = {};
-		header.name = 'operator';
-		header.label = '操作';
-		itemHeaders[hidx+1] = header;
-		
+		$.each(itemData["item-labels"],function(key,label){
+			itemHeaders.push({'name':key,'label':label});
+		});
+		itemHeaders.push({'name':'operator','label':'操作'});
 		divObj.append(builder.newListHeader(itemHeaders));
 
 		var options = {};
@@ -333,8 +321,7 @@ function UIListBuilder(){
 			divObj.append(ulObj);
 		}
 		
-		var maxIndexObj = TM_formBuilder.newInputElement(options.maxIndex);
-		divObj.append(maxIndexObj);
+		TM_formBuilder.newInputElement(options.maxIndex).appendTo(divObj);
 		
 		addBntObj.click(function(){
 			var ulObj = builder.newItemInputs(options.emptyItem,options);
@@ -346,41 +333,60 @@ function UIListBuilder(){
 	
 	this.newItemInputs = function(inputItem,options){
 		var ulObj = $("<ul></ul>");
+		ulObj.attr("row",options.maxIndex.value);
 		
-		for(var idx in options.headers){
-			var fieldInput = inputItem[idx];
-			var oldName = fieldInput.name;
-			fieldInput.name = options.maxIndex.value+'.'+fieldInput.name;
-			
-			var inputObj = TM_formBuilder.newInputElement(fieldInput);
-			var liObj = $("<li></li>");
-			
-			liObj.append(inputObj);
-			ulObj.append(liObj);
-			
-			fieldInput.name = oldName;
-			options.emptyItem[idx] = fieldInput;
-			options.emptyItem[idx].value = null;
+		var col = 0;
+		if(options.headers){
+			$.each(options.headers,function(idx){
+				var fieldInput = inputItem[idx];
+				
+				var liObj = $("<li></li>").attr("column",col++).appendTo(ulObj);
+				if(fieldInput instanceof Array){
+					$.each(fieldInput,function(key,value){
+						if(!value)return true;
+						
+						var oldName = value.name;
+						value.name = options.maxIndex.value+'.'+value.name;
+						TM_formBuilder.newInputElement(value).css("margin-left","5px").appendTo(liObj);
+						
+						value.name = oldName;
+						value.value = null;
+					});
+					
+					options.emptyItem[idx] = fieldInput;
+				}else if(fieldInput){
+					var oldName = fieldInput.name;
+					fieldInput.name = options.maxIndex.value+'.'+fieldInput.name;
+					TM_formBuilder.newInputElement(fieldInput).css("margin-left","5px").appendTo(liObj);
+					
+					fieldInput.name = oldName;
+					options.emptyItem[idx] = fieldInput;
+					options.emptyItem[idx].value = null;
+				}
+			});
 		}
-		builder.addDeleteButton(ulObj);
+
+		builder.addDeleteButton(ulObj,col);
 		options.maxIndex.value++;
 		
 		return ulObj;
 	};
 	
-	this.addDeleteButton = function(ulObj){
+	this.addDeleteButton = function(ulObj,col){
 		var delBntObj = $("<input type='button' value='删除' />");
 		delBntObj.click(function(){
 			ulObj.remove();
 		});
 		var liObj = $("<li></li>");
+		if(col){
+			liObj.attr("column",col);
+		}
 		liObj.append(delBntObj);
 		ulObj.append(liObj);
 	}
 	
 	this.newUIList = function(listData){
-		var divObj = $("<div></div>");
-		divObj.addClass("ul-list");
+		var divObj = $("<div></div>").addClass("ul-list");
 		
 		divObj.append(builder.newListHeader(listData.header));
 
@@ -430,16 +436,18 @@ function UIListBuilder(){
 	};
 	
 	this.newListHeader = function(headers){
-		var ulObj = $("<ul></ul>");
-		ulObj.addClass("header");
+		var ulObj = $("<ul></ul>").addClass("header");
 		
-		for(var idx in headers){
-			var headerData = headers[idx];
-			var liObj = $("<li></li>");
-			liObj.text(headerData.label);
-			
-			ulObj.append(liObj);
+		//alert(JSON.stringify(headers));
+		var col = 0;
+		if(headers){
+			$.each(headers,function(key,value){
+				if(value){
+					$("<li></li>").attr("column",col++).text(value.label).appendTo(ulObj);
+				}
+			});
 		}
+		
 		return ulObj;
 	};
 }

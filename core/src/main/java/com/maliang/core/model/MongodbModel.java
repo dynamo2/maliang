@@ -35,12 +35,14 @@ public class MongodbModel {
 				}
 				sbf.append(fieldName).append("=").append(fieldValue);
 			}
-		} catch (Exception e) {}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 		
 		if(sbf != null){
 			return sbf.toString();
 		}
 		
-		return null;
+		return super.toString();
 	}
 }
