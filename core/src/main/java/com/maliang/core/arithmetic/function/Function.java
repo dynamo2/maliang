@@ -81,6 +81,18 @@ public class Function {
 			return Sum.execute(this, params);
 		}
 		
+		if("int".equals(key)){
+			return TypeFunction.intExecute(this, params);
+		}
+		
+		if("double".equals(key)){
+			return TypeFunction.doubleExecute(this, params);
+		}
+		
+		if("string".equals(key)){
+			return TypeFunction.stringExecute(this, params);
+		}
+		
 		if("each".equals(key)){
 			return Each.execute(this, params);
 		}
