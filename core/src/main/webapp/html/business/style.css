@@ -66,6 +66,12 @@ form .hidden{
 	height: 23px;
 }
 
+.ul-list input[type=text] {
+	border: 1px solid #cccccc;
+	margin: 5px;
+	width:150px;
+}
+
 #enlargedEditerDialog {
 	font-size:12px;
 }
