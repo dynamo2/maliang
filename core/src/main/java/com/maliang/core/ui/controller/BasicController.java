@@ -17,6 +17,7 @@ import org.bson.types.ObjectId;
 import com.maliang.core.dao.ObjectMetadataDao;
 import com.maliang.core.model.Mapped;
 import com.maliang.core.model.ObjectField;
+import com.maliang.core.util.StringUtil;
 
 public class BasicController {
 	protected ObjectMetadataDao metadataDao = new ObjectMetadataDao();
@@ -160,10 +161,10 @@ public class BasicController {
 			parentMap = preMap;
 		}
 		
-		List<Map<String,Object>> preList = new ArrayList<Map<String,Object>>();
+		List<Object> preList = new ArrayList<Object>();
 		parentMap.put(pres[pres.length-1], preList);
 		
-		TreeMap<Integer,Map<String,Object>> preMaps = new TreeMap<Integer,Map<String,Object>>();
+		TreeMap<Integer,Object> preMaps = new TreeMap<Integer,Object>();
 		Enumeration<String> reqNames = request.getParameterNames();
 		prefix = prefix+".";
 		while(reqNames.hasMoreElements()){
@@ -177,15 +178,22 @@ public class BasicController {
 			String subName = reqName.substring(prefix.length(),reqName.length());
 			String[] subs = subName.split("\\.");
 			Integer index = Integer.valueOf(subs[0]);
-			
-			Map<String,Object> preMap = preMaps.get(index);
-			if(preMap == null){
-				preMap = new HashMap<String,Object>();
-				preMaps.put(index, preMap);
+			String key = null;
+			if(subs.length == 2){
+				key = subs[1];
 			}
-			preMap.put(subs[1], request.getParameter(reqName));
+
+			if(StringUtil.isEmpty(key)){
+				preMaps.put(index, reqValue);
+			}else {
+				Map<String,Object> preMap = (Map<String,Object>)preMaps.get(index);
+				if(preMap == null){
+					preMap = new HashMap<String,Object>();
+					preMaps.put(index, preMap);
+				}
+				preMap.put(key, reqValue);
+			}
 		}
-		
 		preList.addAll(preMaps.values());
 	}
 	

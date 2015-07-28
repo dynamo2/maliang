@@ -64,15 +64,16 @@ public class CollectionService {
 		
 		Map<String,Object> dataMap = (Map<String,Object>)obj;
 		
-		this.correctData(dataMap);
+		this.correctData(dataMap,this.collection);
+		//System.out.println("dataMap: " + ((List)dataMap.get("values")).get(0).getClass());
 		this.collectionDao.save(dataMap, this.collection);
 		return dataMap;
 	}
 	
-	private void correctData(Map<String,Object> dataMap){
+	private void correctData(Map<String,Object> dataMap,String collName){
 		if(dataMap == null)return;
 		
-		ObjectMetadata metadata = this.metaDao.getByName(this.collection);
+		ObjectMetadata metadata = this.metaDao.getByName(collName);
 		for(ObjectField of : metadata.getFields()){
 			String fieldName = of.getName();
 			Object fieldValue = dataMap.get(fieldName);
@@ -83,23 +84,54 @@ public class CollectionService {
 	}
 	
 	private Object correctFieldValue(ObjectField of,Object fieldValue){
-		if(FieldType.DOUBLE.is(of.getType())){
+		if(FieldType.ARRAY.is(of.getType())){
+			if(fieldValue instanceof List){
+				List<Object> result = new ArrayList<Object>();
+				for(Object o : (List<Object>)fieldValue){
+					of.setType(of.getElementType());
+					
+					result.add(correctFieldValue(of,o));
+				}
+				
+				return result;
+			}else {
+				return null;
+			}
+		}
+		
+		if(FieldType.LINK_COLLECTION.is(of.getType()) 
+				|| FieldType.INNER_COLLECTION.is(of.getType())){
+			if(fieldValue instanceof Map){
+				Map<String,Object> result = (Map<String,Object>)fieldValue;
+				correctData(result,of.getLinkedObject());
+				
+				return result;
+			}else {
+				return null;
+			}
+		}
+
+		return correctFieldValue(of.getType(),fieldValue);
+	}
+	
+	private Object correctFieldValue(int ftype,Object value){
+		if(FieldType.DOUBLE.is(ftype)){
 			try {
-				return Double.valueOf(fieldValue.toString().trim());
+				return Double.valueOf(value.toString().trim());
 			}catch(Exception e){
 				return null;
 			}
 		}
 		
-		if(FieldType.INT.is(of.getType())){
+		if(FieldType.INT.is(ftype)){
 			try {
-				return Integer.valueOf(fieldValue.toString().trim());
+				return Integer.valueOf(value.toString().trim());
 			}catch(Exception e){
 				return null;
 			}
 		}
 		
-		return fieldValue;
+		return value;
 	}
 	
 	public static void main(String[] args) {

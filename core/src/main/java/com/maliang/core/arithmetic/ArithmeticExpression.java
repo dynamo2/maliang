@@ -14,6 +14,7 @@ import java.util.Set;
 
 import com.maliang.core.arithmetic.function.Function;
 import com.maliang.core.service.MapHelper;
+import com.maliang.core.util.StringUtil;
 
 public class ArithmeticExpression {
 	public static void main(String[] args) {
@@ -132,6 +133,8 @@ public class ArithmeticExpression {
 	}
 	
 	public static Object execute(String expre,Map<String,Object> params){
+		if(StringUtil.isEmpty(expre))return null;
+		
 		Object value = MapHelper.readValue(params, expre);
 		if(value == null){
 			Parentheses pt = Parentheses.compile(expre, 0);

@@ -156,7 +156,8 @@ public class CollectionDao extends BasicDao {
 		if(metedata == null)return;
 		for(ObjectField of : metedata.getFields()){
 			String fieldName = of.getName();
-			if(of.getType() == FieldType.LINK_COLLECTION.getCode()){
+			if(FieldType.LINK_COLLECTION.is(of.getType()) 
+					|| FieldType.INNER_COLLECTION.is(of.getType())){
 				String linkCollName = getLinkedCollectionName(of.getLinkedObject());
 				if(linkCollName == null)continue;
 				

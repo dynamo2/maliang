@@ -204,7 +204,9 @@ public class BusinessController extends BasicController {
 	}
 	
 	private Map<String,Object> executeCode(WorkFlow flow,HttpServletRequest request){
-		Map<String,Object> params = readRequestParameters(flow.getRequestType(),request);
+		//Map<String,Object> params = readRequestParameters(flow.getRequestType(),request);
+		
+		Map<String,Object> params = readRequestParameters(request);
 		
 		System.out.println("********** params **************");
 		System.out.println(params);
@@ -214,6 +216,19 @@ public class BusinessController extends BasicController {
 		return params;
 	}
 	
+	private Map<String,Object> readRequestParameters(HttpServletRequest request){
+		Map<String,Object> params = new HashMap<String,Object>();
+		params.put("request", this.readRequestMap(request));
+		
+		params.put("bid", request.getParameter("bid"));
+		params.put("bn", request.getParameter("bn"));
+		params.put("fid", getInt(request, "fid",-1));
+		
+		//System.out.println("readRequestParameters : " + params);
+		return params;
+	}
+	
+	/*
 	private Map<String,Object> readRequestParameters(String requestType,HttpServletRequest request){
 		Object value = ArithmeticExpression.execute(requestType,null);
 		Map<String,Object> typeMap = null;
@@ -309,7 +324,7 @@ public class BusinessController extends BasicController {
 		}
 		
 		parentMap.put(reqs[reqs.length-1], reqValue);
-	}
+	}*/
 	
 	public static void main(String[] args) throws Exception {
 		
