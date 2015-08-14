@@ -338,7 +338,7 @@ public class ArithmeticExpression {
 			private void readFunction(String key){
 				Function fun = new Function(key,source,this.cursor);
 				addFunctionNode(fun);
-				
+
 				this.cursor = fun.getEndIndex();
 				sb = null;
 			}
@@ -639,7 +639,7 @@ public class ArithmeticExpression {
 			}
 			
 			if(valueLeft instanceof String || valueRight instanceof String){
-				return calculateString(valueLeft.toString(),valueRight.toString());
+				return calculateString(valueLeft==null?null:valueLeft.toString(),valueRight==null?null:valueRight.toString());
 			}
 
 			if(valueLeft instanceof Integer && valueRight instanceof Integer){

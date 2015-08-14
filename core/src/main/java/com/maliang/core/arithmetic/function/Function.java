@@ -105,8 +105,20 @@ public class Function {
 			return AddToParams.execute(this, params);
 		}
 		
+		if("session".equals(key)){
+			return SessionFunction.execute(this, params);
+		}
+		
 		if("business".equals(key)){
 			return business(params);
+		}
+		
+		if("notNull".equals(key)){
+			return NotNull.execute(this, params);
+		}
+		
+		if("check".equals(key)){
+			return Check.execute(this, params);
 		}
 		
 		if(key != null && key.startsWith("db.")){
@@ -166,14 +178,13 @@ public class Function {
 			if(subs.isMatched()){
 				String space = subs.getInnerContent();
 				
-				i = subs.getEndIndex();
 				if(space.trim().isEmpty()){
-					subs = new Substring(this.source,'{','}',i);
-					
-					i = subs.getEndIndex();
+					subs = new Substring(this.source,'{','}',subs.getEndIndex());
 					if(subs.isMatched()){
 						this.body = subs.getInnerContent();
 					}
+					
+					i = subs.getEndIndex();
 				}
 			}
 		}else {

@@ -56,7 +56,7 @@ public class ObjectMetadataController extends BasicController {
 		CLASS_LABELS.put(ObjectField.class.getCanonicalName(), wfMap);
 		
 		EDIT_CODE = "{name:{prefix:'objectMetadata',name:'name',label:'名称',type:'text',value:metadata.name},"
-				+ "id:{prefix:'objectMetadata',name:'id',label:null,type:'hidden',value:metadata.id+''},"
+				+ "id:{prefix:'objectMetadata',name:'id',label:null,type:'hidden',value:metadata.id)+''},"
 				+ "label:{prefix:'objectMetadata',name:'label',label:'标签',type:'text',value:metadata.label},"
 				+ "fields:{item-labels:{name:'名称',label:'标签',type:'字段类型'},prefix:'objectMetadata',"
 					+ "name:'fields',label:'字段',type:'list',item-prefix:'objectMetadata.fields',"

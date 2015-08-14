@@ -3,9 +3,7 @@ package com.maliang.core.ui.controller;
 import java.beans.BeanInfo;
 import java.beans.Introspector;
 import java.beans.PropertyDescriptor;
-import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
-import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -19,14 +17,13 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
 
 import com.maliang.core.arithmetic.ArithmeticExpression;
+import com.maliang.core.arithmetic.function.SessionFunction;
 import com.maliang.core.dao.BusinessDao;
+import com.maliang.core.exception.TianmaException;
 import com.maliang.core.model.Business;
 import com.maliang.core.model.WorkFlow;
-import com.maliang.core.service.MapHelper;
 
 @Controller
 @RequestMapping(value = "business")
@@ -90,11 +87,17 @@ public class BusinessController extends BasicController {
 	
 	@RequestMapping(value = "business.htm")
 	public String business(Model model,HttpServletRequest request) {
-		WorkFlow workFlow = readWorkFlow(request);
-		String resultJson = executeWorkFlow(workFlow,request);
-		
-		model.addAttribute("resultJson", resultJson);
-		return "/business/business";
+		try {
+			WorkFlow workFlow = readWorkFlow(request);
+			String resultJson = executeWorkFlow(workFlow,request);
+			
+			model.addAttribute("resultJson", resultJson);
+			return "/business/business";
+		}catch(TianmaException e){
+			//e.printStackTrace();
+			model.addAttribute("errorMsg", e.getMessage());
+			return "/business/error";
+		}
 	}
 	
 	@RequestMapping(value = "ajax.htm")
@@ -207,17 +210,17 @@ public class BusinessController extends BasicController {
 		//Map<String,Object> params = readRequestParameters(flow.getRequestType(),request);
 		
 		Map<String,Object> params = readRequestParameters(request);
-		
-		System.out.println("********** params **************");
-		System.out.println(params);
-		
 		ArithmeticExpression.execute(flow.getCode(), params);
 		
+		System.out.println("********** params **************");
+		System.out.println("code : " + flow.getCode());
+		System.out.println(params);
 		return params;
 	}
 	
 	private Map<String,Object> readRequestParameters(HttpServletRequest request){
 		Map<String,Object> params = new HashMap<String,Object>();
+		params.put(SessionFunction.HTTP_REQUEST_KEY, request);
 		params.put("request", this.readRequestMap(request));
 		
 		params.put("bid", request.getParameter("bid"));

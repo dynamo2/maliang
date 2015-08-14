@@ -1,9 +1,14 @@
 package com.maliang.core.service;
 
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import org.bson.types.ObjectId;
 
 import com.maliang.core.arithmetic.ArithmeticExpression;
 import com.maliang.core.dao.CollectionDao;
@@ -12,12 +17,17 @@ import com.maliang.core.model.FieldType;
 import com.maliang.core.model.ObjectField;
 import com.maliang.core.model.ObjectMetadata;
 import com.maliang.core.ui.controller.Pager;
+import com.maliang.core.util.StringUtil;
 
 public class CollectionService {
+	public final static DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+	public final static DateFormat timestampFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+	public final static DateFormat timeFormat = new SimpleDateFormat("HH:mm:ss");
+	
 	/**
 	 * DB 查询方法的别名
 	 * **/
-	private static List<String> QUERIES_ALIAS = new ArrayList<String>();  
+	private static List<String> QUERIES_ALIAS = new ArrayList<String>();
 	private String collection;
 	private CollectionDao collectionDao = new CollectionDao();
 	protected ObjectMetadataDao metaDao = new ObjectMetadataDao();
@@ -42,6 +52,28 @@ public class CollectionService {
 		return this.collectionDao.getByID(id, this.collection);
 	}
 	
+	public List<Map<String,Object>> find(Object query){
+		Map v = null;
+		if(query != null && query instanceof Map){
+			v = (Map)query;
+		}
+		
+		return this.find(v);
+	}
+	
+	public Map<String,Object> findOne(Object query){
+		Map v = null;
+		if(query != null && query instanceof Map){
+			v = (Map)query;
+		}
+		
+		List<Map<String,Object>> results = this.find(v);
+		if(results != null && results.size() > 0){
+			return results.get(0);
+		}
+		return null;
+	}
+	
 	public List<Map<String,Object>> find(Map query){
 		return this.collectionDao.findByMap(query, this.collection);
 	}
@@ -64,23 +96,30 @@ public class CollectionService {
 		
 		Map<String,Object> dataMap = (Map<String,Object>)obj;
 		
-		this.correctData(dataMap,this.collection);
-		//System.out.println("dataMap: " + ((List)dataMap.get("values")).get(0).getClass());
+		dataMap = this.correctData(dataMap,this.collection);
+		//System.out.println("dataMap : " + dataMap);
 		this.collectionDao.save(dataMap, this.collection);
 		return dataMap;
 	}
 	
-	private void correctData(Map<String,Object> dataMap,String collName){
-		if(dataMap == null)return;
+	private Map<String,Object> correctData(Map<String,Object> dataMap,String collName){
+		if(dataMap == null)return null;
+		
+		Map<String,Object> newMap = new HashMap<String,Object>();
+		if(!StringUtil.isEmpty((String)dataMap.get("id"))){
+			newMap.put("_id",new ObjectId(dataMap.get("id").toString().trim()));
+		}
 		
 		ObjectMetadata metadata = this.metaDao.getByName(collName);
 		for(ObjectField of : metadata.getFields()){
+			System.out.println("field : " + of.getName()+", type : " + FieldType.getName(of.getType()));
 			String fieldName = of.getName();
 			Object fieldValue = dataMap.get(fieldName);
 			if(fieldValue == null)continue;
 			
-			dataMap.put(fieldName, correctFieldValue(of,fieldValue));
+			newMap.put(fieldName, correctFieldValue(of,fieldValue));
 		}
+		return newMap;
 	}
 	
 	private Object correctFieldValue(ObjectField of,Object fieldValue){
@@ -102,12 +141,7 @@ public class CollectionService {
 		if(FieldType.LINK_COLLECTION.is(of.getType()) 
 				|| FieldType.INNER_COLLECTION.is(of.getType())){
 			if(fieldValue instanceof Map){
-				Map<String,Object> result = (Map<String,Object>)fieldValue;
-				correctData(result,of.getLinkedObject());
-				
-				return result;
-			}else {
-				return null;
+				return correctData((Map<String,Object>)fieldValue,of.getLinkedObject());
 			}
 		}
 
@@ -131,28 +165,46 @@ public class CollectionService {
 			}
 		}
 		
+		if(FieldType.DATE.is(ftype)){
+			try {
+				return timestampFormat.parse(value.toString().trim());
+			}catch(ParseException e){
+				try {
+					return dateFormat.parse(value.toString().trim());
+				}catch(ParseException ee){
+					return null;
+				}
+			}
+		}
+		
 		return value;
 	}
 	
+	
+	
 	public static void main(String[] args) {
-		String page = "{brands:db.Brand.search(),page:{start:1},pros:db.Product.page({page:page})}";
+		String s = "db.User.save({birthday:'1981-4-9', real_name:'www', password:'123456', user:'wmx', id:'', user_grade:'55c8be3f1b970b1ff3fc2f6c'})";
+		//s = "db.Product.search({})";
 		
-		Object ov = ArithmeticExpression.execute(page, null);
-		System.out.println(ov);
+		s = "addToParams({uname:'wmx',password:'jjj',user:db.User.get({user:uname}),c1:check([notNull(user),'用户名不存在']),c2:check([user.password=password,'密码错误',['注册新用户','忘记密码']])})";
+		//s = "db.User.get({user:'wmx'})";
+		Object u = ArithmeticExpression.execute(s, new HashMap());
+		System.out.println(u);
 	}
 	
+	@SuppressWarnings("rawtypes")
 	public Object invoke(String method,Object value){
 		if("get".equals(method)){
+			if(value != null && value instanceof Map){
+				return this.findOne(value);
+			}
+			
 			String v = value==null?null:value.toString();
 			return this.get(v);
 		}
 		
 		if(QUERIES_ALIAS.contains(method)){
-			Map v = null;
-			if(value != null && value instanceof Map){
-				v = (Map)value;
-			}
-			return this.find(v);
+			return this.find(value);
 		}
 		
 		if("page".equals(method)){

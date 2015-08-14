@@ -23,6 +23,7 @@ public class AddToParams {
 		System.out.println(params);
 	}
 	public static Map<String,Object> execute(Function function,Map<String,Object> params){
+		System.out.println("addToParams expression : " + function.getExpression());
 		new MapCompiler(function.getExpression(),1,params,true);
 		return params;
 	}
