@@ -1,5 +1,6 @@
 package com.maliang.core.arithmetic.function;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Stack;
 
@@ -125,7 +126,45 @@ public class Function {
 			return DBFunction.execute(this, params);
 		}
 		
+		if(key.contains(".")){
+			return this.execute2(params);
+		}
+		
 		return ListFunction.execute(this, params);
+	}
+	
+	public Object execute2(Map<String,Object> params){
+		String operatedKey = key.substring(0,key.lastIndexOf('.'));
+		String operator = key.substring(key.lastIndexOf('.')+1,key.length());
+		
+		if("int".equalsIgnoreCase(operator) || "Integer".equalsIgnoreCase(operator)){
+			return TypeFunction.intExecute(operatedKey, params);
+		}
+		
+		if("double".equalsIgnoreCase(operator)){
+			return TypeFunction.doubleExecute(operatedKey, params);
+		}
+		
+		if("float".equalsIgnoreCase(operator)){
+			return TypeFunction.floatExecute(operatedKey, params);
+		}
+		
+		if("string".equalsIgnoreCase(operator)){
+			return TypeFunction.stringExecute(operatedKey, params);
+		}
+		
+		return null;
+	}
+	
+	public static void main(String[] args) {
+		String ps = "{i1:{i11:{i111:{i1111:'33333'}}}}";
+		Map pars = (Map)ArithmeticExpression.execute(ps,null);
+		
+		String s = "i1.i11.i111.i1111.int()+999";
+		Object ii = ArithmeticExpression.execute(s,pars);
+		
+		System.out.println(ii.getClass());
+		System.out.println(ii);
 	}
 	
 	private Object business(Map<String,Object> params){

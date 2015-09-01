@@ -21,6 +21,9 @@ public class AddToParams {
 		Object formMap = ArithmeticExpression.execute(str, params);
 
 		System.out.println(params);
+		
+		String s = "{name:'product.brand',label:'品牌',type:'select',value:product.brand.id,options:each(brands){{value:this.id,text:this.name}}}";
+		
 	}
 	public static Map<String,Object> execute(Function function,Map<String,Object> params){
 		System.out.println("addToParams expression : " + function.getExpression());
