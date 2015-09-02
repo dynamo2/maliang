@@ -43,6 +43,8 @@ public class Function {
 		if(this.expression == null || this.expression.trim().isEmpty()){
 			return null;
 		}
+		
+		System.out.println(this.key+".expression: "+this.expression);
 		return ArithmeticExpression.execute(this.expression, params);
 	}
 	
@@ -126,7 +128,7 @@ public class Function {
 			return DBFunction.execute(this, params);
 		}
 		
-		if(key.contains(".")){
+		if(key != null && key.contains(".")){
 			return this.execute2(params);
 		}
 		
@@ -134,6 +136,8 @@ public class Function {
 	}
 	
 	public Object execute2(Map<String,Object> params){
+		//System.out.println("key : " + this.key);
+		
 		String operatedKey = key.substring(0,key.lastIndexOf('.'));
 		String operator = key.substring(key.lastIndexOf('.')+1,key.length());
 		
@@ -153,11 +157,15 @@ public class Function {
 			return TypeFunction.stringExecute(operatedKey, params);
 		}
 		
+		if("between".equalsIgnoreCase(operator)){
+			return Between.execute(operatedKey, this, params);
+		}
+		
 		return null;
 	}
 	
 	public static void main(String[] args) {
-		String ps = "{i1:{i11:{i111:{i1111:'33333'}}}}";
+		String ps = "{i1:{i11:{i111:{i1111:33333}}}}";
 		Map pars = (Map)ArithmeticExpression.execute(ps,null);
 		
 		String s = "i1.i11.i111.i1111.int()+999";
@@ -165,7 +173,11 @@ public class Function {
 		
 		System.out.println(ii.getClass());
 		System.out.println(ii);
+		
+		System.out.println(ArithmeticExpression.execute("i1.i11.i111.i1111.int().between([1,10000000.99])",pars));
 	}
+	
+	
 	
 	private Object business(Map<String,Object> params){
 		Object value = this.executeExpression(params);
