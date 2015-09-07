@@ -6,15 +6,11 @@ import com.maliang.core.service.MapHelper;
 
 public class TypeFunction {
 	public static Integer intExecute(Function function,Map<String,Object> params){
-		Object value = function.executeExpression(params);
-		
-		return intValueOf(value);
+		return intValueOf(function.executeExpression(params));
 	}
 	
 	public static Integer intExecute(String operatedKey,Map<String,Object> params){
-		Object value = MapHelper.readValue(params,operatedKey);
-		
-		return intValueOf(value);
+		return intValueOf(MapHelper.readValue(params,operatedKey));
 	}
 	
 	public static Double doubleExecute(Function function,Map<String,Object> params){
@@ -42,8 +38,8 @@ public class TypeFunction {
 	}
 	
 	private static Integer intValueOf(Object value){
-		if(value instanceof Integer){
-			return (Integer)value;
+		if(value instanceof Number){
+			return ((Number)value).intValue();
 		}
 		
 		try {
@@ -54,8 +50,8 @@ public class TypeFunction {
 	}
 	
 	private static Double doubleValueOf(Object value){
-		if(value instanceof Double){
-			return (Double)value;
+		if(value instanceof Number){
+			return ((Number)value).doubleValue();
 		}
 		
 		try {
@@ -66,8 +62,8 @@ public class TypeFunction {
 	}
 	
 	private static Float floatValueOf(Object value){
-		if(value instanceof Float){
-			return (Float)value;
+		if(value instanceof Number){
+			return ((Number)value).floatValue();
 		}
 		
 		try {
