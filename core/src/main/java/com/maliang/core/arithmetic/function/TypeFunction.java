@@ -6,35 +6,44 @@ import com.maliang.core.service.MapHelper;
 
 public class TypeFunction {
 	public static Integer intExecute(Function function,Map<String,Object> params){
-		return intValueOf(function.executeExpression(params));
+		return intValueOf(getOperandValue(function,params));
 	}
-	
-	public static Integer intExecute(String operatedKey,Map<String,Object> params){
-		return intValueOf(MapHelper.readValue(params,operatedKey));
-	}
-	
+
 	public static Double doubleExecute(Function function,Map<String,Object> params){
-		return doubleValueOf(function.executeExpression(params));
+		return doubleValueOf(getOperandValue(function,params));
+	}
+
+	public static Float floatExecute(Function function,Map<String,Object> params){
+		return floatValueOf(getOperandValue(function,params));
+	}
+
+	public static String stringExecute(Function function,Map<String,Object> params){
+		return stringValueOf(getOperandValue(function,params));
 	}
 	
+	/*
 	public static Double doubleExecute(String operatedKey,Map<String,Object> params){
 		return doubleValueOf(MapHelper.readValue(params,operatedKey));
-	}
-	
-	public static Float floatExecute(Function function,Map<String,Object> params){
-		return floatValueOf(function.executeExpression(params));
 	}
 	
 	public static Float floatExecute(String operatedKey,Map<String,Object> params){
 		return floatValueOf(MapHelper.readValue(params,operatedKey));
 	}
 	
-	public static String stringExecute(Function function,Map<String,Object> params){
-		return stringValueOf( function.executeExpression(params));
+	public static Integer intExecute(String operatedKey,Map<String,Object> params){
+		return intValueOf(MapHelper.readValue(params,operatedKey));
 	}
 	
 	public static String stringExecute(String operatedKey,Map<String,Object> params){
 		return stringValueOf(MapHelper.readValue(params,operatedKey));
+	}*/
+	
+	private static Object getOperandValue(Function function,Map<String,Object> params){
+		Object value = function.getKeyValue();
+		if(!function.useKeyValue()){
+			value = function.executeExpression(params);
+		}
+		return value;
 	}
 	
 	private static Integer intValueOf(Object value){
@@ -45,7 +54,11 @@ public class TypeFunction {
 		try {
 			return new Integer(value.toString());
 		}catch(Exception e){
-			return null;
+			try {
+				return new Double(value.toString()).intValue();
+			}catch(Exception ee){
+				return null;
+			}
 		}
 	}
 	
@@ -69,7 +82,11 @@ public class TypeFunction {
 		try {
 			return new Float(value.toString());
 		}catch(Exception e){
-			return null;
+			try {
+				return new Double(value.toString()).floatValue();
+			}catch(Exception ee){
+				return null;
+			}
 		}
 	}
 	
