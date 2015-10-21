@@ -1,6 +1,5 @@
 package com.maliang.core.arithmetic.function;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Stack;
 
@@ -15,6 +14,8 @@ public class Function {
 	private String key;
 	public String expression;
 	private String body;
+	private Object keyValue;
+	private boolean useKeyValue = false;
 	
 	private final String source;
 	private final int startIndex;
@@ -28,6 +29,19 @@ public class Function {
 		if(key != null)key = key.trim();
 		
 		readOthers();
+	}
+	
+	public void setKeyValue(Object kv){
+		this.keyValue = kv;
+		this.useKeyValue = true;
+	}
+	
+	public boolean useKeyValue(){
+		return this.useKeyValue;
+	}
+	
+	public Object getKeyValue(){
+		return this.keyValue;
 	}
 	
 	public Function(String body){
@@ -44,7 +58,6 @@ public class Function {
 			return null;
 		}
 		
-		System.out.println(this.key+".expression: "+this.expression);
 		return ArithmeticExpression.execute(this.expression, params);
 	}
 	
@@ -80,19 +93,23 @@ public class Function {
 			return MapFunction.execute(this, params);
 		}
 		
-		if("sum".equals(key)){
+		if("between".equalsIgnoreCase(key)){
+			return Between.execute(this, params);
+		}
+		
+		if("sum".equalsIgnoreCase(key)){
 			return Sum.execute(this, params);
 		}
 		
-		if("int".equals(key)){
+		if("int".equalsIgnoreCase(key) || "Integer".equalsIgnoreCase(key)){
 			return TypeFunction.intExecute(this, params);
 		}
 		
-		if("double".equals(key)){
+		if("double".equalsIgnoreCase(key)){
 			return TypeFunction.doubleExecute(this, params);
 		}
 		
-		if("string".equals(key)){
+		if("string".equalsIgnoreCase(key)){
 			return TypeFunction.stringExecute(this, params);
 		}
 		
@@ -124,17 +141,27 @@ public class Function {
 			return Check.execute(this, params);
 		}
 		
+		if("query".equals(key)){
+			return QueryFunction.execute(this, params);
+		}
+		
+		if("max".equals(key)){
+			return MaxFunction.execute(this, params);
+		}
+		
 		if(key != null && key.startsWith("db.")){
 			return DBFunction.execute(this, params);
 		}
 		
+		/*
 		if(key != null && key.contains(".")){
 			return this.execute2(params);
-		}
+		}*/
 		
 		return ListFunction.execute(this, params);
 	}
 	
+	/*
 	public Object execute2(Map<String,Object> params){
 		//System.out.println("key : " + this.key);
 		
@@ -157,12 +184,12 @@ public class Function {
 			return TypeFunction.stringExecute(operatedKey, params);
 		}
 		
-		if("between".equalsIgnoreCase(operator)){
-			return Between.execute(operatedKey, this, params);
-		}
+//		if("between".equalsIgnoreCase(operator)){
+//			return Between.execute(operatedKey, this, params);
+//		}
 		
 		return null;
-	}
+	}*/
 	
 	public static void main(String[] args) {
 		String ps = "{i1:{i11:{i111:{i1111:33333}}}}";
