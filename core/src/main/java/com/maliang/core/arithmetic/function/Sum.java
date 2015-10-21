@@ -4,8 +4,14 @@ import java.util.Collection;
 import java.util.Map;
 
 public class Sum {
+	private static final int TYPE_STRING = 1;
+	private static final int TYPE_INT = 2;
+	private static final int TYPE_DOUBLE = 3;
+	private static final int TYPE_FLOAT = 4;
+	private static final int TYPE_UNKNOW = -1;
+	
 	public static Object execute(Function function ,Map<String,Object> params){
-		Object expressionData = function.executeExpression(params);
+		Object expressionData = getOperandValue(function,params);
 		if(expressionData == null){
 			return expressionData;
 		}
@@ -16,20 +22,28 @@ public class Sum {
 		
 		Object resultValue = expressionData;
 		if(expressionData instanceof Object[]){
-			String type = checkDataType(expressionData);
+			int type = checkDataType(expressionData);
 			
-			if("string".equals(type)){
+			if(TYPE_STRING == type){
 				return sumString((Object[])expressionData);
-			}else if("double".equals(type)){
+			}else if(TYPE_DOUBLE == type){
 				return sumDouble((Object[])expressionData);
-			}else if("float".equals(type)){
+			}else if(TYPE_FLOAT == type){
 				return sumFloat((Object[])expressionData);
-			}else if("int".equals(type)){
+			}else if(TYPE_INT == type){
 				return sumInt((Object[])expressionData);
 			}
 		}
 
 		return resultValue;
+	}
+	
+	private static Object getOperandValue(Function function,Map<String,Object> params){
+		Object value = function.getKeyValue();
+		if(!function.useKeyValue()){
+			value = function.executeExpression(params);
+		}
+		return value;
 	}
 	
 	public static void main(String[] args) {
@@ -44,7 +58,7 @@ public class Sum {
 		}
 	}
 	
-	private static String checkDataType(Object data){
+	private static int checkDataType(Object data){
 		boolean isDouble = false;
 		boolean isString = false;
 		boolean isFloat = false;
@@ -69,16 +83,16 @@ public class Sum {
 		}
 		
 		if(isString){
-			return "string";
+			return TYPE_STRING;
 		}else if(isDouble){
-			return "double";
+			return TYPE_DOUBLE;
 		}else if(isFloat){
-			return "float";
+			return TYPE_FLOAT;
 		}else if(isInt){
-			return "int";
+			return TYPE_INT;
 		}
 		
-		return "unknow";
+		return TYPE_UNKNOW;
 	}
 	
 	private static Double sumDouble(Object[] datas){
