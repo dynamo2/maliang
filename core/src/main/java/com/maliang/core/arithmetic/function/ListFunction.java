@@ -73,8 +73,7 @@ class ListCompiler {
 			}
 			
 			ArithmeticExpression.Parentheses pt = ArithmeticExpression.Parentheses.compile(source, this.cursor-1, endChars);
-			Object value = pt.getValue(this.params);
-			list.add(value);
+			list.add(pt.getValue(this.params));
 			
 			this.cursor = pt.getEndIndex()+1;
 		}
