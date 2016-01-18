@@ -1,6 +1,7 @@
 package com.maliang.core.arithmetic;
 
 public class Operator implements Comparable<Operator> {
+	private final static char[] OPERATOR_CHAR = {'+','-','*','/','&','|','>','<','=','.'};
 	private final String source;
 	private char optChar;
 	private int arrayIndex;
@@ -85,6 +86,10 @@ public class Operator implements Comparable<Operator> {
 	public boolean isLt() {
 		return this.optChar == '<';
 	}
+	
+	public boolean isDot(){
+		return this.optChar == '.';
+	}
 
 	public boolean isLte() {
 		return "<=".equals(this.operatorKey);
@@ -116,6 +121,10 @@ public class Operator implements Comparable<Operator> {
 	}
 
 	private int priority() {
+		if (this.isDot()) {
+			return 0;
+		}
+		
 		if (optChar == '*' || optChar == '/') {
 			return 1;
 		}
@@ -131,13 +140,25 @@ public class Operator implements Comparable<Operator> {
 		if (this.isLogical()) {
 			return 4;
 		}
+		
+		if(optChar == '?'){
+			return 10;
+		}
 
 		return 100;
 	}
 
 	public static boolean isOperator(char c) {
+		for(char oc : OPERATOR_CHAR){
+			if(c == oc){
+				return true;
+			}
+		}
+		return false;
+		
+		/*
 		return c == '+' || c == '-' || c == '*' || c == '/' || c == '&'
-				|| c == '|' || c == '>' || c == '<' || c == '=';
+				|| c == '|' || c == '>' || c == '<' || c == '=';*/
 	}
 
 	public static boolean isOperator(String s) {
