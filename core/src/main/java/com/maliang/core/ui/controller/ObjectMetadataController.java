@@ -1,7 +1,6 @@
 package com.maliang.core.ui.controller;
 
 import java.beans.BeanInfo;
-import java.beans.IntrospectionException;
 import java.beans.Introspector;
 import java.beans.PropertyDescriptor;
 import java.util.ArrayList;
@@ -13,6 +12,7 @@ import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
 
+import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 
 import org.bson.types.ObjectId;
@@ -24,18 +24,16 @@ import org.springframework.web.bind.annotation.ResponseBody;
 
 import com.maliang.core.arithmetic.ArithmeticExpression;
 import com.maliang.core.dao.ObjectMetadataDao;
-import com.maliang.core.model.Business;
 import com.maliang.core.model.FieldType;
 import com.maliang.core.model.ObjectField;
 import com.maliang.core.model.ObjectMetadata;
-import com.maliang.core.model.WorkFlow;
-import com.maliang.core.service.MapHelper;
 
 @Controller
 @RequestMapping(value = "metadata")
 public class ObjectMetadataController extends BasicController {
 	static Map<String,Map<String,String>> CLASS_LABELS = new HashMap<String,Map<String,String>>();
 	static final String EDIT_CODE;
+	static final String EDIT_CODE2;
 	
 	static {
 		Map<String,String> blMap = new LinkedHashMap<String,String>();
@@ -56,7 +54,7 @@ public class ObjectMetadataController extends BasicController {
 		CLASS_LABELS.put(ObjectField.class.getCanonicalName(), wfMap);
 		
 		EDIT_CODE = "{name:{prefix:'objectMetadata',name:'name',label:'名称',type:'text',value:metadata.name},"
-				+ "id:{prefix:'objectMetadata',name:'id',label:null,type:'hidden',value:metadata.id)+''},"
+				+ "id:{prefix:'objectMetadata',name:'id',label:null,type:'hidden',value:metadata.id+''},"
 				+ "label:{prefix:'objectMetadata',name:'label',label:'标签',type:'text',value:metadata.label},"
 				+ "fields:{item-labels:{name:'名称',label:'标签',type:'字段类型'},prefix:'objectMetadata',"
 					+ "name:'fields',label:'字段',type:'list',item-prefix:'objectMetadata.fields',"
@@ -74,10 +72,111 @@ public class ObjectMetadataController extends BasicController {
 						+ "]"
 				+ "}}}}";
 	}
+	
+	/********************** Test start ******************************/
+	/**
+	 * md: ObjectMetadata
+	 * types: FieldType.values()
+	 * **/
+	static {
+		EDIT_CODE2 = "{"
+				+ "global:{"
+					+ "fieldTypes:each(types){{key:this.code,label:this.name}},"
+					+ "fieldTemplate:{"
+						+ "name:{},label:{},"
+						+ "type:{type:'select',options:'fieldTypes'}"
+					+ "}"
+				+ "},"
+/*			
++ "metadata:tree(md,'fields'){"
++ "name:{val:md.name},"
++ "label:{val:md.label},"
++ "fields:each(md.fields){tree([this,'fields']){{"
+	+ "name:{val:this.name},"
+	+ "label:{val:this.label},"
+	+ "type:{type:'select',val:this.type,options:'fieldTypes'}"
++ "}}}}}"*/
+				+ "metadata:{"
+					+ "name:{val:md.name},"
+					+ "id:{val:md.id+''},"
+					+ "label:{val:md.label},"
+					+ "fields:tree(md,'fields'){{"
+						+ "name:{val:this.name},"
+						+ "label:{val:this.label},"
+						+ "type:{type:'select',val:this.type,options:'fieldTypes'}"
+				+ "}}}}";
+		
+		
+		
+		
+		//tree([md,'fields']){{}}
+	}
+	
+	private void tree(){
+		
+	}
+	
+	@RequestMapping(value = "main.htm")
+	public String list2(Model model) {
+		List<ObjectMetadata> metadataList = metadataDao.list();
 
+		List<Map> datas = new ArrayList<Map>();
+		for (ObjectMetadata data : metadataList) {
+			Map result = new HashMap();
+			System.out.println(data.getId().toString());
+			result.put("id", data.getId().toString());
+			result.put("name", data.getName());
+			result.put("label", data.getLabel());
+
+			datas.add(result);
+		}
+
+		Map resultMap = new HashMap();
+		resultMap.put("metadataList", datas);
+
+		model.addAttribute("resultJson", JSONObject.fromObject(resultMap)
+				.toString());
+		return "/metadata/gojs/main";
+	}
+	
+	@RequestMapping(value = "edit2.htm", method = RequestMethod.POST)
+	@ResponseBody
+	public String edit2(HttpServletRequest request, Model model) {
+		System.out.println("==========================");
+		JSONObject json = JSONObject.fromObject(request.getParameterMap());
+		JSONArray ja = (JSONArray)json.get("metadata");
+		ObjectMetadata reqMetadata = (ObjectMetadata)JSONObject.toBean(ja.getJSONObject(0), ObjectMetadata.class);
+		System.out.println("fields : "+reqMetadata.getFields().size());
+		
+		String id = request.getParameter("id");
+		ObjectMetadata metadata = null;
+		if (id != null && !id.trim().isEmpty()) {
+			metadata = metadataDao.getByID(id);
+		}else {
+			metadata = new ObjectMetadata();
+			
+			ObjectField ofield = new ObjectField();
+			metadata.setFields(new ArrayList<ObjectField>());
+			metadata.getFields().add(ofield);
+		}
+		
+		Map<String,Object> params = new HashMap<String,Object>();
+		params.put("metadata",metadata);
+		params.put("fieldTypes",FieldType.values());
+		
+		List<ObjectMetadata> metadataList = metadataDao.list();
+		params.put("allMetadatas",metadataList);
+		
+		Object editMap = ArithmeticExpression.execute(EDIT_CODE, params);
+		String str = JSONObject.fromObject(editMap).toString();
+		System.out.println("**************************************");
+		System.out.println(str);
+		return str;
+	}
+	/********************** Test end ******************************/
+	
 	@RequestMapping(value = "edit.htm", method = RequestMethod.GET)
 	public String edit(String id, Model model) {
-
 		String resultJson = "";
 		ObjectMetadata metadata = null;
 		if (id != null && !id.trim().isEmpty()) {

@@ -1,12 +1,9 @@
 package com.maliang.core.dao;
 
-import java.util.List;
 import java.util.Map;
 
 import com.maliang.core.model.ObjectMetadata;
 import com.mongodb.BasicDBObject;
-import com.mongodb.DBCursor;
-import com.mongodb.DBObject;
 
 public class BasicDao extends AbstractDao{
 	private static String OBJECT_METADATA_KEY = "_object_metadata_";

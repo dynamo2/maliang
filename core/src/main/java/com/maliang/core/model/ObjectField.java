@@ -1,5 +1,7 @@
 package com.maliang.core.model;
 
+import java.util.List;
+
 
 public class ObjectField extends MongodbModel {
 	private String name;
@@ -9,6 +11,9 @@ public class ObjectField extends MongodbModel {
 	private String label;
 	private String relationship;
 	private Integer elementType;//用于type=array时
+	
+	@Mapped(type=ObjectField.class)
+	private List<ObjectField> fields;//用于type=inner
 
 	public String getName() {
 		return name;
@@ -51,6 +56,12 @@ public class ObjectField extends MongodbModel {
 	}
 	public void setElementType(Integer elementType) {
 		this.elementType = elementType;
+	}
+	public List<ObjectField> getFields() {
+		return fields;
+	}
+	public void setFields(List<ObjectField> fields) {
+		this.fields = fields;
 	}
 }
 
