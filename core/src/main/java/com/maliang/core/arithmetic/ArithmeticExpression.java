@@ -31,9 +31,19 @@ public class ArithmeticExpression {
 					+ "{name:'product.picture',type:'file',value:product.picture}]}";
 		
 		String s = "{name:'product.price',type:'date',options:each(brands){key:this.id,value:this.name}+2,action:''}";
-		Parentheses pt = Parentheses.compile(s,42,new char[]{',','}'});
+		Parentheses pt = null;//Parentheses.compile(s,42,new char[]{',','}'});
 		
-		System.out.println(pt);
+		String ps = "{i1:{i11:{i111:{i1111:33333}}}}";
+		Map pars = (Map)ArithmeticExpression.execute(ps,null);
+		s = "i1.i11.i111.i1111.string().int().double().string().int().between([1,2222222])";
+		s = "{i1:{i11:{i111:{i1111:33333}}}}.i1.i11";
+		s = "[1,2,3,4].size";
+		s = "'dfadfadsf'.length+88";
+		pt = Parentheses.compile(s,0,new char[]{',','}'});
+		Object v = null;//ArithmeticExpression.execute(s,pars);
+		
+		System.out.println(pt.getValue(pars));
+		System.out.println(v);
 	}
 	public static void testComparion(){
 		String str = "9+8 > 13 & 9 > 12";
@@ -144,8 +154,13 @@ public class ArithmeticExpression {
 		return value;
 	}
 	
-	static class Node {
+	static abstract class Node {
+		
 		public Object getValue(Map<String,Object> paramsMap){
+			return null;
+		}
+		
+		public Object getValue(Object obj){
 			return null;
 		}
 	}
@@ -160,6 +175,11 @@ public class ArithmeticExpression {
 		public Object getValue(Map<String,Object> paramsMap){
 			return this.function.execute(paramsMap);
 		}
+	}
+	
+	static class DotNode extends Node {
+		Node preNode;
+		String key;
 	}
 	
 	public static class Parentheses extends Node{
@@ -178,7 +198,11 @@ public class ArithmeticExpression {
 		}
 		
 		public Object getValue(Map<String,Object> paramsMap){
-			return expression.getValue(paramsMap);
+			Object value = expression.getValue(paramsMap);
+			if(value instanceof MapNode){
+				return ((MapNode)value).getValue(paramsMap);
+			}
+			return value;
 		}
 		
 		public String expressionStr(){
@@ -538,7 +562,7 @@ public class ArithmeticExpression {
 				
 				expreMap.put(root, indexSet);
 			}
-			
+
 			return root;
 		}
 		
@@ -609,18 +633,21 @@ public class ArithmeticExpression {
 		
 		public Object getValue(Map<String,Object> paramsMap){
 			if(this.right == null){
-				Object leftV = this.left.getValue(paramsMap);
-				if(this.operator.isAnd()){
-					return false;
-				}else if(this.operator.isOr()){
-					return LogicalCalculator.getBoolean(leftV);
-				}
-				
-				return leftV;
+				return singleExpression(paramsMap);
+			}
+
+			if(this.operator.isDot()){
+				return calculateDot(paramsMap);
 			}
 			
 			Object valueLeft = this.left.getValue(paramsMap);
 			Object valueRight = this.right.getValue(paramsMap);
+			if(valueLeft instanceof MapNode){
+				valueLeft = ((MapNode)valueLeft).getValue(paramsMap);
+			}
+			if(valueRight instanceof MapNode){
+				valueRight = ((MapNode)valueRight).getValue(paramsMap);
+			}
 			
 			if(this.operator.isLogical()){
 				return LogicalCalculator.calculate(valueLeft, valueRight, operator);
@@ -637,7 +664,7 @@ public class ArithmeticExpression {
 			if(valueRight instanceof Date){
 				return DateCalculator.calculate((Date)valueRight,valueLeft.toString(),this.operator);
 			}
-			
+
 			if(valueLeft instanceof String || valueRight instanceof String){
 				return calculateString(valueLeft==null?null:valueLeft.toString(),valueRight==null?null:valueRight.toString());
 			}
@@ -651,6 +678,48 @@ public class ArithmeticExpression {
 			return DoubleCalculator.calculate(dl,dr,this.operator);
 		}
 		
+		/**
+		 * 单一操作数的计算
+		 * **/
+		private Object singleExpression(Map<String,Object> paramsMap){
+			Object leftV = this.left.getValue(paramsMap);
+			if(this.operator.isAnd()){
+				return false;
+			}else if(this.operator.isOr()){
+				return LogicalCalculator.getBoolean(leftV);
+			}
+			
+			return leftV;
+		}
+		
+		/**
+		 * '.'操作符的运算
+		 * **/
+		private Object calculateDot(Map<String,Object> paramsMap){
+			Object valueLeft = this.left.getValue(paramsMap);
+			Object valueRight = null;
+			
+			if(valueLeft instanceof MapNode){
+				valueLeft = ((MapNode)valueLeft).getValue(paramsMap);
+			}
+			
+			if(this.right instanceof Operand){
+				valueRight = this.right.getValue(paramsMap);
+				
+				if(valueRight instanceof MapNode){
+					return ((MapNode)valueRight).getValue(valueLeft);
+				}
+				
+				return null;
+			}
+			if(this.right instanceof FunctionNode){
+				((FunctionNode)this.right).function.setKeyValue(valueLeft);
+				return this.right.getValue(paramsMap);
+			}
+			
+			return null;
+		}
+		
 		
 		private String calculateString(String left,String right){
 			if(!this.operator.isPlus()){
@@ -662,6 +731,23 @@ public class ArithmeticExpression {
 		
 		public String toString(){
 			return "("+this.left+this.operator+this.right+")";
+			//return ""+this.left+this.operator+this.right;
+		}
+	}
+	
+	static class MapNode extends Node {
+		String key;
+		
+		MapNode(String k){
+			this.key = k;
+		}
+		
+		public Object getValue(Object obj){
+			return MapHelper.readValue(obj,key);
+		}
+		
+		public Object getValue(Map<String,Object> paramsMap){
+			return this.getValue((Object)paramsMap);
 		}
 	}
 	
@@ -706,7 +792,8 @@ public class ArithmeticExpression {
 				}catch(NumberFormatException e1){}
 			}
 			
-			return MapHelper.readValue(paramsMap,this.operand);
+			return new MapNode(this.operand);
+			//return MapHelper.readValue(paramsMap,this.operand);
 		}
 		
 		public boolean isString(){

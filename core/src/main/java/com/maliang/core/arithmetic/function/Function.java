@@ -149,6 +149,10 @@ public class Function {
 			return MaxFunction.execute(this, params);
 		}
 		
+		if("tree".equals(key)){
+			return TreeFunction.execute(this, params);
+		}
+		
 		if(key != null && key.startsWith("db.")){
 			return DBFunction.execute(this, params);
 		}
