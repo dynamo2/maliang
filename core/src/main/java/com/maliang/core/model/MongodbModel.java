@@ -15,6 +15,9 @@ public class MongodbModel {
 	public void setId(ObjectId id) {
 		this.id = id;
 	}
+	public void setId(String id) {
+		this.id = new ObjectId(id);
+	}
 	
 	public String toString(){
 		StringBuffer sbf = null;

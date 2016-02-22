@@ -107,7 +107,6 @@ public class TreeFunction {
 		//data = params.get("this");
 		//System.out.println("========= data : " + params.get("this"));
 		Object val = treeNode(data,fieldName,flag,function.getBody(),params);
-		
 		return val;
 	}
 	

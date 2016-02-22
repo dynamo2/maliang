@@ -34,6 +34,7 @@ public class ObjectMetadataController extends BasicController {
 	static Map<String,Map<String,String>> CLASS_LABELS = new HashMap<String,Map<String,String>>();
 	static final String EDIT_CODE;
 	static final String EDIT_CODE2;
+	static final String METADATA_LIST;
 	
 	static {
 		Map<String,String> blMap = new LinkedHashMap<String,String>();
@@ -87,33 +88,22 @@ public class ObjectMetadataController extends BasicController {
 						+ "type:{type:'select',options:'fieldTypes'}"
 					+ "}"
 				+ "},"
-/*			
-+ "metadata:tree(md,'fields'){"
-+ "name:{val:md.name},"
-+ "label:{val:md.label},"
-+ "fields:each(md.fields){tree([this,'fields']){{"
-	+ "name:{val:this.name},"
-	+ "label:{val:this.label},"
-	+ "type:{type:'select',val:this.type,options:'fieldTypes'}"
-+ "}}}}}"*/
 				+ "metadata:{"
-					+ "name:{val:md.name},"
-					+ "id:{val:md.id+''},"
-					+ "label:{val:md.label},"
-					+ "fields:tree(md,'fields'){{"
-						+ "name:{val:this.name},"
-						+ "label:{val:this.label},"
-						+ "type:{type:'select',val:this.type,options:'fieldTypes'}"
-				+ "}}}}";
+					+ "name:{value:md.name},"
+					+ "id:{value:md.id+''},"
+					+ "label:{value:md.label},"
+					+ "fields:each(md.fields){tree([this,'fields']){{"
+						+ "name:{value:this.name},"
+						+ "label:{value:this.label},"
+						+ "type:{type:'select',value:this.type,linkedObject:this.linkedObject,elementType:this.elementType,options:'fieldTypes'}"
+					+ "}}}"
+				+ "}}";
 		
-		
-		
-		
-		//tree([md,'fields']){{}}
-	}
-	
-	private void tree(){
-		
+		METADATA_LIST = "metadataList:each(list){{"
+					+ "name:this.name,"
+					+ "label:this.label,"
+					+ "id:this.id+''"
+				+ "}}";
 	}
 	
 	@RequestMapping(value = "main.htm")
@@ -161,17 +151,136 @@ public class ObjectMetadataController extends BasicController {
 		}
 		
 		Map<String,Object> params = new HashMap<String,Object>();
-		params.put("metadata",metadata);
-		params.put("fieldTypes",FieldType.values());
+		params.put("md",metadata);
+		params.put("types",FieldType.values());
 		
-		List<ObjectMetadata> metadataList = metadataDao.list();
-		params.put("allMetadatas",metadataList);
+		Object editMap = ArithmeticExpression.execute(EDIT_CODE2, params);
+		((Map)editMap).put("metadata",order(id));
 		
-		Object editMap = ArithmeticExpression.execute(EDIT_CODE, params);
 		String str = JSONObject.fromObject(editMap).toString();
 		System.out.println("**************************************");
 		System.out.println(str);
 		return str;
+	}
+	
+	private void printFields(List<ObjectField> ofs){
+		if(ofs == null || ofs.size() == 0)return;
+		
+		for(ObjectField of : ofs){
+			System.out.println(of);
+			printFields(of.getFields());
+		}
+	}
+	
+	
+	@RequestMapping(value = "save2.htm", method = RequestMethod.POST)
+	@ResponseBody
+	public String save2(HttpServletRequest request, Model model) {
+		JSONObject json = JSONObject.fromObject(request.getParameterMap());
+		JSONArray ja = (JSONArray)json.get("metadata");
+		
+		Map cm = new HashMap();
+		cm.put("fields",ObjectField.class);
+		ObjectMetadata reqMetadata = (ObjectMetadata)JSONObject.toBean(ja.getJSONObject(0), ObjectMetadata.class,cm);
+		
+		System.out.println("============ request metadata ===================");
+		//System.out.println("json : "+ja.getJSONObject(0).toString());
+		//System.out.println(reqMetadata);
+		//System.out.println("field type "+reqMetadata.getFields().get(0));
+		//metadataDao.save(reqMetadata);
+		printFields(reqMetadata.getFields());
+
+		ObjectMetadata metadata = metadataDao.getByID(reqMetadata.getId()+"");
+		
+		Map<String,Object> params = new HashMap<String,Object>();
+		params.put("md",metadata);
+		params.put("types",FieldType.values());
+		
+		Object editMap = ArithmeticExpression.execute(EDIT_CODE2, params);
+		return JSONObject.fromObject(editMap).toString();
+	}
+	
+	@RequestMapping(value = "linkedObject2.htm")
+	@ResponseBody
+	public String linkedObject2() {
+		String desc = "{name:'linkedObject',type:'select',options:each(metadatas){{key:this.name,label:this.name}}}";
+		
+		List<ObjectMetadata> metadataList = metadataDao.list();
+		
+		Map<String,Object> params = new HashMap<String,Object>();
+		params.put("metadatas",metadataList);
+		
+		Map<String,Object> linkedMap = (Map<String,Object>)ArithmeticExpression.execute(desc, params);
+		return JSONObject.fromObject(linkedMap).toString();
+	}
+	
+	@RequestMapping(value = "elementType2.htm")
+	@ResponseBody
+	public String elementType2() {
+		String desc = "{name:'elementType',type:'select',options:each(fieldTypes){{key:this.code,label:this.name}}}";
+		
+		Map<String,Object> params = new HashMap<String,Object>();
+		params.put("fieldTypes",FieldType.values());
+		
+		Map<String,Object> map = (Map<String,Object>)ArithmeticExpression.execute(desc, params);
+		return JSONObject.fromObject(map).toString();
+	}
+	
+	
+	private Object order(String id){
+		String str = "{"
+				+ "name:{value:'Order'},"
+				+ "id:{value:'"+id+"'},"
+				+ "label:{value:'订单'},"
+				+ "fields:[{"
+					+ "name:{value:'info'},"
+					+ "label:{value:'基本信息'},"
+					+ "type:{type:'select',value:7,options:'fieldTypes'},"
+					+ "fields:[{"
+						+ "name:{value:'number'},"
+						+ "label:{value:'订单号'},"
+						+ "type:{type:'select',value:3,options:'fieldTypes'}"
+					+ "},{"
+						+ "name:{value:'owner'},"
+						+ "label:{value:'订单所属人'},"
+						+ "type:{type:'select',value:6,options:'fieldTypes'}"
+					+ "},{"
+						+ "name:{value:'status'},"
+						+ "label:{value:'状态'},"
+						+ "type:{type:'select',value:1,options:'fieldTypes'}"
+					+ "},{"
+						+ "name:{value:'totalPrice'},"
+						+ "label:{value:'总额'},"
+						+ "type:{type:'select',value:2,options:'fieldTypes'}"
+					+ "}]"
+				+ "},{"//// 收货地址
+					+ "name:{value:'address'},"
+					+ "label:{value:'收货地址'},"
+					+ "type:{type:'select',value:7,options:'fieldTypes'},"
+					+ "fields:[{"
+						+ "name:{value:'province'},"
+						+ "label:{value:'省'},"
+						+ "type:{type:'select',value:3,options:'fieldTypes'}"
+					+ "},{"
+						+ "name:{value:'city'},"
+						+ "label:{value:'市'},"
+						+ "type:{type:'select',value:3,options:'fieldTypes'}"
+					+ "},{"
+						+ "name:{value:'zoom'},"
+						+ "label:{value:'邮编'},"
+						+ "type:{type:'select',value:3,options:'fieldTypes'}"
+					+ "},{"
+						+ "name:{value:'address'},"
+						+ "label:{value:'详细地址'},"
+						+ "type:{type:'select',value:3,options:'fieldTypes'}"
+					+ "},{"
+						+ "name:{value:'accepter'},"
+						+ "label:{value:'收件人'},"
+						+ "type:{type:'select',value:8,linkedObject:'User',options:'fieldTypes'}"
+					+ "}]"
+				+ "}]"
+			+ "}";
+		return ArithmeticExpression.execute(str, null);
 	}
 	/********************** Test end ******************************/
 	
