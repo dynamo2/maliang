@@ -244,6 +244,14 @@ function FormBuilder(){
 	};
 	
 	this.newInputElement = function(inputData){
+		if(!inputData.type){
+			inputData.type = "text";
+		}
+		if(inputData.val){
+			inputData.value = inputData.val;
+		}
+		
+		
 		if(inputData.type == "text"){
 			return TM_htmlBuilder.newText(inputData);
 		}else if(inputData.type == "select"){
