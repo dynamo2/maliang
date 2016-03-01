@@ -17,6 +17,10 @@
 		<link href="../../html/business/style.css" rel="stylesheet" type="text/css"/> 
     </head>
 	<body>
+		<div class="ui-layout-north">
+			<a href="/metadata/main.htm">首页</a>&nbsp;&nbsp;
+			<a href="main.htm">业务</a>
+		</div>
 		<div class="ui-layout-center">
 			<div id="objectPanel">
 				<ul id="objectList" />
@@ -34,11 +38,7 @@
 			</div>
 		</div>
 		
-		<div id="addObjectDialog" title="添加新对象">
-			<table>
-				<tr></tr>
-			</table>
-		</div>
+		<div id="addObjectMetadataDialog" title="新增对象模型" />
 		<script type="text/javascript">
 		var json = ${resultJson};
 		var objectPanelTab = null;
@@ -47,48 +47,81 @@
 		
 		$(function(){
 			metadataModel.compile(json.metadataList);
-			objectPanelTab = $("#objectPanel").tabs();
-			
+			initObjectPanelTab();
 			initEditPanel();
+			initAddObjectMetadataDialog();
 			
 			$("body").layout({ applyDemoStyles: true });
-			
-			objectPanelTab.on( "tabsactivate", function( event, ui ) {
-				var omId = ui.newTab.closest("li").attr("aria-controls");
-				if(!metadataModel.isMetadataLoaded(omId)){
-					metadataModel.ajaxLoadMetadata(omId);
-				}
-			});
-			
-			objectPanelTab.delegate( "span.ui-icon-close", "click", function() {
-				var panelId = $(this).closest("li").remove().attr("aria-controls");
-				$( "#" + panelId ).remove();
-				objectPanelTab.tabs("refresh");
-				
-				metadataModel.removeTab(panelId);
-			});
 		});
 		
-		function initAddObjectDialog(){
-			$("#addObjectDialog").dialog({
+		/**
+		** 初始化对象操作面板
+		**/
+		function initObjectPanelTab(){
+			objectPanelTab = $("#objectPanel").tabs();
+			
+			/**
+			** 激活tab时加载对象数据
+			**/
+			objectPanelTab.on( "tabsactivate", function( event, ui ) {
+				var omId = ui.newTab.closest("li").attr("aria-controls");
+				metadataModel.activeMetadataTab(omId);
+			});
+			
+			/*
+			* 对象操作tab的删除按钮
+			**/
+			objectPanelTab.delegate( "span.ui-icon-close", "click", function() {
+				var omId = $(this).closest("li").remove().attr("aria-controls");
+				metadataModel.removeTab(omId);
+			});
+		}
+		
+		/**
+		** 初始化新增对象模型dialog
+		**/
+		function initAddObjectMetadataDialog(){
+			$("#addObjectMetadataDialog").dialog({
 				resizable: false,
-				height:600,
-				width:550,
+				height:400,
+				width:300,
 				autoOpen: false,
 				buttons: {
 					"Save": function(){
+						var obj = $("#addObjectMetadataDialog").data("data");
+						var diagram = $("#addObjectMetadataDialog").data("diagram");
+						
+						var metadata = metadataModel.readRequestObject(obj);
+						var newNode = metadataModel.newTreeNode(metadata);
+						
+						$.ajax("save2.htm",{
+							data:{metadata:JSON.stringify(metadata)},
+							dataType:'json',
+							type:'POST',
+							success:function(result,textStatus){
+								var omId = result.metadata.id.value;
+								metadataModel.syncPool(omId,result.metadata);
+
+								//重新解析metadata数据，并刷新diagram
+								metadataModel.refreshMetadataDiagram(omId);
+								
+								newNode.id = omId;
+							}
+						});
+						
+						diagram.model.addNodeData(newNode);
 						$(this).dialog("close");
+					},
+					Cancel: function() {
+					  $(this).dialog( "close" );
 					}
 				}
 			});
-			
-			var table = $("<table id='addObjectTable' />");
-			var newObj = {name:{},label:{}};
-			for(x in newObj){
-				var tr = $("<tr />");
-			}
 		}
 		
+		/**
+		** 初始化字段操作dialog
+		**/
 		function initEditPanel(){
 			$("#editPanel").tabs();
 			$("#editDialog").dialog({
@@ -105,33 +138,51 @@
 						var oldData = newData['_clone_'];
 						var addFields = [];
 						
-						if(newData.fields){
-							$.each(newData.fields,function(i,field){
-								if(field['_delete_']){
-									if(field['_clone_']){
-										oldData.fields.splice(i,1);
-									}
-								}else if(field['_add_']){
-									field._add_ = undefined;
-									addFields.push(field);
-								}else if(field['_clone_']){
-									updateProperties(field['_clone_'],field);
-								}
-							});
-						}
-						updateProperties(oldData,newData);
-						
-						if(addFields.length > 0){
-							if(!oldData.fields){
-								oldData.fields = [];
-							}
+						/**
+						** 新增字段
+						**/
+						if(newData['_add_']){
+							newData._add_ = undefined;
 							
-							$.each(addFields,function(i,v){
-								oldData.fields.push(v);
-							});
+							var parent = $("#editPanel").data("parent");
+							if(!parent.fields){
+								parent.fields = [];
+							}
+							parent.fields.push(newData);
+							
+						}else { 
+							
+							/**
+							** 编辑字段
+							**/
+							if(newData.fields){
+								$.each(newData.fields,function(i,field){
+									if(field['_delete_']){
+										if(field['_clone_']){
+											oldData.fields.splice(i,1);
+										}
+									}else if(field['_add_']){
+										field._add_ = undefined;
+										addFields.push(field);
+									}else if(field['_clone_']){
+										updateProperties(field['_clone_'],field);
+									}
+								});
+							}
+							updateProperties(oldData,newData);
+							
+							if(addFields.length > 0){
+								if(!oldData.fields){
+									oldData.fields = [];
+								}
+								
+								$.each(addFields,function(i,v){
+									oldData.fields.push(v);
+								});
+							}
 						}
-						
-						print(ts(metadataModel.readRequestMetadata(omId)));
+
+						metadataModel.ajaxSaveMetadata(omId);
 						
 						$(this).dialog("close");
 					},
@@ -214,32 +265,38 @@
 .ui-dialog-title{
 	font-size:12px;
 }
-#editDialog {
+#editDialog,
+#addObjectMetadataDialog {
 	font-size:12px;
 }
-#editDialog table {
+#editDialog table,
+#addObjectMetadataDialog table  {
 	background-color:#ccc;
 }
 
-#editDialog table input{
+#editDialog table input,
+#addObjectMetadataDialog table input {
 	//border:0px;
 	//border-bottom:1px solid #ccc;
 	width:80px;
 }
 
-#editDialog td {
+#editDialog td,
+#addObjectMetadataDialog td  {
 	background-color:#fff;
 	padding:7px 10px;
 	min-width:100px;
 	height:23px;
 }
 
-#editDialog .label {
+#editDialog .label,
+#addObjectMetadataDialog .label {
 	text-align:right;
 	font-weight:bold;
 }
 
-#editDialog .header td {
+#editDialog .header td,
+#addObjectMetadataDialog .header td  {
 	text-align:center;
 	font-weight:bold;
 }

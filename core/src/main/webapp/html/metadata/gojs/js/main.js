@@ -23,6 +23,7 @@ function objectMetadataModel(){
 	var metadataDiagramMap = null;
 	var metadataFieldTreeNodesMap = null;
 	var dataPool = null;
+	var metadataTreeRoot = null;
 	
 	this.init = function(source){
 		_.metadatas = source;
@@ -80,7 +81,7 @@ function objectMetadataModel(){
 	};
 	
 	this.removeData = function(key){
-		_.dataPool[key] = null;
+		_.dataPool[key] = undefined;
 	};
 	
 	/******  Field start **************/
@@ -110,13 +111,10 @@ function objectMetadataModel(){
 		var treeNodes = [];
 		var omId = metadata.id.value;
 
+		metadata._isObject_ = true;
 		_.parseFields([metadata],null,treeNodes,omId);
 		
 		_.metadataFieldTreeNodesMap[omId] = treeNodes;
-	};
-	
-	this.ts = function(json){
-		return JSON.stringify(json);
 	};
 	
 	this.parseFields = function(fields,treeParent,treeNodes,omId){
@@ -168,6 +166,10 @@ function objectMetadataModel(){
 		return node;
 	}
 	
+	this.canHasFields = function(obj){
+		return $.isPlainObject(obj)?obj._isObject_ || ($.isPlainObject(obj.type)?obj.type.value == 7:obj.type == 7):obj == 7;
+	};
+	
 	/******  Field end **************/
 	
 	this.get = function(omId){
@@ -181,16 +183,53 @@ function objectMetadataModel(){
 	this.compile = function(source){
 		_.init(source);
 		
-		var treeRoot = {key : 'All Object'};
-		_.metadataTreeNodes.push(treeRoot);
 		$.each(_.metadatas, function(i,metadata) {
-			var node = _.newTreeNode(metadata,treeRoot);
-			_.metadataTreeNodes.push(node);
-			
 			_.metadataMap[metadata.id] = metadata;
 		});
+		_.buildTreeNodes();
 		
 		_.metadataTreeDiagram = newMetadatasTreeDiagram(_);
+	};
+	
+	/**
+	 * 根据 metadataMap 重置生成 metadataTreeNodes
+	 * **/
+	this.buildTreeNodes = function(){
+		_.metadataTreeNodes = [];
+		
+		_.metadataTreeRoot = {key : 'All Object'};
+		_.metadataTreeNodes.push(_.metadataTreeRoot);
+		
+		for(x in _.metadataMap){
+			var metadata = _.metadataMap[x];
+			if(!metadata)continue;
+			
+			var node = _.newTreeNode(metadata);
+			_.metadataTreeNodes.push(node);
+		}
+	};
+	
+	/**
+	 * 同步数据池
+	 * ***/
+	this.syncPool = function(omId,newData){
+		var oldData = _.get(omId);
+		if(oldData){
+			_.copy(newData,oldData,null);
+		}else {
+			_.metadataMap[omId] = newData;
+		}
+		
+		//解析metadata数据
+		_.parseMetadata(_.get(omId));
+		
+		_.buildTreeNodes();
+	}
+	
+	this.removeMetadata = function(omId){
+		_.metadataMap[omId] = undefined;
+		_.removeTab(omId);
+		_.buildTreeNodes();
 	};
 	
 	this.openMetadataTab = function (omId) {
@@ -199,22 +238,31 @@ function objectMetadataModel(){
 		}else {
 			_.showTab(omId);
 		}
-	}
+	};
 	
 	this.showTab = function(omId){
 		objectPanelTab.find("a[href='#"+omId+"']").click();
-	}
+	};
 	
 	this.isExistsTab = function(omId){
 		if(_.metadataTabMap){
 			return _.metadataTabMap[omId];
 		}
 		return false;
-	}
+	};
 	
+	/***
+	 * 删除Tab
+	 * **/
 	this.removeTab = function(omId){
-		_.metadataTabMap[omId] = null;
-	}
+		
+		$("#"+omId).remove();
+		$("#"+omId+"Link").remove();
+		objectPanelTab.tabs("refresh");
+		
+		_.metadataTabMap[omId] = undefined;
+		_.metadataDiagramMap[omId] = undefined;
+	};
 	
 	this.addMetadataTab = function (omId) {
 		var metadata = metadataModel.get(omId);
@@ -224,19 +272,36 @@ function objectMetadataModel(){
 
 		var tab = $("<div id='"+tabId+"' />");
 		var diagram = $('<div id="'+diagramId + '" style="border: 1px solid blue; width:100%; height:600px;margin-top:30px;" />');
+		var mdName = metadata.name;
+		if($.isPlainObject(mdName)){
+			mdName = mdName.value;
+		}
 		
-		objectPanelTab.find(".ui-tabs-nav").append('<li><a href="#' + tabId + '">' + metadata.name + '</a><span class="ui-icon ui-icon-close" role="presentation">Remove Tab</span></li>');
+		objectPanelTab.find(".ui-tabs-nav").append('<li id="'+tabId+'Link"><a href="#' + tabId + '">' + mdName + '</a><span class="ui-icon ui-icon-close" role="presentation">Remove Tab</span></li>');
 		objectPanelTab.append(tab.append(diagram));
 		objectPanelTab.tabs("refresh");
 		
 		_.metadataTabMap[omId] = tab;
 		_.showTab(omId);
-	}
+	};
 	
-	this.newTreeNode = function(obj,treeParent){
+	this.activeMetadataTab = function(omId){
+		if(_.isMetadataLoaded(omId)){
+			if(!_.metadataDiagramMap[omId]){
+				_.refreshMetadataDiagram(omId);
+			}
+		}else {
+			_.ajaxLoadMetadata(omId);
+		}
+	};
+	
+	this.newTreeNode = function(obj){
+		if(!obj)return null;
+		
 		var node = {};
+		
 		node.key = obj.name + "(" + obj.label + ")";
-		node.parent = treeParent.key;
+		node.parent = _.metadataTreeRoot.key;
 		node.id = obj.id;
 		
 		return node;
@@ -244,6 +309,12 @@ function objectMetadataModel(){
 	
 	this.readRequestMetadata = function(omId){
 		var metadata = _.get(omId);
+		
+		//解析metadata数据
+		_.parseMetadata(_.get(omId));
+		
+		_.refreshMetadataDiagram(omId);
+		
 		return _.readRequestObject(metadata);
 	};
 	
@@ -276,7 +347,7 @@ function objectMetadataModel(){
 		// read other props
 		for(x in editObj){
 			if(isSystemProp(x))continue;
-			if(x === 'fields' || x === 'type')continue;
+			if(x === 'fields' || x === 'type' || x === 'id')continue;
 			
 			reqObj[x] = editObj[x].value;
 		}
@@ -307,14 +378,12 @@ function objectMetadataModel(){
 				
 				//重新解析metadata数据，并刷新diagram
 				_.refreshMetadataDiagram(omId);
-				
-				
 			}
 		});
 	};
 	
 	this.ajaxSaveMetadata = function (omId){
-		var metadata = metadataModel.readRequestMetadata(omId);
+		var metadata = _.readRequestMetadata(omId);
 		
 		$.ajax("save2.htm",{
 			data:{
@@ -324,18 +393,59 @@ function objectMetadataModel(){
 			dataType:'json',
 			type:'POST',
 			success:function(result,textStatus){
+				//更新数据池里的数据
+				_.syncPool(omId,result.metadata);
 				
-				alert("save ok!");
+				//重新解析metadata数据，并刷新diagram
+				_.refreshMetadataDiagram(omId);
 			}
 		});
 	};
 	
+	/*
+	this.ajaxSave = function (obj,succFun){
+		var omId = null;
+		var metadata = null;
+		if(isString(obj)){
+			omId = obj;
+			metadata = _.readRequestMetadata(omId);
+		}else {
+			metadata = _.readRequestObject(obj);
+		}
+		
+		if(!$.isFunction(succFun)){
+			succFun = function(result,textStatus){
+				//更新数据池里的数据
+				_.syncPool(omId,result.metadata);
+			};
+		}
+		
+		$.ajax("save2.htm",{
+			data:{
+				id:omId,
+				metadata:JSON.stringify(metadata)
+			},
+			dataType:'json',
+			type:'POST',
+			success:succFun
+		});
+	};
+	*/
+	
+	
 	/**
-	 * 同步数据池
+	 * 删除对象模型
 	 * ***/
-	this.syncPool = function(omId,result){
-		_.copy(result,_.get(omId),null);
-	}
+	this.ajaxDelete = function(omId){
+		$.ajax("delete2.htm",{
+			data:{id:omId},
+			dataType:'json',
+			type:'POST',
+			success:function(result,textStatus){
+				_.removeMetadata(omId);
+			}
+		});
+	};
 	
 	/**
 	 * fieldModel:{
@@ -345,8 +455,6 @@ function objectMetadataModel(){
 	 * }
 	 * **/
 	this.refreshMetadataDiagram = function(omId){
-		//解析metadata数据
-		_.parseMetadata(_.get(omId));
 		var fieldTreeNodes = _.getFieldTreeNodes(omId);
 		
 		var diagram = _.metadataDiagramMap[omId];
@@ -428,21 +536,16 @@ function objectMetadataModel(){
 	}
 }
 
-function isInnerType(val){
-	if(val instanceof Object){
-		return val.value == 7;
-	}
-	
-	return val == 7;
-}
-
+/**
+ * 显示字段操作面板
+ * ***/
 function showEditPanel(e,node){
 	clearEditPanel();
 	
 	var dataObject = completelyClone(node.data.field);
 	
 	editPropertiesTable(dataObject);
-	if(isInnerType(dataObject.type)){
+	if(metadataModel.canHasFields(dataObject)){
 		editChildrenTable(dataObject.fields);
 	}
 	
@@ -585,7 +688,7 @@ function editPropertiesTable(props){
 	 * 切换字段编辑表
 	 * **/
 	tObj.on("change", "select[name='type']", function() {
-		if(isInnerType($(this).val())){
+		if(metadataModel.canHasFields($(this).val())){
 			var dataObject = $("#editPanel").data("data");
 			editChildrenTable(dataObject.fields);
 		}else {
@@ -869,6 +972,7 @@ function groupText(td){
 
 function newMetadatasTreeDiagram(metadataModel) {
 	var G_Make = go.GraphObject.make;
+	var _ = this;
 	var yellowgrad = G_Make(go.Brush, "Linear", {
 		0 : "rgb(254, 201, 0)",
 		1 : "rgb(254, 162, 0)"
@@ -892,10 +996,91 @@ function newMetadatasTreeDiagram(metadataModel) {
 			setsChildPortSpot : false
 		})
 	});
+
+	this.isMetadata = function(o){
+		if(o.diagram.selection 
+				&& o.diagram.selection.first() 
+				&& o.diagram.selection.first().data 
+				&& o.diagram.selection.first().data.id){
+			return true;
+		}
+		
+		return false;
+	};
+	
+	this.menuText = function(txt){
+		return G_Make(go.TextBlock, 
+				{ text: txt, margin:5,font : "13px Helvetica"});
+		
+		/*
+		return G_Make(go.Panel, "Auto", G_Make(go.Shape, "RoundedRectangle", {
+			fill : yellowgrad,
+			name : "SHAPE",
+			stroke : null
+		}), G_Make(go.TextBlock, {
+			font : "bold 13px Helvetica, bold Arial, sans-serif",
+			stroke : "white",
+			margin : 5,
+			text :txt
+		}));*/
+		
+	};
+	
+	/**
+	 * 右键菜单
+	 * **/
+	var contextMenu = G_Make(go.Adornment, "Vertical", 
+		G_Make("ContextMenuButton",_.menuText("打开"),{
+			click : function(e, obj) {
+				var nodeData = obj.diagram.selection.first().data;
+				metadataModel.openMetadataTab(nodeData.id);
+			}
+	},new go.Binding("visible", "", _.isMetadata).ofObject()
+    ), G_Make("ContextMenuButton", _.menuText("新增对象模型"), {
+		click : function(e, obj) {
+			$("#addObjectMetadataTable").remove();
+			
+			var tObj = newEditTable("addObjectMetadataTable");
+			var props = {
+				name:{name:'name'},
+				label:{name:'label'}
+			};
+			for(x in props){
+				if(x == 'fields')continue;
+				if(x == 'id')continue;
+				if(isSystemProp(x))continue;
+				
+				var field = props[x];
+				var trObj = $("<tr />");
+				
+				trObj.append(newLabelTD(field.name)); //add label td
+				trObj.append(newEditTD(field)); // add value td
+				
+				tObj.append(trObj);
+			}
+			
+			$("#addObjectMetadataDialog").append(tObj);
+			$("#addObjectMetadataDialog").data("data",props);
+			$("#addObjectMetadataDialog").data("diagram",obj.diagram);
+			$("#addObjectMetadataDialog").dialog("open");
+		}
+	}), G_Make("ContextMenuButton", _.menuText("删除对象模型"), {
+		click : function(e, obj) {
+			var diagram = obj.diagram;
+			var nodeData = diagram.selection.first().data;
+			
+			metadataModel.ajaxDelete(nodeData.id);
+			
+			diagram.model.removeNodeData(nodeData);
+		}
+	},new go.Binding("visible", "", _.isMetadata).ofObject()));
+	
+	myDiagram.contextMenu = contextMenu;
 	myDiagram.nodeTemplate = G_Make(go.Node, {
 		doubleClick : function(e, node) {
 			metadataModel.openMetadataTab(node.data.id);
-		}
+		},
+		contextMenu : contextMenu
 	}, G_Make("TreeExpanderButton", {
 		width : 14,
 		"ButtonBorder.fill" : "whitesmoke",
@@ -939,6 +1124,7 @@ function newMetadatasTreeDiagram(metadataModel) {
 
 function newMetadataDiagram(digramId, fieldTreeNodes) {
 	var G_Make = go.GraphObject.make; // for conciseness in defining templates
+	var _ = this;
 	var yellowgrad = G_Make(go.Brush, "Linear", {
 		0 : "rgb(254, 201, 0)",
 		1 : "rgb(254, 162, 0)"
@@ -959,34 +1145,82 @@ function newMetadataDiagram(digramId, fieldTreeNodes) {
 			e.diagram.currentTool.doCancel();
 		}
 	});
+	
+	this.menuText = function(txt){
+		return G_Make(go.TextBlock, 
+				{ text: txt, margin:5,font : "13px Helvetica"});
+		
+		/*
+		return G_Make(go.Panel, "Auto", G_Make(go.Shape, "RoundedRectangle", {
+			fill : yellowgrad,
+			name : "SHAPE",
+			stroke : null
+		}), G_Make(go.TextBlock, {
+			font : "bold 13px Helvetica, bold Arial, sans-serif",
+			stroke : "white",
+			margin : 5,
+			text :txt
+		}));*/
+		
+	};
 
-	var contextMenu = // context menu for each Node
-	G_Make(go.Adornment, "Vertical", G_Make("ContextMenuButton", G_Make(
-			go.TextBlock, "Add top port"), {
+	/**
+	 * 右键菜单
+	 * **/
+	var contextMenu = G_Make(go.Adornment, "Vertical", 
+		G_Make("ContextMenuButton",_.menuText("新增字段"),{
+			click : function(e, obj) {
+				var node = obj.diagram.selection.first();
+				
+				clearEditPanel();
+				
+				var dataObject = completelyClone(metadataModel.getData("fieldTemplate"),true);
+				for(x in dataObject){
+					if(isSystemProp(x))continue;
+					
+					var field = dataObject[x];
+					if(field instanceof Array)continue;
+					
+					if(field instanceof Object){
+						field.name = x;
+					}
+				}
+				editPropertiesTable(dataObject);
+				
+				dataObject._add_ = true;
+				$("#editPanel").tabs("refresh");
+				
+				$("#editPanel").data("omId",node.data.omId);
+				$("#editPanel").data("data",dataObject);
+				$("#editPanel").data("parent",node.data.field);
+				$("#editDialog").dialog("open");
+			}
+	},new go.Binding("visible", "", function(o) {
+			return metadataModel.canHasFields(o.diagram.selection.first().data.field);
+    	}).ofObject()
+    ), G_Make("ContextMenuButton", _.menuText("编辑字段"), {
 		click : function(e, obj) {
-			alert(obj.data);
+			showEditPanel(e,obj.diagram.selection.first());
 		}
-	}), G_Make("ContextMenuButton", G_Make(go.TextBlock, "Add left port"), {
+	}), G_Make("ContextMenuButton", _.menuText("删除字段"), {
 		click : function(e, obj) {
-			alert("left");
+			alert("待完成");
 		}
-	}), G_Make("ContextMenuButton", G_Make(go.TextBlock, "Add right port"), {
+	}), G_Make("ContextMenuButton", _.menuText("刷新"), {
 		click : function(e, obj) {
-			alert("right");
-		}
-	}), G_Make("ContextMenuButton", G_Make(go.TextBlock, "Add bottom port"), {
-		click : function(e, obj) {
-			alert("bottom");
+			alert("待完成");
 		}
 	}));
 
-	// Define a simple node template consisting of text followed by an
-	// expand/collapse button
+	
 	objDiagram.nodeTemplate = G_Make(go.Node, "Horizontal", {
+		/***
+		 * 拖拽
+		 * **/
 		mouseDragEnter : function(e, node, prev) {
 			var diagram = node.diagram;
 			var selnode = diagram.selection.first();
-			if (!mayWorkFor(selnode, node))
+			if (!_.mayWorkFor(selnode, node))
 				return;
 			var shape = node.findObject("SHAPE");
 			if (shape) {
@@ -1003,9 +1237,9 @@ function newMetadataDiagram(digramId, fieldTreeNodes) {
 		mouseDrop : function(e, node) {
 			var diagram = node.diagram;
 			var selnode = diagram.selection.first(); // assume just one Node
+			
 			// in selection
-
-			if (mayWorkFor(selnode, node)) {
+			if (_.mayWorkFor(selnode, node)) {
 				// find any existing link into the selected node
 				var link = selnode.findTreeParentLink();
 				var fromFields = link.fromNode.data.field;
@@ -1016,15 +1250,17 @@ function newMetadataDiagram(digramId, fieldTreeNodes) {
 							selnode, selnode.port);
 				}
 				
-				moveField(fromFields,node.data.field,selnode.data.field);
+				_.moveField(fromFields,node.data.field,selnode.data.field);
+				metadataModel.ajaxSaveMetadata(node.data.omId);
 			} else {
 				diagram.currentTool.doCancel();
 			}
 		},
 
-		doubleClick : showEditPanel
+		doubleClick : showEditPanel,
+		contextMenu : contextMenu
+		
 		/* 
-		contextMenu : contextMenu,
 		toolTip : G_Make(go.Adornment, "Auto", G_Make(go.Shape,
 				"RoundedRectangle", {
 					fill : "rgb(242, 254, 255)",
@@ -1065,67 +1301,48 @@ function newMetadataDiagram(digramId, fieldTreeNodes) {
 		}
 		return "#ccc";
 	}).ofObject()));
+	
+	this.moveField = function (from,to,field){
+		$.each(from.fields,function(i,f){
+			if(f == field){
+				from.fields.splice(i,1);
+				return;
+			}
+		});
+		
+		if(!to.fields){
+			to.fields = [];
+		}
+		to.fields.push(field);
+	};
+
+	this.mayWorkFor = function (node1, to) {
+	    if (!(node1 instanceof go.Node)) return false;  // must be a Node
+	    if (node1 === to) return false;  // cannot work for yourself
+	    if (to.isInTreeOf(node1)) return false;  // cannot work for someone who works for you
+		if(node1.findTreeParentNode() === to)return false;
+
+		if(!(metadataModel.canHasFields(to.data.field))){
+			return false;
+		}
+	    return true;
+	};
 
 	objDiagram.model = new go.TreeModel(fieldTreeNodes);
-	
 	return objDiagram;
 }
 
-function moveField(from,to,field){
-	$.each(from.fields,function(i,f){
-		if(f == field){
-			from.fields.splice(i,1);
-			return;
-		}
-	});
-	
-	if(!to.fields){
-		to.fields = [];
-	}
-	to.fields.push(field);
-}
-
-function mayWorkFor(node1, to) {
-    if (!(node1 instanceof go.Node)) return false;  // must be a Node
-    if (node1 === to) return false;  // cannot work for yourself
-    if (to.isInTreeOf(node1)) return false;  // cannot work for someone who works for you
-	if(node1.findTreeParentNode() === to)return false;
-	  
-	  //var toProp = dataModel.getObject(to.data.id);
-	/*
-	if(!(dataModel.allowFields(to.data.id))){
-		return false;
-	}*/
-	  
-    return true;
-}
-
-function readDataFromNode(node){
-	var field = node.data.field;
-	var newField = {};
-	metadataModel.copy(field,newField,'fields');
-	
-	//读取子节点对象
-	var cns = node.findTreeChildrenNodes();
-	var fields = [];
-	while(cns.next()){
-		fields.push(readDataFromNode(cns.value));
-	}
-	if(fields.length > 0){
-		newField.fields = fields;
-	}
-	
-	return newField;
-}
-
 function isString(obj){
-	return typeof(obj) === 'string';
+	return $.type(obj) === 'string';
 }
 
 function ts(obj){
 	return JSON.stringify(obj);
 }
 
+/***
+ * 深度clone：递归克隆对象及对象的子元素，并缓存被克隆对象（noMark=true,不缓存）
+ * ***/
 function completelyClone(obj,noMark){
 	var newObj = null;
 	if(obj instanceof Object){
@@ -1152,33 +1369,6 @@ function completelyClone(obj,noMark){
 	
 	return newObj;
 }
-
-function readDataFromNode22222222222(node){
-	var dObj = dataModel.getObject(node.data.id);
-	var newObj = {};
-	for(var x in dObj){
-		if(x === "fields")continue;
-		newObj[x] = dObj[x];
-	}
-	
-	//更新node id
-	var parent = node.findTreeParentNode();
-	var prep = parent?parent.data.id+".":"";
-	node.data.id = prep+newObj.key;
-	
-	//读取子节点对象
-	var cns = node.findTreeChildrenNodes();
-	var fields = [];
-	while(cns.next()){
-		fields.push(readDataFromNode(cns.value));
-	}
-	if(fields.length > 0){
-		newObj.fields = fields;
-	}
-	
-	return newObj;
-}
-
 
 function metadata(oi){
 	return {
