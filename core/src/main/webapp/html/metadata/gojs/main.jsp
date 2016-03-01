@@ -18,8 +18,8 @@
     </head>
 	<body>
 		<div class="ui-layout-north">
-			<a href="/metadata/main.htm">首页</a>&nbsp;&nbsp;
-			<a href="main.htm">业务</a>
+			<a href="/metadata/main.htm">对象模型</a>&nbsp;&nbsp;
+			<a href="/business/main.htm">业务</a>
 		</div>
 		<div class="ui-layout-center">
 			<div id="objectPanel">
