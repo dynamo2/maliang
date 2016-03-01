@@ -12,6 +12,8 @@ import java.util.TreeMap;
 
 import javax.servlet.http.HttpServletRequest;
 
+import net.sf.json.JSONObject;
+
 import org.bson.types.ObjectId;
 
 import com.maliang.core.dao.ObjectMetadataDao;
@@ -56,6 +58,10 @@ public class BasicController {
 		}catch(Exception e){
 			return dev;
 		}
+	}
+	
+	protected String json(Object obj){
+		return JSONObject.fromObject(obj).toString();
 	}
 	
 	protected <T> T buildToObject(Map<String,Object> objMap,Class<T> cls) {

@@ -21,6 +21,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.context.request.RequestContextHolder;
 
 import com.maliang.core.arithmetic.ArithmeticExpression;
 import com.maliang.core.dao.ObjectMetadataDao;
@@ -84,8 +85,7 @@ public class ObjectMetadataController extends BasicController {
 				+ "global:{"
 					+ "fieldTypes:each(types){{key:this.code,label:this.name}},"
 					+ "fieldTemplate:{"
-						+ "name:{},label:{},"
-						+ "type:{type:'select',options:'fieldTypes'}"
+						+ "name:{},label:{},type:{type:'select',options:'fieldTypes'}"
 					+ "}"
 				+ "},"
 				+ "metadata:{"
@@ -124,80 +124,33 @@ public class ObjectMetadataController extends BasicController {
 		Map resultMap = new HashMap();
 		resultMap.put("metadataList", datas);
 
-		model.addAttribute("resultJson", JSONObject.fromObject(resultMap)
-				.toString());
+		model.addAttribute("resultJson", json(resultMap));
 		return "/metadata/gojs/main";
 	}
 	
 	@RequestMapping(value = "edit2.htm", method = RequestMethod.POST)
 	@ResponseBody
-	public String edit2(HttpServletRequest request, Model model) {
-		System.out.println("==========================");
-		JSONObject json = JSONObject.fromObject(request.getParameterMap());
-		JSONArray ja = (JSONArray)json.get("metadata");
-		ObjectMetadata reqMetadata = (ObjectMetadata)JSONObject.toBean(ja.getJSONObject(0), ObjectMetadata.class);
-		System.out.println("fields : "+reqMetadata.getFields().size());
-		
-		String id = request.getParameter("id");
-		ObjectMetadata metadata = null;
-		if (id != null && !id.trim().isEmpty()) {
-			metadata = metadataDao.getByID(id);
-		}else {
-			metadata = new ObjectMetadata();
-			
-			ObjectField ofield = new ObjectField();
-			metadata.setFields(new ArrayList<ObjectField>());
-			metadata.getFields().add(ofield);
-		}
-		
-		Map<String,Object> params = new HashMap<String,Object>();
-		params.put("md",metadata);
-		params.put("types",FieldType.values());
-		
-		Object editMap = ArithmeticExpression.execute(EDIT_CODE2, params);
-		((Map)editMap).put("metadata",order(id));
-		
-		String str = JSONObject.fromObject(editMap).toString();
-		System.out.println("**************************************");
-		System.out.println(str);
-		return str;
+	public String edit2(String id) {
+		ObjectMetadata metadata = metadataDao.getByID(id);
+
+		return jsonEditCode2(metadata);
 	}
-	
-	private void printFields(List<ObjectField> ofs){
-		if(ofs == null || ofs.size() == 0)return;
-		
-		for(ObjectField of : ofs){
-			System.out.println(of);
-			printFields(of.getFields());
-		}
-	}
-	
 	
 	@RequestMapping(value = "save2.htm", method = RequestMethod.POST)
 	@ResponseBody
 	public String save2(HttpServletRequest request, Model model) {
-		JSONObject json = JSONObject.fromObject(request.getParameterMap());
-		JSONArray ja = (JSONArray)json.get("metadata");
+		ObjectMetadata reqMetadata = readMetadataFromRequest(request);
 		
-		Map cm = new HashMap();
-		cm.put("fields",ObjectField.class);
-		ObjectMetadata reqMetadata = (ObjectMetadata)JSONObject.toBean(ja.getJSONObject(0), ObjectMetadata.class,cm);
+		metadataDao.save(reqMetadata);
 		
-		System.out.println("============ request metadata ===================");
-		//System.out.println("json : "+ja.getJSONObject(0).toString());
-		//System.out.println(reqMetadata);
-		//System.out.println("field type "+reqMetadata.getFields().get(0));
-		//metadataDao.save(reqMetadata);
-		printFields(reqMetadata.getFields());
-
-		ObjectMetadata metadata = metadataDao.getByID(reqMetadata.getId()+"");
-		
-		Map<String,Object> params = new HashMap<String,Object>();
-		params.put("md",metadata);
-		params.put("types",FieldType.values());
-		
-		Object editMap = ArithmeticExpression.execute(EDIT_CODE2, params);
-		return JSONObject.fromObject(editMap).toString();
+		return jsonEditCode2(reqMetadata);
+	}
+	
+	@RequestMapping(value = "delete2.htm", method = RequestMethod.POST)
+	@ResponseBody
+	public String delete2(String id) {
+		metadataDao.remove(id);
+		return "{}";
 	}
 	
 	@RequestMapping(value = "linkedObject2.htm")
@@ -211,7 +164,7 @@ public class ObjectMetadataController extends BasicController {
 		params.put("metadatas",metadataList);
 		
 		Map<String,Object> linkedMap = (Map<String,Object>)ArithmeticExpression.execute(desc, params);
-		return JSONObject.fromObject(linkedMap).toString();
+		return json(linkedMap);
 	}
 	
 	@RequestMapping(value = "elementType2.htm")
@@ -223,10 +176,44 @@ public class ObjectMetadataController extends BasicController {
 		params.put("fieldTypes",FieldType.values());
 		
 		Map<String,Object> map = (Map<String,Object>)ArithmeticExpression.execute(desc, params);
-		return JSONObject.fromObject(map).toString();
+		return json(map);
 	}
 	
+	private void printFields(List<ObjectField> ofs){
+		if(ofs == null || ofs.size() == 0)return;
+		
+		for(ObjectField of : ofs){
+			System.out.println(of);
+			printFields(of.getFields());
+		}
+	}
+
+	private String jsonEditCode2(ObjectMetadata metadata){
+		Map<String,Object> params = new HashMap<String,Object>();
+		params.put("md",metadata);
+		params.put("types",FieldType.values());
+		
+		Object editMap =  ArithmeticExpression.execute(EDIT_CODE2, params);
+		return this.json(editMap);
+	}
 	
+	private ObjectMetadata readMetadataFromRequest(HttpServletRequest request){
+		JSONObject json = JSONObject.fromObject(request.getParameterMap());
+		JSONArray ja = (JSONArray)json.get("metadata");
+
+		Map cm = new HashMap();
+		cm.put("fields",ObjectField.class);
+		
+		ObjectMetadata metadata = (ObjectMetadata)JSONObject.toBean(ja.getJSONObject(0), ObjectMetadata.class,cm);
+		
+		JSONArray jid = (JSONArray)json.get("id");
+		if(jid != null && jid.size() > 0){
+			metadata.setId((String)jid.get(0));
+		}
+		
+		return metadata;
+	}
+
 	private Object order(String id){
 		String str = "{"
 				+ "name:{value:'Order'},"
