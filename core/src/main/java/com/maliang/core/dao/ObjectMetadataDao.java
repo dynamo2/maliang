@@ -21,6 +21,7 @@ public class ObjectMetadataDao  extends AbstractDao {
 	
 	static {
 		INNER_TYPE.put("ObjectMetadata.fields",ObjectField.class);
+		INNER_TYPE.put("ObjectField.fields",ObjectField.class);
 	}
 	
 	public ObjectMetadataDao(){
@@ -98,32 +99,7 @@ public class ObjectMetadataDao  extends AbstractDao {
 		return readCursor(cursor,ObjectMetadata.class);
 	}
 	
-	public static void main(String[] args) {
-		ObjectMetadataDao dao = new ObjectMetadataDao();
-		dao.testFind();
-		
-		System.out.println(UUID.randomUUID().toString().length());
-	}
 	
-	private void testFind(){
-		//BasicDBObject doc = (BasicDBObject)this.dbColl.find(new BasicDBObject("id", 10)).toArray().get(0);
-		//BasicDBObject doc = (BasicDBObject)this.dbColl.find(this.getObjectId("54c9e4b6fc778a8689446ce7")).toArray().get(0);
-
-		//BasicDBObject bc = (BasicDBObject)this.dbColl.find(new BasicDBObject("fields.unique_mark","user")).toArray().get(0);
-		//System.out.println(bc);
-
-		System.out.println(this.getByID("54c9e4b6fc778a8689446ce7"));
-		ObjectField of = new ObjectField();
-		//of.setId(new ObjectId("54d0371d50f1324ab162ba7a"));
-		of.setName("zerofdsa345");
-		of.setUniqueMark("322100");
-		
-		//this.saveFields("54c9e4b6fc778a8689446ce7", of);
-		
-		//System.out.println(this.getByID("54c9e4b6fc778a8689446ce7"));
-		
-		System.out.println(isDuplicateMark("54c9e4b6fc778a8689446ce7",of));
-	}
 	
 	/**
 	 * 判断fields.unique_mark是否有重复的值
@@ -157,31 +133,49 @@ public class ObjectMetadataDao  extends AbstractDao {
 	}
 	
 	private void testSave(){
-		ObjectMetadata om = new ObjectMetadata();
-		om.setName("订单2");
-		om.setUniqueMark("order");
-
-		List<ObjectField> fields = new ArrayList<ObjectField>();
-
-		ObjectField of = new ObjectField();
-		of.setName("订单号2");
-		of.setUniqueMark("order_num");
-		fields.add(of);
-
-		of = new ObjectField();
-		of.setName("下单人2");
-		of.setUniqueMark("user");
-		fields.add(of);
-
-		of = new ObjectField();
-		of.setName("订单总价2");
-		of.setUniqueMark("price");
-		fields.add(of);
-
-		om.setFields(fields);
+		List<ObjectMetadata> metadataList = this.list();
+		ObjectMetadata om = this.getByID("56cfb7b7e45900ecf9b71d4a");
+		
+		
+		System.out.println("============= om =================");
+		System.out.println(om);
+		
+		om.setName(om.getName()+"_1");
+		System.out.println(om);
 		
 		this.save(om);
+		om = this.getByID("56cfb7b7e45900ecf9b71d4a");
+		System.out.println(om);
+		
+		metadataList = this.list();
+		System.out.println(metadataList.get(0));
+	}
+
+	private void testFind(){
+		//BasicDBObject doc = (BasicDBObject)this.dbColl.find(new BasicDBObject("id", 10)).toArray().get(0);
+		//BasicDBObject doc = (BasicDBObject)this.dbColl.find(this.getObjectId("54c9e4b6fc778a8689446ce7")).toArray().get(0);
+
+		//BasicDBObject bc = (BasicDBObject)this.dbColl.find(new BasicDBObject("fields.unique_mark","user")).toArray().get(0);
+		//System.out.println(bc);
+
+		System.out.println(this.getByID("54c9e4b6fc778a8689446ce7"));
+		ObjectField of = new ObjectField();
+		//of.setId(new ObjectId("54d0371d50f1324ab162ba7a"));
+		of.setName("zerofdsa345");
+		of.setUniqueMark("322100");
+		
+		//this.saveFields("54c9e4b6fc778a8689446ce7", of);
+		
+		//System.out.println(this.getByID("54c9e4b6fc778a8689446ce7"));
+		
+		System.out.println(isDuplicateMark("54c9e4b6fc778a8689446ce7",of));
 	}
 	
-	
+	public static void main(String[] args) {
+		ObjectMetadataDao dao = new ObjectMetadataDao();
+		//dao.testFind();
+		dao.testSave();
+		
+		System.out.println(UUID.randomUUID().toString().length());
+	}
 }
