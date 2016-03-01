@@ -8,9 +8,9 @@
         <script src="../../js/angular.js"></script>
 		<script src="../../js/jquery-2.1.3.min.js"></script>
 		<script src="../../js/jquery-ui.min.js"></script>
+		<script src="../../js/go.js"></script>
+		<script src="../../js/jquery.layout-latest.js"></script>
 		
-		<script src="../../html/metadata/gojs/js/go.js"></script>
-		<script src="../../html/metadata/gojs/js/jquery.layout-latest.js"></script>
 		<script src="../../html/metadata/gojs/js/main.js"></script>
 		
 		<script src="../../html/business/tianma.js"></script>
