@@ -245,10 +245,7 @@ function objectMetadataModel(){
 	};
 	
 	this.isExistsTab = function(omId){
-		if(_.metadataTabMap){
-			return _.metadataTabMap[omId];
-		}
-		return false;
+		return _.metadataTabMap && _.metadataTabMap[omId];
 	};
 	
 	/***
