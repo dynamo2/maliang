@@ -146,7 +146,7 @@ function newTreeDiagram() {
 				var node = obj.diagram.selection.first();
 				var bid = node.data && node.data.business && node.data.business.id;
 				
-				$("#previewIframe").attr("src","/business/business.htm?bid="+bid);
+				$("#previewIframe").attr("src","/business/business2.htm?bid="+bid);
 			}
     	},new go.Binding("visible", "", _.isMetadata).ofObject()
     ), G_Make("ContextMenuButton", _.menuText("新增页面"), {
