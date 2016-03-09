@@ -1,7 +1,7 @@
 package com.maliang.core.arithmetic;
 
 public class Operator implements Comparable<Operator> {
-	private final static char[] OPERATOR_CHAR = {'+','-','*','/','&','|','>','<','=','.'};
+	private final static char[] OPERATOR_CHAR = {'+','-','*','/','&','|','>','<','='};//,'.'};
 	private final String source;
 	private char optChar;
 	private int arrayIndex;
