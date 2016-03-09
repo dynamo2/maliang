@@ -26,7 +26,7 @@ public class AddToParams {
 		
 	}
 	public static Map<String,Object> execute(Function function,Map<String,Object> params){
-		System.out.println("addToParams expression : " + function.getExpression());
+		//System.out.println("addToParams expression : " + function.getExpression());
 		new MapCompiler(function.getExpression(),1,params,true);
 		return params;
 	}
