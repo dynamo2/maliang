@@ -122,7 +122,7 @@
 
 					if($.isPlainObject(obj)){
 						utils.copy(obj,htmlOption,null);
-					}else if(isString(obj)){
+					}else if(utils.isString(obj)){
 						htmlOption.id = obj+'.'+_.tag;
 						prefix = obj;
 					}
@@ -223,9 +223,7 @@
 			return input;
 		}
 
-		function isString(obj){
-			return $.type(obj) === 'string';
-		}
+		
 		
 		function ts(obj){
 			return JSON.stringify(obj);

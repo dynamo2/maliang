@@ -46,11 +46,38 @@ function HtmlBuilder(){
 		}
 	};
 	
+	this.newSubmit = function(opts){
+		var bnt = $("<input type='submit' />");
+		bnt.attr("name",opts.name);
+		bnt.val(opts.value);
+		
+		return bnt;
+	};
+	
 	this.newSelect = function(data){
-		var selObj = $("<select></select>");
+		var selObj = $("<select />");
 		selObj.attr("name",builder.addPrefix(data.prefix)+data.name);
 		var defaultValue = data.value;
 		
+		if($.isArray(data.options)){
+			$.each(data.options,function(){
+				var opts = this;
+				if(!$.isPlainObject(this)){
+					opts = {key:this,label:this};
+				}
+				
+				var optObj = $("<option />");
+				selObj.append(optObj);
+				
+				optObj.attr("value",opts.key);
+				optObj.text(opts.label);
+				if(opts.key == defaultValue){
+					optObj.attr("selected",true);
+				}
+			});
+		}
+		
+		/*
 		for(var i = 0; i < data.options.length;i++){
 			var option = data.options[i];
 			var optObj = $("<option></option>");
@@ -61,7 +88,8 @@ function HtmlBuilder(){
 			if(option.key == defaultValue){
 				optObj.attr("selected",true);
 			}
-		}
+		}*/
+		
 		return selObj;
 	};
 	
@@ -172,7 +200,7 @@ function HtmlBuilder(){
 	
 	this.newDateInput = function(data){
 		var txtObj = builder.newText(data);
-		txtObj.datepicker();
+		//txtObj.datepicker();
 		return txtObj;
 	};
 	
@@ -254,6 +282,8 @@ function FormBuilder(){
 		
 		if(inputData.type == "text"){
 			return TM_htmlBuilder.newText(inputData);
+		}else if(inputData.type == "submit"){
+			return TM_htmlBuilder.newSubmit(inputData);
 		}else if(inputData.type == "select"){
 			return TM_htmlBuilder.newSelect(inputData);
 		}else if(inputData.type == "hidden"){
@@ -459,6 +489,188 @@ function UIListBuilder(){
 		return ulObj;
 	};
 }
+
+
+/***
+ * 构建以<table>排版的form表单
+ * ***/
+function FormTable(){
+	var _ = this;
+	var table;
+	var hiddenTd;
+	
+	this.init = function(inputs){
+		_.newTable();
+		_.addInputs(inputs);
+		return _.table;
+	};
+	
+	this.addInputs = function(inputs){
+		var lastTd = null;
+		$.each(inputs,function(){
+			if(_.isHidden(this)){
+				_.addHidden(this);
+				return;
+			}else if(_.isNewLine(this) || !(lastTd)){
+				lastTd = _.newLine(this);
+				return;
+			}else {
+				_.append(lastTd,this);
+			}
+		});
+	};
+	
+	this.newLine = function(opts){
+		var tr = $("<tr />");
+		var ltd = $("<td class='label' />");
+		var etd = $("<td />");
+		_.table.append(tr.append(ltd).append(etd));
+		
+		ltd.text(_.readLabel(opts));
+		if(_.isGroup(opts)){
+			var groupInps = opts.type.inputs;
+			if($.isArray(groupInps)){
+				var lastLine = null;
+				$.each(groupInps,function(){
+					if(!lastLine || _.isNewLine(this)){
+						lastLine = $("<div />").appendTo(etd);
+					}
+					_.append(lastLine,this);
+				});
+			}
+		}else {
+			_.appendInput(etd,opts);
+		}
+		
+		return etd;
+	};
+	
+	/**
+	将opts解析出来的元素[label,input]添加到参数td中
+	***/
+	this.append = function(td,opts){
+		if(_.isGroup(opts)){
+			var groupInps = opts.type && opts.type.inputs;
+			if($.isArray(groupInps)){
+				var lastLine = $("<div />").appendTo(td);
+				$.each(groupInps,function(){
+					if(_.isNewLine(this)){
+						lastLine = $("<div />").appendTo(td);
+					}
+					_.append(lastLine,this);
+				});
+			}
+		}else {
+			if(_.isPreLabel(opts)){
+				_.appendLabel(td,opts);
+			}
+			_.appendInput(td,opts);
+			
+			if(_.isPostLabel(opts)){
+				_.appendLabel(td,opts);
+			}
+		}
+
+		return td;
+	};
+	
+	this.isPreLabel = function(opts){
+		if(opts.label && utils.isString(opts.label)){
+			var start = opts.label.slice(0,1);
+			return !(start === '?');
+		}
+		return false;
+	};
+	
+	this.isPostLabel = function(opts){
+		if(opts.label && utils.isString(opts.label)){
+			var start = opts.label.slice(0,1);
+			if(start === '?'){
+				opts.label = opts.label.slice(1);
+				return true;
+			}
+		}
+		return false;
+	};
+	
+	this.appendLabel = function(td,opts){
+		var label = $("<label />");
+		label.text(_.readLabel(opts));
+		td.append(label);
+		return td;
+	};
+	
+	this.appendInput = function(td,opts){
+		if(_.isSelect(opts)){
+			var selOpts = opts.type;
+			if($.isPlainObject(selOpts)){
+				opts.type = selOpts.name;
+				utils.copy(selOpts,opts,['name']);
+			}
+		}
+		td.append(_.input(opts));
+		return td;
+	};
+	
+	this.isHidden = function(opts){
+		return opts && opts.type === 'hidden';
+	};
+	
+	this.isNewLine = function(opts){
+		return opts && (opts.newLine === true || opts.newLine === LINE_BREAK);
+	};
+	
+	this.isGroup = function(opts){
+		return _.isType(opts,'group');
+	};
+	
+	this.isSelect = function(opts){
+		return _.isType(opts,'select');
+	};
+	
+	this.isType = function(opts,tname){
+		if(opts && opts.type){
+			if($.isPlainObject(opts.type)){
+				return opts.type.name === tname;
+			}
+			
+			return opts.type === tname;
+		}
+		return false;
+	};
+	
+	this.newTable = function(){
+		_.table =  $("<table cellspacing='0' />");
+		var htr = $("<tr class='hidden' />");
+		_.hiddenTd = $("<td />");
+		htr.append(_.hiddenTd);
+		
+		_.table.append(htr);
+	};
+	
+	this.addHidden = function(opts){
+		_.hiddenTd.append(_.input(opts));
+	};
+	
+	this.input = function(opts){
+		return TM_formBuilder.newInputElement(_.readInputOptions(opts));
+	};
+	
+	
+	this.readLabel = function(opts){
+		return (opts && opts.label)?opts.label:'';
+	};
+	
+	this.readInputOptions = function(opts){
+		var inpOpts = {};
+		utils.copy(opts,inpOpts,['newLine','label']);
+		
+		return inpOpts;
+	};
+}
+
+
+
 var TM_formBuilder =  new FormBuilder();
 var TM_htmlBuilder =  new HtmlBuilder();
 var TM_ulListBuilder = new UIListBuilder();
