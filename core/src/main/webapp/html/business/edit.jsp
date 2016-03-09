@@ -19,6 +19,11 @@
     		width:160px;
     		height:25px;
     	}
+    	
+    	#businessForm input[type=number] {
+    		width:50px;
+    		height:25px;
+    	}
     	</style>
 		<script>
 		
@@ -26,6 +31,7 @@
 			//fieldsDivObj = $("#fieldsDiv");
 			
 			var inputs = ${resultJson};
+			
 			//{"name":{"prefix":"business","name":"name","label":"名称","type":"text","value":"editProduct"},"workFlows":{"item-labels":{"step":"step","requestType":"requestType","code":"code","response":"response"},"prefix":"business","name":"workFlows","label":"流程","type":"list","item-prefix":"business.workFlows","value":[{"code":{"prefix":"business.workFlows","name":"code","label":"code","type":"text","value":"addToParams({p2:db.Product.save(request.product),brands:db.Brand.search(),products:db.Product.search()})"},"requestType":{"prefix":"business.workFlows","name":"requestType","label":"requestType","type":"text","value":"{fid:'int',bid:'int'}"},"response":{"prefix":"business.workFlows","name":"response","label":"response","type":"text","value":"{html_template:'<div id='edit_form'><\/div>',contents:[{type:'form',html_parent:'edit_form',action:'',name:'product.edit.form',children:{inputs:[{name:'fid',type:'hidden',value:2},{name:'product.id',type:'hidden'},{name:'product.name',label:'名称',type:'text'},{name:'product.brand',label:'品牌',type:'select',options:each(brands){{key:this.id,label:this.name}}},{name:'product.price',label:'价格',type:'number'}],ul-list:{header:[{name:'name',label:'名称'},{name:'brand',label:'品牌'},{name:'price',label:'价格'},{name:'picture',label:'图片'},{name:'operator',label:'操作'}],data:each(products){{name:{type:'a',href:'/detail.htm?id='+this.id,text:this.name},brand:{type:'a',href:'/detail.htm?id='+this.brand.id,text:this.brand.name},price:{type:'label',text:this.price},picture:{type:'img',src:this.picture},operator:[{type:'a',href:'/edit.htm?id='+this.id,text:'编辑'},{type:'a',href:'/delete.htm?id='+this.id,text:'删除'}]}}}}}]}"},"step":{"prefix":"business.workFlows","name":"step","label":"step","type":"text","value":1},"id":{"prefix":"business.workFlows","name":"id","label":null,"type":"hidden","value":null}}]},"id":{"prefix":"business","name":"id","label":null,"type":"hidden","value":"55657a12bd77fdf857e1b743"}};
 			var inputDiv = TM_formBuilder.newInputsDiv(inputs);
 			$("#businessForm").append(inputDiv);
@@ -34,7 +40,7 @@
 				autoOpen: false,
 				modal:true,
 				width:800,
-				height:650,
+				height:500,
 				buttons: {
 					"确定": function() {
 					  $(this).dialog("close");

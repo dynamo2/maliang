@@ -83,43 +83,6 @@
 			}
 			
 			if(json){
-				
-				/*
-				var htmlTag = resultModel[0];
-				var htmlOptions = {};
-				var prefix = null;
-				if(resultModel.length >= 2){
-					var obj = resultModel[1];
-					if($.isPlainObject(obj)){
-						htmlOptions = obj;
-					}else if(isString(obj)){
-						htmlOptions.id = obj+'.'+htmlTag;
-						prefix = obj;
-					}
-				}
-				if(!htmlOptions.tag){
-					htmlOptions.tag = htmlTag;
-				}
-				
-				var isForm = htmlTag == 'form';
-				if(resultModel.length >= 3){
-					var obj = resultModel[2];
-					if($.isArray(obj)){
-						if(isForm){
-							var inputs = [];
-							$.each(obj,function(){
-								var input = readInput(this,prefix);
-								
-								inputs.push(input);
-							});
-							
-							htmlOptions.inputs = inputs;
-						}
-					}
-				}
-				*/
-				
-				
 				var inputs = readForm(json);
 				pt(ts(inputs));
 				
