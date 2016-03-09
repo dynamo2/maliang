@@ -12,8 +12,6 @@ public class DBFunction {
 		String method = keys[2];
 		
 		Object value = function.executeExpression(params);
-		
-		System.out.println(function.getBody());
 		return new CollectionService(collection).invoke(method, value);
 	}
 }
