@@ -67,33 +67,34 @@ public class CollectionDao extends BasicDao {
 		System.out.println("============== before update =================");
 		printTest("56e0e4fb8f778c15692b9eaf");
 		
-		ObjectMetadataDao omDao = new ObjectMetadataDao();
-		CollectionDao collDao = new CollectionDao();
-		BasicDBObject query = new BasicDBObject("_id",new ObjectId("56e0e4fb8f778c15692b9eaf"));
-		
-		String str = "{F3:{F31:[{F311:{F3114:[{F31141:'F31141_1'}]},id:'56e0e4fb8f778c15692b9ead'}]}}";
-		str = "{F3:{F31:[{F312:'F312_2',F313:'F313_2'},{F311:{F3114:[{F31142:'F31142_1',id:'56e0fbe28f77546a3d590d58'}]}}]}}";
+//		ObjectMetadataDao omDao = new ObjectMetadataDao();
+//		CollectionDao collDao = new CollectionDao();
+//		BasicDBObject query = new BasicDBObject("_id",new ObjectId("56e0e4fb8f778c15692b9eaf"));
+//		
+		//String str = "{F3:{F31:[{F311:{F3114:[{F31141:'F31141_1'}]},id:'56e0e4fb8f778c15692b9ead'}]}}";
+		String str = "db.Test.save({id:'56e0e4fb8f778c15692b9eaf',F3:{F31:[{F312:'F312_2',F313:'F313_2'},{F311:{F3114:[{F31142:'F31142_1',id:'56e0fbe28f77546a3d590d58'}]}}]}})";
+		str = "db.Test.save({id:'56e0e4fb8f778c15692b9eaf',F3:{F31:[{F312:'F312_4',F313:'F313_4'},{id:'56e0e4fb8f778c15692b9ead',F311:{F3113 : 'F3113_12',F3111 : 'F3111_12',F3112 : 'F3112_12'}}]}})";
 		Map<String,Object> params = (Map<String,Object>)ArithmeticExpression.execute(str,null);
 		
 		//System.out.println("TEST : " + params);
 		
-		ObjectMetadata meta = omDao.getByName("Test");
-		List<Map<String,BasicDBObject>> updates = new ArrayList<Map<String,BasicDBObject>>();
-		Map<String,Object> daoMap = buildUpdates(meta.getFields(),params,null,updates,query);
-		
-		if(daoMap != null && daoMap.size() > 0){
-			Map<String,BasicDBObject> bdbMap = new HashMap<String,BasicDBObject>();
-			bdbMap.put("query", query);
-			bdbMap.put("update", new BasicDBObject("$set",daoMap));
-			updates.add(bdbMap);
-		}
-		
-		for(Map<String,BasicDBObject> um : updates){
-			System.out.println(um);
-			
-			//WriteResult daoResult = dao.getDBCollection("Test").update(um.get("query"), um.get("update"));
-			//System.out.println("daoResult : " + daoResult);
-		}
+//		ObjectMetadata meta = omDao.getByName("Test");
+//		List<Map<String,BasicDBObject>> updates = new ArrayList<Map<String,BasicDBObject>>();
+//		Map<String,Object> daoMap = buildUpdates(meta.getFields(),params,null,updates,query);
+//		
+//		if(daoMap != null && daoMap.size() > 0){
+//			Map<String,BasicDBObject> bdbMap = new HashMap<String,BasicDBObject>();
+//			bdbMap.put("query", query);
+//			bdbMap.put("update", new BasicDBObject("$set",daoMap));
+//			updates.add(bdbMap);
+//		}
+//		
+//		for(Map<String,BasicDBObject> um : updates){
+//			System.out.println(um);
+//			
+//			//WriteResult daoResult = dao.getDBCollection("Test").update(um.get("query"), um.get("update"));
+//			//System.out.println("daoResult : " + daoResult);
+//		}
 		
 //		daoMap = new HashMap<String,Object>();
 //		daoMap.put("F3.F31.$.F311.F3114.$1.F31143","F31143_1");
@@ -175,7 +176,10 @@ public class CollectionDao extends BasicDao {
 		
 		DBCollection db = this.getDBCollection(collName);
 		for(Map<String,BasicDBObject> um : updates){
-			db.update(um.get("query"), um.get("update"));
+			if(um != null){
+				//System.out.println("um : " + um);
+				db.update(um.get("query"), um.get("update"));
+			}
 		}
 	}
 	
