@@ -16,7 +16,11 @@ public class MongodbModel {
 		this.id = id;
 	}
 	public void setId(String id) {
-		this.id = new ObjectId(id);
+		try {
+			this.id = new ObjectId(id);
+		}catch(IllegalArgumentException e){
+			this.id = new ObjectId();
+		}
 	}
 	
 	public String toString(){
