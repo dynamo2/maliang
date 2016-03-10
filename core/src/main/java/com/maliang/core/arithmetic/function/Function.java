@@ -1,11 +1,13 @@
 package com.maliang.core.arithmetic.function;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Stack;
 
 import com.maliang.core.arithmetic.ArithmeticExpression;
 import com.maliang.core.arithmetic.Substring;
 import com.maliang.core.service.BusinessService;
+import com.maliang.core.service.MapHelper;
 
 public class Function {
 	BusinessService businessService = new BusinessService();
@@ -87,14 +89,21 @@ public class Function {
 	boolean isList(){
 		return key == null && this.body.startsWith("[") && this.body.endsWith("]");
 	}
-	
+
 	public Object execute(Map<String,Object> params){
+		this.executeKey(params);
+		
 		if(this.isMap()){
 			return MapFunction.execute(this, params);
 		}
 		
+		if(this.isList()){
+			return ListFunction.execute(this, params);
+		}
+		
 		if("between".equalsIgnoreCase(key)){
 			return Between.execute(this, params);
+			//return null;
 		}
 		
 		if("sum".equalsIgnoreCase(key)){
@@ -102,6 +111,7 @@ public class Function {
 		}
 		
 		if("int".equalsIgnoreCase(key) || "Integer".equalsIgnoreCase(key)){
+			System.out.println("key value " + this.keyValue);
 			return TypeFunction.intExecute(this, params);
 		}
 		
@@ -153,7 +163,7 @@ public class Function {
 			return TreeFunction.execute(this, params);
 		}
 		
-		if(key != null && key.startsWith("db.")){
+		if(this.isDBFun()){
 			return DBFunction.execute(this, params);
 		}
 		
@@ -162,7 +172,56 @@ public class Function {
 			return this.execute2(params);
 		}*/
 		
-		return ListFunction.execute(this, params);
+		return defaultValue(params);
+		//return ListFunction.execute(this, params);
+	}
+	
+	private Object defaultValue(Map<String,Object> params){
+		Object val = null;
+		if(this.useKeyValue){
+			val = MapHelper.readValue(this.keyValue,this.key);
+		}else {
+			val = ArithmeticExpression.execute(this.key, params);
+		}
+ 
+		if(val != null){
+			if(val instanceof List){
+				List<Object> list = (List<Object>)val;
+				Object idx = this.executeExpression(params);
+				if(idx != null && idx instanceof Integer && list.size() > (Integer)idx){
+					return list.get((Integer)idx);
+				}
+			}else if(val instanceof Map){
+				Map<Object,Object> map = (Map<Object,Object>)val;
+				Object key = this.executeExpression(params);
+				
+				if(key != null && key instanceof String){
+					return MapHelper.readValue(map,(String)key);
+				}
+				
+				return map.get(key);
+			}
+		}
+		
+		return null;
+	}
+	
+	private boolean isDBFun(){
+		return key != null && key.startsWith("db.");
+	}
+	
+	private void executeKey(Map<String,Object> params){
+		if(this.isDBFun()){
+			return;
+		}
+		
+		if(key != null && key.contains(".")){
+			String kv = key.substring(0,key.lastIndexOf("."));
+			this.keyValue = ArithmeticExpression.execute(kv, params);
+			
+			key = key.substring(key.lastIndexOf(".")+1);
+			this.useKeyValue = true;
+		}
 	}
 	
 	/*
