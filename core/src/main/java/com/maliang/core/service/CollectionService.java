@@ -95,45 +95,60 @@ public class CollectionService {
 		if(obj == null || !(obj instanceof Map))return null;
 		
 		Map<String,Object> dataMap = (Map<String,Object>)obj;
+		if(StringUtil.isEmpty((String)dataMap.get("id"))){ // Save
+			//System.out.println("========== save ");
+			
+			dataMap = this.correctData(dataMap,this.collection,true);
+			this.collectionDao.save(dataMap, this.collection);
+		}else { // Update
+			//System.out.println("========== updateBySet ");
+			dataMap = this.correctData(dataMap,this.collection,false);
+			
+			//System.out.println("dataMap : " + dataMap);
+			this.collectionDao.updateBySet(dataMap, this.collection);
+		}
 		
-		dataMap = this.correctData(dataMap,this.collection);
-		this.collectionDao.save(dataMap, this.collection);
 		return dataMap;
 	}
 	
-	private Map<String,Object> correctData(Map<String,Object> dataMap,String collName){
+	private Map<String,Object> correctData(Map<String,Object> dataMap,String collName,boolean dealWithId){
 		if(dataMap == null)return null;
 		
 		ObjectMetadata metadata = this.metaDao.getByName(collName);
-		return correctData(dataMap,metadata.getFields());
+		return correctData(dataMap,metadata.getFields(),dealWithId);
 	}
 	
-	private Map<String,Object> correctData(Map<String,Object> dataMap,List<ObjectField> fields){
+	private Map<String,Object> correctData(Map<String,Object> dataMap,List<ObjectField> fields,boolean dealWithId){
 		if(dataMap == null)return null;
 		
 		Map<String,Object> newMap = new HashMap<String,Object>();
-		if(!StringUtil.isEmpty((String)dataMap.get("id"))){
-			newMap.put("_id",new ObjectId(dataMap.get("id").toString().trim()));
-		}
 		
+		if(!StringUtil.isEmpty((String)dataMap.get("id"))){
+			if(dealWithId){
+				newMap.put("_id",new ObjectId(dataMap.get("id").toString().trim()));
+			}else {
+				newMap.put("id",dataMap.get("id"));
+			}
+		}
+
 		for(ObjectField of : fields){
 			String fieldName = of.getName();
 			Object fieldValue = dataMap.get(fieldName);
 			if(fieldValue == null)continue;
 			
-			newMap.put(fieldName, correctFieldValue(of,fieldValue));
+			newMap.put(fieldName, correctFieldValue(of,fieldValue,dealWithId));
 		}
 		return newMap;
 	}
 	
-	private Object correctFieldValue(ObjectField of,Object fieldValue){
+	private Object correctFieldValue(ObjectField of,Object fieldValue,boolean dealWithId){
 		if(FieldType.ARRAY.is(of.getType())){
 			if(fieldValue instanceof List){
 				List<Object> result = new ArrayList<Object>();
 				for(Object o : (List<Object>)fieldValue){
 					of.setType(of.getElementType());
 					
-					result.add(correctFieldValue(of,o));
+					result.add(correctFieldValue(of,o,dealWithId));
 				}
 				
 				return result;
@@ -144,17 +159,19 @@ public class CollectionService {
 		
 		if(FieldType.INNER_COLLECTION.is(of.getType())){
 			if(fieldValue instanceof Map){
-				if(((Map) fieldValue).get("id") == null){
-					((Map) fieldValue).put("id",new ObjectId().toString());
+				if(dealWithId){
+					if(((Map) fieldValue).get("id") == null){
+						((Map) fieldValue).put("id",new ObjectId().toString());
+					}
 				}
-				
-				return correctData((Map<String,Object>)fieldValue,of.getFields());
+
+				return correctData((Map<String,Object>)fieldValue,of.getFields(),dealWithId);
 			}
 		}
 		
 		if(FieldType.LINK_COLLECTION.is(of.getType())){
 			if(fieldValue instanceof Map){
-				return correctData((Map<String,Object>)fieldValue,of.getLinkedObject());
+				return correctData((Map<String,Object>)fieldValue,of.getLinkedObject(),dealWithId);
 			}
 		}
 
