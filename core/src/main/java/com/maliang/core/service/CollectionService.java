@@ -97,7 +97,6 @@ public class CollectionService {
 		Map<String,Object> dataMap = (Map<String,Object>)obj;
 		
 		dataMap = this.correctData(dataMap,this.collection);
-		//System.out.println("dataMap : " + dataMap);
 		this.collectionDao.save(dataMap, this.collection);
 		return dataMap;
 	}
@@ -105,14 +104,19 @@ public class CollectionService {
 	private Map<String,Object> correctData(Map<String,Object> dataMap,String collName){
 		if(dataMap == null)return null;
 		
+		ObjectMetadata metadata = this.metaDao.getByName(collName);
+		return correctData(dataMap,metadata.getFields());
+	}
+	
+	private Map<String,Object> correctData(Map<String,Object> dataMap,List<ObjectField> fields){
+		if(dataMap == null)return null;
+		
 		Map<String,Object> newMap = new HashMap<String,Object>();
 		if(!StringUtil.isEmpty((String)dataMap.get("id"))){
 			newMap.put("_id",new ObjectId(dataMap.get("id").toString().trim()));
 		}
 		
-		ObjectMetadata metadata = this.metaDao.getByName(collName);
-		for(ObjectField of : metadata.getFields()){
-			System.out.println("field : " + of.getName()+", type : " + FieldType.getName(of.getType()));
+		for(ObjectField of : fields){
 			String fieldName = of.getName();
 			Object fieldValue = dataMap.get(fieldName);
 			if(fieldValue == null)continue;
@@ -138,8 +142,17 @@ public class CollectionService {
 			}
 		}
 		
-		if(FieldType.LINK_COLLECTION.is(of.getType()) 
-				|| FieldType.INNER_COLLECTION.is(of.getType())){
+		if(FieldType.INNER_COLLECTION.is(of.getType())){
+			if(fieldValue instanceof Map){
+				if(((Map) fieldValue).get("id") == null){
+					((Map) fieldValue).put("id",new ObjectId().toString());
+				}
+				
+				return correctData((Map<String,Object>)fieldValue,of.getFields());
+			}
+		}
+		
+		if(FieldType.LINK_COLLECTION.is(of.getType())){
 			if(fieldValue instanceof Map){
 				return correctData((Map<String,Object>)fieldValue,of.getLinkedObject());
 			}
