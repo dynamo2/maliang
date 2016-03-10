@@ -141,6 +141,8 @@ public class ObjectMetadataController extends BasicController {
 	public String save2(HttpServletRequest request, Model model) {
 		ObjectMetadata reqMetadata = readMetadataFromRequest(request);
 		
+		System.out.println("save id : " + reqMetadata.getId());
+		
 		metadataDao.save(reqMetadata);
 		
 		return jsonEditCode2(reqMetadata);
@@ -392,6 +394,26 @@ public class ObjectMetadataController extends BasicController {
 							+ "type:'select',value:this.linkedObject,"
 							+ "options:each(allMetadatas){{key:this.id,label:this.name}}}}}}]}}";
 		
+		
+		//Account.id : 56d69195fe559fe3d66284db
+		String account = "{account:{account:'wmx',password:'123456',"
+						+ "personal_profile:{real_name:'王美霞',email:'wmx@tm.com',age:100,"
+						+ "address:[{province:'江苏省',city:'南京市',zone:'鼓楼区'},{province:'浙江省',city:'湖州市',zone:'安吉县'}]}}}";
+		
+		account = "{list:db.Account.get('56dd3903e45701ce0113bdda')}";
+		account = "{list:db.Account.search()}";
+		Map<String,Object> params = (Map<String,Object>)ArithmeticExpression.execute(account, null);
+		
+		account = "{ads:list(list.size-1)}";
+		params = (Map<String,Object>)ArithmeticExpression.execute(account, params);
+		
+		account = "ads";
+		System.out.println(ArithmeticExpression.execute(account, params));
+		
+		/*
+		String str = "db.Account.";
+		
+		
 		ObjectMetadata metadata = new ObjectMetadata();
 		ObjectField ofield = new ObjectField();
 		metadata.setFields(new ArrayList<ObjectField>());
@@ -404,6 +426,7 @@ public class ObjectMetadataController extends BasicController {
 		Object v = ArithmeticExpression.execute(typeDes, params);
 		System.out.println(v);
 		//System.out.println(MapHelper.readValue(params,"field.type"));
+		 * */
 	}
 	
 	@SuppressWarnings("unchecked")

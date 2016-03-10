@@ -23,6 +23,7 @@ import com.maliang.core.arithmetic.function.SessionFunction;
 import com.maliang.core.dao.BusinessDao;
 import com.maliang.core.exception.TianmaException;
 import com.maliang.core.model.Business;
+import com.maliang.core.model.FieldType;
 import com.maliang.core.model.WorkFlow;
 
 @Controller
@@ -30,6 +31,7 @@ import com.maliang.core.model.WorkFlow;
 public class BusinessController extends BasicController {
 	static BusinessDao businessDao = new BusinessDao();
 	static Map<String,Map<String,String>> CLASS_LABELS = new HashMap<String,Map<String,String>>();
+	static final String BUSINESS_LIST;
 	
 	static {
 		Map<String,String> blMap = new LinkedHashMap<String,String>();
@@ -45,7 +47,47 @@ public class BusinessController extends BasicController {
 		wfMap.put("javaScript", "javaScript");
 		wfMap.put("ajax", "ajax");
 		CLASS_LABELS.put(WorkFlow.class.getCanonicalName(), wfMap);
+		
+		
+		BUSINESS_LIST = "{list:each(list){{"
+				+ "name:this.name,"
+				+ "id:this.id+''"
+			+ "}}}";
 	}
+	
+	/*************** new code start ***********************/
+	
+	@RequestMapping(value = "main.htm")
+	public String main(Model model) {
+		List<Business> blist = businessDao.list();
+		
+		Map<String,Object> params = new HashMap<String,Object>();
+		params.put("list",blist);
+		
+		Object editMap =  ArithmeticExpression.execute(BUSINESS_LIST, params);
+		String resultJson = this.json(editMap);
+		
+		model.addAttribute("resultJson",resultJson);
+		return "/business/main";
+	}
+	
+	@RequestMapping(value = "business2.htm")
+	public String business2(Model model,HttpServletRequest request) {
+		try {
+			WorkFlow workFlow = readWorkFlow(request);
+			String resultJson = executeWorkFlow(workFlow,request);
+			
+			System.out.println("resultJson : " + resultJson);
+			model.addAttribute("resultJson", resultJson);
+			return "/business/business2";
+		}catch(TianmaException e){
+			//e.printStackTrace();
+			model.addAttribute("errorMsg", e.getMessage());
+			return "/business/error";
+		}
+	}
+	
+	/*************** new code end ***********************/
 	
 	@RequestMapping(value = "edit.htm")
 	public String edit(String id,Model model,HttpServletRequest request) {
@@ -57,6 +99,8 @@ public class BusinessController extends BasicController {
 		Map<String,Object> bMap = buildInputsMap(business,CLASS_LABELS,"business");
 		String resultJson = JSONObject.fromObject(bMap).toString();
 		model.addAttribute("resultJson", resultJson);
+		
+		System.out.println(business.getName()+" bid : " + business.getId());
 		
 		return "/business/edit";
 	}
@@ -82,7 +126,8 @@ public class BusinessController extends BasicController {
 
 		businessDao.save(busi);
 		
-		return this.list(model, request);
+		//return this.list(model, request);
+		return this.edit(busi.getId().toString(), model, request);
 	}
 	
 	@RequestMapping(value = "business.htm")
@@ -210,11 +255,11 @@ public class BusinessController extends BasicController {
 		//Map<String,Object> params = readRequestParameters(flow.getRequestType(),request);
 		
 		Map<String,Object> params = readRequestParameters(request);
-		ArithmeticExpression.execute(flow.getCode(), params);
 		
-		System.out.println("********** params **************");
-		System.out.println("code : " + flow.getCode());
-		System.out.println(params);
+		System.out.println("=========== params ==============");
+		System.out.println("executeCode params : " + params);
+		ArithmeticExpression.execute(flow.getCode(), params);
+
 		return params;
 	}
 	
@@ -352,7 +397,11 @@ public class BusinessController extends BasicController {
 				+ "ajax:'/business/ajax.htm?bid=2',"
 				+ "header:['名称','品牌','价格','图片','操作']}]}";
 		
-		Object ov = ArithmeticExpression.execute(str, null);
+		str = "{accounts:db.Account.search()}";
+		Map<String,Object> params = (Map<String,Object>)ArithmeticExpression.execute(str, null);
+		
+		str = "{html:'<table cellspacing='0' cellpadding='0' class='list'>'+sum(each(accounts){'<tr><td>'+this.account+'</td></td>'+this.password+'</td></tr>'})+'</table>'}";
+		Object ov = ArithmeticExpression.execute(str, params);
 		
 		System.out.println(ov);
 	}
