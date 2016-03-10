@@ -20,7 +20,6 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
 import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
-import com.mongodb.WriteResult;
 
 public class CollectionDao extends BasicDao {
 	public static void main(String[] args) {
@@ -80,7 +79,7 @@ public class CollectionDao extends BasicDao {
 		
 		ObjectMetadata meta = omDao.getByName("Test");
 		List<Map<String,BasicDBObject>> updates = new ArrayList<Map<String,BasicDBObject>>();
-		Map<String,Object> daoMap = encodeInner(meta.getFields(),params,null,updates,query);
+		Map<String,Object> daoMap = buildUpdates(meta.getFields(),params,null,updates,query);
 		
 		if(daoMap != null && daoMap.size() > 0){
 			Map<String,BasicDBObject> bdbMap = new HashMap<String,BasicDBObject>();
@@ -165,7 +164,31 @@ public class CollectionDao extends BasicDao {
 		return false;
 	}
 	
-	private static Map<String,Object> encodeInner(List<ObjectField> fields,Map<String,Object> innMap,
+	public void updateBySet(Map value,String collName) {
+		String id = (String)value.remove("id");
+		BasicDBObject query = this.getObjectId(id);
+
+		ObjectMetadata meta = this.metaDao.getByName(collName);
+		List<Map<String,BasicDBObject>> updates = new ArrayList<Map<String,BasicDBObject>>();
+		Map<String,Object> daoMap = buildUpdates(meta.getFields(),value,null,updates,query);
+		updates.add(buildSetUpdateMap(query,daoMap));
+		
+		DBCollection db = this.getDBCollection(collName);
+		for(Map<String,BasicDBObject> um : updates){
+			db.update(um.get("query"), um.get("update"));
+		}
+	}
+	
+	public static Map<String,BasicDBObject> buildSetUpdateMap(BasicDBObject query,Map<String,Object> setMap){
+		if(setMap == null || setMap.size() == 0)return null;
+		
+		Map<String,BasicDBObject> bdbMap = new HashMap<String,BasicDBObject>();
+		bdbMap.put("query", query);
+		bdbMap.put("update", new BasicDBObject("$set",setMap));
+		return bdbMap;
+	}
+	
+	private static Map<String,Object> buildUpdates(List<ObjectField> fields,Map<String,Object> innMap,
 			String prefix,List<Map<String,BasicDBObject>> updates,BasicDBObject updateQuery){
 		
 		Map<String,Object> daoMap = new HashMap<String,Object>();
@@ -184,45 +207,30 @@ public class CollectionDao extends BasicDao {
 				if(value != null && value instanceof Map && ((Map)value).size() > 0){
 					Map<String,Object> valMap = (Map<String,Object>)value;
 
-					Map<String,Object> m = encodeInner(ff.getFields(),(Map<String,Object>)value,key,updates,updateQuery);
+					Map<String,Object> m = buildUpdates(ff.getFields(),(Map<String,Object>)value,key,updates,updateQuery);
 					daoMap.putAll(m);
 				}
 			}else if(FieldType.ARRAY.is(ff.getType()) && FieldType.INNER_COLLECTION.is(ff.getElementType())){
 				if(value != null && value instanceof List && ((List)value).size() > 0){
 					List<Map<String,Object>> valList = (List<Map<String,Object>>)value;
 					for(Map<String,Object> valMap:valList){
-						
-						
-						boolean hasId = hasId(valMap);
-						if(hasId){
+						if(hasId(valMap)){
 							String id = (String)valMap.remove("id");
 							BasicDBObject currQuery = updateQuery;
 							if(id != null){
 								currQuery = new BasicDBObject(key +"._id",new ObjectId(id));
 							}
 
-							Map<String,Object> updMap = encodeInner(ff.getFields(),valMap,key+".$",updates,currQuery);
+							Map<String,Object> updMap = buildUpdates(ff.getFields(),valMap,key+".$",updates,currQuery);
+							updates.add(buildSetUpdateMap(currQuery,updMap));
 							
-//							System.out.println("update array : ");
-//							System.out.println("      query : " + key +"._id: " + id);
-//							System.out.println("      val : " + updMap);
-							
-							if(updMap != null && updMap.size() > 0){
-								Map<String,BasicDBObject> bdbMap = new HashMap<String,BasicDBObject>();
-								bdbMap.put("query", currQuery);
-								bdbMap.put("update", new BasicDBObject("$set",updMap));
-								updates.add(bdbMap);
-							}
+//							if(updMap != null && updMap.size() > 0){
+//								Map<String,BasicDBObject> bdbMap = new HashMap<String,BasicDBObject>();
+//								bdbMap.put("query", currQuery);
+//								bdbMap.put("update", new BasicDBObject("$set",updMap));
+//								updates.add(bdbMap);
+//							}
 						}else {
-							//push
-							
-							//Map<String,Object> pushMap = encodeInner(ff.getFields(),valMap,key);
-							//System.out.println("\npush array : " + valMap+"\n    prefix="+prefix+", key="+key+"\n");
-							
-//							System.out.println("push array : ");
-//							System.out.println("      query : Object._id");
-//							System.out.println("      "+key+".val : " + valMap);
-							
 							valMap.put("_id",new ObjectId());
 							
 							Map<String,BasicDBObject> bdbMap = new HashMap<String,BasicDBObject>();
@@ -258,7 +266,7 @@ public class CollectionDao extends BasicDao {
 		System.out.println("account : " + account);
 		
 		List<Map<String,BasicDBObject>> updates = new ArrayList<Map<String,BasicDBObject>>();
-		Map<String,Object> daoMap = encodeInner(meta.getFields(),account,null,updates,null);
+		Map<String,Object> daoMap = buildUpdates(meta.getFields(),account,null,updates,null);
 		//ObjectId id = new ObjectId(account.remove("id")+"");
 		
 		System.out.println("daoMap : " + daoMap);
@@ -274,7 +282,7 @@ public class CollectionDao extends BasicDao {
 		value.put("id", doc.getObjectId("_id").toByteArray());
 	}
 	
-	public void update(Map value,String collName) {
+	public void update22(Map value,String collName) {
 		DBCollection db = this.getDBCollection(collName);
 		String id = (String)value.remove("id");
 		
@@ -486,7 +494,7 @@ public class CollectionDao extends BasicDao {
 		m.put("id","5582390ffc7770b40ef01787");
 		m.put("modified_date", new Date());
 		
-		dao.update(m, collName);
+		//dao.update(m, collName);
 	}
 	
 	private void testSet(){
