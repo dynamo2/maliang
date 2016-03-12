@@ -24,6 +24,8 @@ function objectMetadataModel(){
 	var metadataFieldTreeNodesMap = null;
 	var dataPool = null;
 	var metadataTreeRoot = null;
+	var ARRAY = null;
+	var INNER = null;
 	
 	this.init = function(source){
 		_.metadatas = source;
@@ -35,6 +37,9 @@ function objectMetadataModel(){
 		_.metadataFieldTreeNodesMap = {};
 		
 		_.labels = {name:'名称',label:'标签',type:'类型',operate:'操作'};
+		
+		_.INNER = 7;
+		_.ARRAY = 9;
 	};
 	
 	this.getLabel = function(key){
@@ -167,7 +172,29 @@ function objectMetadataModel(){
 	}
 	
 	this.canHasFields = function(obj){
-		return $.isPlainObject(obj)?obj._isObject_ || ($.isPlainObject(obj.type)?obj.type.value == 7:obj.type == 7):obj == 7;
+		//return $.isPlainObject(obj)?obj._isObject_ || ($.isPlainObject(obj.type)?obj.type.value == 7:obj.type == 7):obj == 7;
+		return _.isObject(obj) || _.isInnerType(obj) || _.isArrayInnerType(obj);
+	};
+	
+	this.isObject = function(obj){
+		return $.isPlainObject(obj) && obj._isObject_;
+	};
+	
+	this.isInnerType = function(obj){
+		if($.isPlainObject(obj)){
+			return $.isPlainObject(obj.type)?obj.type.value == _.INNER:obj.type == _.INNER;
+		}else {
+			return obj == _.INNER;
+		}
+	};
+	
+	this.isArrayInnerType = function(obj){
+		if($.isPlainObject(obj.type)){
+			if(obj.type.value == _.ARRAY){
+				return obj.type.elementType == _.INNER;
+			}
+		}
+		return false;
 	};
 	
 	/******  Field end **************/
@@ -319,7 +346,7 @@ function objectMetadataModel(){
 		var reqObj = {};
 		
 		// read fields
-		if((!editObj.type || editObj.type.value == 7) 
+		if((_.isObject(editObj) || _.isInnerType(editObj) || _.isArrayInnerType(editObj)) 
 				&& editObj.fields){
 			reqObj.fields = [];
 			$.each(editObj.fields,function(){
@@ -540,7 +567,7 @@ function showEditPanel(e,node){
 	clearEditPanel();
 	
 	var dataObject = completelyClone(node.data.field);
-	
+
 	editPropertiesTable(dataObject);
 	if(metadataModel.canHasFields(dataObject)){
 		editChildrenTable(dataObject.fields);

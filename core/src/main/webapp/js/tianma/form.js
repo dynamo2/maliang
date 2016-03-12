@@ -28,11 +28,13 @@ function newInputItem(options){
 	
 	if(options.label){
 		$("<label />").text(options.label).appendTo(item);
-	}else {
+	}
+	
+	if(options.type == 'hidden'){
 		item.prop("className","hidden");
 	}
-	newInputElement(options).appendTo(item);
 	
+	newInputElement(options).appendTo(item);
 	return item;
 }
 
@@ -64,11 +66,25 @@ function newHtmlEditor(options){
 	return divObj;
 }
 
-function newHtmlSelect(options){
+function newHtmlSelect(selOpts){
 	var selObj = $("<select />");
-	selObj.prop("name",options.name);
+	selObj.prop("name",selOpts.name);
 	
-	var defaultValue = options.value;
+	var dVal = selOpts.value;
+	$.each(selOpts.options,function(){
+		var opts = this;
+		if(!$.isPlainObject(this)){
+			opts = {label:this,value:this};
+		}
+		opts.tag = 'option';
+		
+		var optObj = buildHtmlElement(opts).appendTo(selObj);
+		if(opts.value == dVal){
+			optObj.prop("selected",true);
+		}
+	});
+	
+	/*
 	for(idx in options.options){
 		var option = options.options[idx];
 		option.tag = "option";
@@ -77,7 +93,7 @@ function newHtmlSelect(options){
 		if(option.value == defaultValue){
 			optObj.prop("selected",true);
 		}
-	}
+	}*/
 	return selObj;
 }
 

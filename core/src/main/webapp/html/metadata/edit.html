@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html ng-app>
+    <head>
+        <script src="js/angular.min.js"></script>
+        <script src="script.js"></script>
+    </head>
+    <body>
+    	<style>
+    	body {
+    		font-size:12px;
+    	}
+    	
+    	form label {
+    		margin:5px;
+    	}
+    	
+    	form input {
+    		border:1px solid #cccccc;
+    		margin:5px;
+    	}
+    	
+    	#editDiv {
+    		width:500px;
+    		height:300px;
+    	}
+    	
+    	#editTitle {
+    		margin-top:30px;
+    		margin-bottom:5px;
+    		font-weight:bold;
+    	}
+    	</style>
+    	<div id="editTitle">新增数据结构</div>
+    	<div id="editDiv">
+    		<form action="/metadata/save.htm">
+    			<div><label>名称</label><input type="text" name="name" /></div>
+    			<div><label>标签</label><input type="text" name="label" /></div>
+    			<table>
+    				<tr>
+    					<th>名称</th>
+    					<th>标签</th>
+    					<th>类型</th>
+    				</tr>
+    				<tr>
+    					<th><input type="text" name="name" /></th>
+    					<th><input type="text" name="label" /></th>
+    					<th><input type="text" name="type" /></th>
+    				</tr>
+    			</table>
+    		</form>
+    	</div>
+    </body>
+</html>

@@ -27,42 +27,6 @@ public class CollectionDao extends BasicDao {
 //				+ "personal_profile:{real_name:'张惠',email:'zh@tm.com',age:100,"
 //				+ "address:[{province:'江苏省',city:'南京市',zone:'鼓楼区'},{province:'浙江省',city:'湖州市',zone:'安吉县'}]}}}";
 //		
-//		str = "{acc:db.Account.get('56dfbe2dba596ca3c6c9f971')}";
-//		Map<String,Object> params = (Map<String,Object>)ArithmeticExpression.execute(str,null);
-//		
-//		str = "{app:acc.personal_profile}";
-//		Object v = ArithmeticExpression.execute(str,params);
-//		
-//		System.out.println(v);
-//		
-//		str = "{real_name:'张惠',email:'zh@tm.com',age:100,"
-//				+ "address:[{province:'江苏省',city:'南京市',zone:'鼓楼区'},{province:'浙江省',city:'湖州市',zone:'安吉县'}]}";
-//		str = "{personal_profile.address:[{province:'江苏省',city:'南京市',zone:'鼓楼区'},{province:'浙江省',city:'湖州市',zone:'安吉县'}]}";
-//		
-//		
-//		str = "{personal_profile.address.$.province:'江苏省',personal_profile.address.$.city:'苏州市'}";
-//		Map<String,Object> accountMap = (Map<String,Object>)ArithmeticExpression.execute(str,null);
-////		for(Map<String,Object> map : (List<Map<String,Object>>)accountMap.get("personal_profile.address")){
-////			map.put("_id",new ObjectId());
-////		}
-//		CollectionDao dao = new CollectionDao();
-//		System.out.println("accountMap : " + accountMap);
-//		//dao.update(accountMap,"Account");
-//		
-//		dao.getDBCollection("Account").update(new BasicDBObject("personal_profile.address._id",new ObjectId("56dfe161ba594151e4e9ebd6")), 
-//				new BasicDBObject("$set",accountMap));
-//		
-//		
-//		
-//		System.out.println("========= after update ==============");
-//		
-//		str = "{acc:db.Account.get('56dfbe2dba596ca3c6c9f971')}";
-//		params = (Map<String,Object>)ArithmeticExpression.execute(str,null);
-//		
-//		str = "{app:acc.personal_profile}";
-//		v = ArithmeticExpression.execute(str,params);
-//		
-//		System.out.println(v);
 		
 		System.out.println("============== before update =================");
 		printTest("56e0e4fb8f778c15692b9eaf");
@@ -74,7 +38,20 @@ public class CollectionDao extends BasicDao {
 		//String str = "{F3:{F31:[{F311:{F3114:[{F31141:'F31141_1'}]},id:'56e0e4fb8f778c15692b9ead'}]}}";
 		String str = "db.Test.save({id:'56e0e4fb8f778c15692b9eaf',F3:{F31:[{F312:'F312_2',F313:'F313_2'},{F311:{F3114:[{F31142:'F31142_1',id:'56e0fbe28f77546a3d590d58'}]}}]}})";
 		str = "db.Test.save({id:'56e0e4fb8f778c15692b9eaf',F3:{F31:[{F312:'F312_4',F313:'F313_4'},{id:'56e0e4fb8f778c15692b9ead',F311:{F3113 : 'F3113_12',F3111 : 'F3111_12',F3112 : 'F3112_12'}}]}})";
+		
+		str = "{F3:{F31:{id:'56e0e4fb8f778c15692b9ead'}}}";
 		Map<String,Object> params = (Map<String,Object>)ArithmeticExpression.execute(str,null);
+		System.out.println(params);
+		
+		CollectionDao collDao = new CollectionDao();
+		DBCollection db = collDao.getDBCollection("Test");
+		db.find();
+		
+		Map<String,Object> query = buildQueryMap(params,null);
+		System.out.println("query : " + query);
+		
+		List<Map<String,Object>> list = collDao.findByMap(query, "Test");
+		System.out.println(list);
 		
 		//System.out.println("TEST : " + params);
 		
@@ -104,9 +81,9 @@ public class CollectionDao extends BasicDao {
 //				new BasicDBObject("$set",daoMap));
 //		System.out.println("daoResult : " + daoResult);
 		
-		System.out.println("");
-		System.out.println("============== after update =================");
-		printTest("56e0e4fb8f778c15692b9eaf");
+//		System.out.println("");
+//		System.out.println("============== after update =================");
+//		printTest("56e0e4fb8f778c15692b9eaf");
 		//System.out.println(updates);
 		
 //		DBCursor cursor = collDao.getDBCollection("Test").find(new BasicDBObject("F3.F31.F311.F3114._id",new ObjectId("56e0fbe28f77546a3d590d58")));
@@ -130,15 +107,42 @@ public class CollectionDao extends BasicDao {
 		//testEncode();
 	}
 	
+	private static Map<String,Object> buildQueryMap(Map<String,Object> queryMap,String prefix){
+		
+		Map<String,Object> daoMap = new HashMap<String,Object>();
+		String preName = "";
+		if(prefix != null && prefix.trim().length() > 0){
+			preName = prefix+".";
+		}
+		
+		if(queryMap.containsKey("id") && queryMap.get("id") != null){
+			daoMap.put(preName+"_id", new ObjectId(queryMap.remove("id").toString()));
+		}
+		
+		for(String fname : queryMap.keySet()){
+			String key = preName+fname;
+			Object value = queryMap.get(fname);
+			
+			if(value != null && value instanceof Map && ((Map)value).size() > 0){
+				Map<String,Object> valMap = (Map<String,Object>)value;
+
+				Map<String,Object> m = buildQueryMap((Map<String,Object>)value,key);
+				daoMap.putAll(m);
+			}else {
+				daoMap.put(key, value);
+			}
+		}
+		
+		return daoMap;
+	}
+	
 	private static void printTest(String id){
 		String str = "db.Test.get('"+id+"')";
 		Map<String,Object> val = (Map<String,Object>)ArithmeticExpression.execute(str,null);
 		System.out.println("val : " + val);
 		System.out.println("");
 	}
-	
-	
-	
+
 	private static boolean hasId(Object obj){
 		if(obj == null)return false;
 		
@@ -695,34 +699,5 @@ public class CollectionDao extends BasicDao {
 		public String toString(){
 			return DateCalculator.dateFormat.format(this.date);
 		}
-	}
-	
-	public static void testProduct() {
-		CollectionDao dao = new CollectionDao();
-		
-//		Map m = new HashMap();
-//		m.put("name", "雪花秀");
-//		
-//		//dao.save(m, "Brand");
-//		
-//		Map bdc = dao.getByID("5562fd11bd77137b45adcb44", "Brand");
-//		System.out.println(bdc);
-//		
-//		m = new HashMap();
-//		m.put("name", "珍雪面霜60ml");
-//		m.put("brand", "5562fd11bd77137b45adcb44");
-//		m.put("price", "2285.00");
-//		
-//		//dao.save(m, "Product");
-//		bdc = dao.getByID("5563e32cbd779fb4ab91984c", "Product");
-//		System.out.println(bdc);
-
-
-		//dao.remove("55648ebdbd77bd914c6194b6", "Product");
-		//dao.remove("556490abbd77524954cecd70", "Product");
-		
-		List<Map<String,Object>> ps = dao.find(null, "Product");
-		
-		System.out.println(ps);
 	}
 }

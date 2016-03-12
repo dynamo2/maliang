@@ -150,7 +150,9 @@ public class BusinessController extends BasicController {
 	public String ajaxBusiness(HttpServletRequest request) {
 		WorkFlow workFlow = readWorkFlow(request);
 		
-		return this.executeAjaxWorkFlow(workFlow,request);
+		String json = this.executeAjaxWorkFlow(workFlow,request);
+		System.out.println("ajax return json : " + json);
+		return json;
 	}
 	
 	@SuppressWarnings("rawtypes")

@@ -11,6 +11,7 @@
         
         <!-- jquery -->
 		<script src="../js/jquery-2.1.4.js"></script>
+		<script src="../../js/jquery-ui.min.js"></script>
 		<link href="../style/jquery-ui.min.css" rel="stylesheet" type="text/css"/> 
 		
 		<!-- datatables -->
@@ -21,7 +22,6 @@
 		<script src="../js/wysiwyg/wysiwyg.js"></script>
 		<script src="../js/wysiwyg/wysiwyg-editor.js"></script>
 		<script src="../js/wysiwyg/config.js"></script>
-		<link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.min.css">
 		<link href="../style/wysiwyg/wysiwyg-editor.css" rel="stylesheet" type="text/css"/>
 		
 		<!-- tianma -->
@@ -36,6 +36,16 @@
 		<link href="../html/business/style.css" rel="stylesheet" type="text/css"/>
     </head>
     <body>
+   		<h1 id="title">完善个人资料</h1>
+		<div id="main">
+			<div id="html"></div>
+		</div>
+		
+		<textarea id="print" style="width:700px;height:500px;"></textarea>
+		
+		<div id="dialog">
+			<div id="dialogPanel">
+		</div>
 		<script>
 		/**
 		input:
@@ -67,13 +77,26 @@
 		//h.form('Account.personalProfile',{ex:[2,3,'email'],bid:'uuuuu',fid:2})
 		
 		var result = ${resultJson};
-		
-		//alert("resultModel : " + ts(resultModel));
-		
+
 		var json = result.json;
 		var htmlCode = result.html;
 
 		$(function(){
+			$("#dialog").dialog({
+				resizable: false,
+				height:500,
+				width:500,
+				autoOpen: false,
+				buttons: {
+					"Save": function(){
+						$(this).dialog("close");
+					},
+					Cancel: function() {
+					  $(this).dialog( "close" );
+					}
+				}
+			});
+			
 			if(result && result.title){
 				$("#title").text(result.title);
 			}
@@ -83,23 +106,173 @@
 			}
 			
 			if(json){
-				var inputs = readForm(json);
-				pt(ts(inputs));
-				
-				var ft = new FormTable();
-				ft.init(inputs);
-				$("#testForm").append(ft.table);
+				build(json,$("#main"));
 			}
-			
-			
-			/***
-			if(resultModel && resultModel.components){
-				$.each(resultModel.components,function(){
-					buildComponent(this,$("#main"));
+		});
+		
+		function build(json,parent){
+			var type = json[0];
+			if(utils.isString(type)){
+				if(type === 'tableBlock'){
+					parent.append(TableBlock(json));
+				}else if(type === 'tableList'){
+					parent.append(TableList(json));
+				}else if(type === 'dialog'){
+					appendToDialog(json[1]);
+				}else if(type === 'form'){
+					var form = $('<form id="testForm" action="/business/business2.htm" method="post" />').appendTo(parent);
+					
+					var inputs = readForm(json);
+					pt(ts(inputs));
+					
+					var ft = new FormTable();
+					ft.init(inputs);
+					form.append(ft.table);
+				}
+			}else {
+				$.each(json,function(){
+					build(this);
 				});
 			}
-			***/
-		});
+		}
+		
+		function appendToDialog(json){
+			$("#dialogPanel").empty();
+			build(json,$("#dialogPanel"));
+			$("#dialog").dialog("open");
+		}
+		
+		function ajax(data){
+			$.ajax('/business/ajax.htm',{
+				data:data,
+				dataType:'json',
+				type:'POST',
+				async:false
+			}).done(function(result,status){
+				build(result.json,$("#main"));
+			});
+		}
+		
+		function build2(json){
+			var type = json[0];
+			if(utils.isString(type)){
+				if(type === 'a'){
+					return buildA(json);
+				}else if(type === 'img'){
+					return buildImg(json);
+				}else if(type === 'button'){
+					return buildButton(json);
+				}else if(type === 'div'){
+					return buildDiv(json);
+				}else if(type === 'span'){
+					return buildSpan(json);
+				}
+			}else {
+				var comps = [];
+				$.each(json,function(){
+					var ccs = build2(this);
+					if($.isArray(ccs)){
+						comps = comps.concat(css);
+					}else {
+						comps.push(ccs);
+					}
+				});
+				
+				return comps;
+			}
+		}
+		
+		function addChildren(parent,json){
+			if(utils.isString(json)){
+				parent.text(json);
+			}else if($.isArray(json)){
+				parent.append(build2(json));
+			}else if($.isPlainObject(json)){
+				parent.html(json.html);
+			}
+			return parent;
+		}
+		
+		function buildA(json){
+			var a = $("<a />");
+			
+			addChildren(a,json[1]);
+			
+			var href = "/business/business2.htm?"+json[2];
+			a.attr("href",href);
+			return a;
+		}
+
+		function buildButton(json){
+			var bnt = $("<input type='button' />");
+			bnt.val(json[1]);
+			bnt.attr("onclick",json[2]);
+
+			return bnt;
+		}
+		
+		function buildImg(json){
+			var img = $("<img />");
+			img.attr("src",json[1]);
+			
+			return img;
+		}
+		
+		function buildDiv(json){
+			var div = $("<div style='padding:3px 5px' />");
+			
+			addChildren(div,json[1]);
+			
+			return div;
+		}
+		
+		function buildSpan(json){
+			var span = $("<span style='margin-right:5px;' />");
+			addChildren(span,json[1]);
+			
+			return span;
+		}
+		
+		/**
+		 * 个人资料详情列表
+		 * **
+		['tableList',
+		 	['账号','密码','真实姓名','Email','手机号码','操作'],
+		 	each(accounts){[this.account,this.password,this.personal_profile.real_name,
+		 	                this.personal_profile.email,this.personal_profile.mobile,
+		 	                {html:'<a href="/business/business2.htm?bid='+bid+'&fid=4&id='+this.id+'">修改</a>
+		 		<a href="/business/business2.htm?bid='+bid+'&fid=6&id='+this.id+'">查看</a>'}]}
+		]*/
+		function TableList(json){
+			var table = $("<table class='tableList' cellpadding='0' cellspacing='1' />");
+			
+			var tr = $("<tr />").appendTo(table);
+			$.each(json[1],function(){
+				addChildren($("<th class='header' />"),this).appendTo(tr);
+			});
+
+			$.each(json[2],function(){
+				tr = $("<tr />").appendTo(table);
+				$.each(this,function(){
+					addChildren($("<td />"),this).appendTo(tr);
+				});
+			});
+			
+			return table;
+		}
+		
+
+		function TableBlock(json){
+			var table = $("<table class='tableBlock' cellpadding='0' cellspacing='0' />");
+			
+			$.each(json[1],function(){
+				var tr = $("<tr />").appendTo(table);
+				addChildren( $("<td class='label' />"),this[0]).appendTo(tr);
+				addChildren($("<td />"),this[1]).appendTo(tr);
+			});
+			
+			return table;
+		}
 		
 		function readForm(json){
 			var _ = this;
@@ -145,7 +318,7 @@
 			_.read();
 			return inputs;
 		}
-		
+
 		function readInput(opts,prefix){
 			var _ = this;
 			var input = {};
@@ -184,7 +357,7 @@
 						if($.isArray(list)){
 							topts.inputs = [];
 							$.each(list,function(){
-								topts.inputs.push(readInput(this));
+								topts.inputs.push(readInput(this,input.name));
 							});
 						}
 					}
@@ -262,11 +435,24 @@
 			margin-right:10px;
 		}
 		
-		.list {
+		.tableBlock {
+			min-width:400px;
+		}
+		
+		.tableBlock td {
+			padding:8px 10px;
+			border-bottom:1px dashed #ccc;
+		}
+		
+		.tableBlock .label {
+			text-align:right;
+		}
+		
+		.tableList {
 			background-color:#ccc;
 		}
 		
-		.list td,.list th{
+		.tableList td,.tableList th{
 			padding:8px 10px;
 			background-color:#fff;
 			min-width:150px;
@@ -284,14 +470,6 @@
 		}
 		</style>
 		
-		<h1 id="title">完善个人资料</h1>
-		<div id="main">
-			<div id="html"></div>
-			<div><form id="testForm" action="/business/business2.htm" method="post" /></div>
-			
-			<!-- 
-			<textarea id="print" style="width:700px;height:500px;"></textarea>
-			 -->
-		</div>
+		
 	</body>
 </html>
