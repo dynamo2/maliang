@@ -155,6 +155,13 @@ public class BusinessController extends BasicController {
 		return json;
 	}
 	
+	@RequestMapping(value = "js.htm")
+	@ResponseBody
+	public String javaScript(HttpServletRequest request) {
+		WorkFlow workFlow = readWorkFlow(request);
+		return workFlow.getJavaScript();
+	}
+	
 	@SuppressWarnings("rawtypes")
 	private Map buildULListMap(List<Business> list,Map<String,String> labels){
 		

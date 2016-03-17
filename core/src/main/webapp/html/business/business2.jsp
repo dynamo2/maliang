@@ -80,7 +80,46 @@
 
 		var json = result.json;
 		var htmlCode = result.html;
-
+		var jsUrl = result.jsUrl;
+		
+		if(jsUrl){
+			$.getScript(jsUrl,function(){
+				init();
+			});
+		}else {
+			$(function(){
+				init();
+			});
+		}
+		
+		
+		function init(){
+			$("#dialog").dialog({
+				resizable: false,
+				height:500,
+				width:500,
+				autoOpen: false,
+				buttons: {
+					Cancel: function() {
+					  $(this).dialog( "close" );
+					}
+				}
+			});
+			
+			if(result && result.title){
+				$("#title").text(result.title);
+			}
+			
+			if(htmlCode){
+				$("#html").html(htmlCode);
+			}
+			
+			if(json){
+				build(json,$("#main"));
+			}
+		}
+		     
+		/*
 		$(function(){
 			$("#dialog").dialog({
 				resizable: false,
@@ -108,7 +147,7 @@
 			if(json){
 				build(json,$("#main"));
 			}
-		});
+		});*/
 		
 		function build(json,parent){
 			var type = json[0];
@@ -118,16 +157,15 @@
 				}else if(type === 'tableList'){
 					parent.append(TableList(json));
 				}else if(type === 'dialog'){
-					appendToDialog(json[1]);
+					appendToDialog(json);
 				}else if(type === 'form'){
-					var form = $('<form id="testForm" action="/business/business2.htm" method="post" />').appendTo(parent);
-					
-					var inputs = readForm(json);
-					pt(ts(inputs));
+					var options = readForm(json);
+					pt(ts(options));
 					
 					var ft = new FormTable();
-					ft.init(inputs);
-					form.append(ft.table);
+					ft.init(options);
+					
+					parent.append(ft.form);
 				}
 			}else {
 				$.each(json,function(){
@@ -138,7 +176,38 @@
 		
 		function appendToDialog(json){
 			$("#dialogPanel").empty();
-			build(json,$("#dialogPanel"));
+			build(json[1],$("#dialogPanel"));
+			
+			/**
+			** Dialog options
+			**/
+			if(json.length >= 3){
+				var opts = json[2];
+				var dopts = {};
+				dopts.buttons = {};
+
+				for(x in opts){
+					if(x === 'buttons'){
+						var btns = opts.buttons;
+						
+						for(bn in btns){
+							dopts.buttons[bn] = function(){
+								eval(btns[bn]);
+							};
+						}
+					}else {
+						dopts[x] = opts[x];
+					}
+				}
+				
+				if(!dopts.buttons.Cancel){
+					dopts.buttons.Cancel = function(){
+						$(this).dialog( "close" );
+					};
+				}
+				
+				$("#dialog").dialog(dopts);
+			}
 			$("#dialog").dialog("open");
 		}
 		
@@ -149,8 +218,30 @@
 				type:'POST',
 				async:false
 			}).done(function(result,status){
-				build(result.json,$("#main"));
+				if(result && result.json){
+					build(result.json,$("#main"));
+				}
 			});
+		}
+		
+		function ajaxForm(formId){
+			var form = $("#"+formId);
+			var reqDatas = readFormDatas(form);
+			
+			pt(ts(reqDatas));
+			
+			ajax(reqDatas);
+		}
+		
+		function readFormDatas(form){
+			var inputs = form.find(":input");
+			
+			var reqDatas = {};
+			$.each(inputs,function(){
+				reqDatas[$(this).attr("name")] = $(this).val();
+			});
+
+			return reqDatas;
 		}
 		
 		function build2(json){
@@ -221,14 +312,24 @@
 		function buildDiv(json){
 			var div = $("<div style='padding:3px 5px' />");
 			
-			addChildren(div,json[1]);
+			for(i in json){
+				if(i > 0){
+					addChildren(div,json[i]);
+				}
+			}
+			
 			
 			return div;
 		}
 		
 		function buildSpan(json){
 			var span = $("<span style='margin-right:5px;' />");
-			addChildren(span,json[1]);
+
+			for(i in json){
+				if(i > 0){
+					addChildren(span,json[i]);
+				}
+			}
 			
 			return span;
 		}
@@ -279,7 +380,7 @@
 			var source = json;
 			
 			var tag = 'form';
-			var htmlOption = {tag:_.tag};
+			var htmlOption = {tag:'form'};
 			
 			var prefix = null;
 			var inputs = null;
@@ -296,7 +397,7 @@
 					if($.isPlainObject(obj)){
 						utils.copy(obj,htmlOption,null);
 					}else if(utils.isString(obj)){
-						htmlOption.id = obj+'.'+_.tag;
+						htmlOption.id = obj+'.'+tag;
 						prefix = obj;
 					}
 				}
@@ -316,7 +417,8 @@
 			};
 			
 			_.read();
-			return inputs;
+			htmlOption.inputs = inputs;
+			return htmlOption;
 		}
 
 		function readInput(opts,prefix){

@@ -498,11 +498,17 @@ function FormTable(){
 	var _ = this;
 	var table;
 	var hiddenTd;
+	var form;
 	
-	this.init = function(inputs){
+	this.init = function(options){
+		_.form = $('<form action="/business/business2.htm" method="post" />');
+		_.form.attr("id",options.id);
+		
 		_.newTable();
-		_.addInputs(inputs);
-		return _.table;
+		_.addInputs(options.inputs);
+		
+		_.form.append(_.table);
+		return _.form;
 	};
 	
 	this.addInputs = function(inputs){

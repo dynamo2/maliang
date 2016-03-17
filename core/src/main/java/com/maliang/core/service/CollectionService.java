@@ -52,6 +52,15 @@ public class CollectionService {
 		return this.collectionDao.getByID(id, this.collection);
 	}
 	
+	public Map<String,Object> innerObjectById(Object query){
+		Map v = null;
+		if(query != null && query instanceof Map){
+			v = (Map)query;
+		}
+		
+		return this.collectionDao.innerObjectById(v, this.collection);
+	}
+	
 	public List<Map<String,Object>> find(Object query){
 		Map v = null;
 		if(query != null && query instanceof Map){
@@ -96,19 +105,18 @@ public class CollectionService {
 		
 		Map<String,Object> dataMap = (Map<String,Object>)obj;
 		if(StringUtil.isEmpty((String)dataMap.get("id"))){ // Save
-			//System.out.println("========== save ");
-			
 			dataMap = this.correctData(dataMap,this.collection,true);
-			this.collectionDao.save(dataMap, this.collection);
+			dataMap = this.collectionDao.save(dataMap, this.collection);
 		}else { // Update
-			//System.out.println("========== updateBySet ");
 			dataMap = this.correctData(dataMap,this.collection,false);
-			
-			//System.out.println("dataMap : " + dataMap);
-			this.collectionDao.updateBySet(dataMap, this.collection);
+			dataMap = this.collectionDao.updateBySet(dataMap, this.collection);
 		}
 		
 		return dataMap;
+	}
+	
+	public int remove(String oid){
+		return this.collectionDao.remove(oid,this.collection);
 	}
 	
 	private Map<String,Object> correctData(Map<String,Object> dataMap,String collName,boolean dealWithId){
@@ -233,6 +241,18 @@ public class CollectionService {
 			return this.get(v);
 		}
 		
+		if("innerObjectById".equals(method)){
+			return this.innerObjectById(value);
+		}
+		
+		if("delete".equals(method) || "remove".equals(method) || "del".equals(method)){
+			return this.remove(value.toString());
+		}
+		
+		if("save".equals(method)){
+			return this.save(value);
+		}
+		
 		if(QUERIES_ALIAS.contains(method)){
 			return this.find(value);
 		}
@@ -254,11 +274,7 @@ public class CollectionService {
 
 			return this.find(query,sort,page);
 		}
-		
-		if("save".equals(method)){
-			return this.save(value);
-		}
-		
+
 		/*
 		try {
 			Class vc = value == null?null:value.getClass();
