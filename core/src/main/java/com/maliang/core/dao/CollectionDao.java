@@ -14,128 +14,34 @@ import com.maliang.core.arithmetic.DateCalculator;
 import com.maliang.core.model.FieldType;
 import com.maliang.core.model.ObjectField;
 import com.maliang.core.model.ObjectMetadata;
+import com.maliang.core.service.MapHelper;
 import com.maliang.core.ui.controller.Pager;
 import com.mongodb.AggregationOutput;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
 import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
+import com.mongodb.WriteResult;
 
 public class CollectionDao extends BasicDao {
 	public static void main(String[] args) {
-//		String str = "{account:{account:'zhanghui',password:'123456',"
-//				+ "personal_profile:{real_name:'张惠',email:'zh@tm.com',age:100,"
-//				+ "address:[{province:'江苏省',city:'南京市',zone:'鼓楼区'},{province:'浙江省',city:'湖州市',zone:'安吉县'}]}}}";
-//		
-		
+
 		System.out.println("============== before update =================");
 		printTest("56e0e4fb8f778c15692b9eaf");
 		
-//		ObjectMetadataDao omDao = new ObjectMetadataDao();
-//		CollectionDao collDao = new CollectionDao();
-//		BasicDBObject query = new BasicDBObject("_id",new ObjectId("56e0e4fb8f778c15692b9eaf"));
-//		
 		//String str = "{F3:{F31:[{F311:{F3114:[{F31141:'F31141_1'}]},id:'56e0e4fb8f778c15692b9ead'}]}}";
 		String str = "db.Test.save({id:'56e0e4fb8f778c15692b9eaf',F3:{F31:[{F312:'F312_2',F313:'F313_2'},{F311:{F3114:[{F31142:'F31142_1',id:'56e0fbe28f77546a3d590d58'}]}}]}})";
-		str = "db.Test.save({id:'56e0e4fb8f778c15692b9eaf',F3:{F31:[{F312:'F312_4',F313:'F313_4'},{id:'56e0e4fb8f778c15692b9ead',F311:{F3113 : 'F3113_12',F3111 : 'F3111_12',F3112 : 'F3112_12'}}]}})";
+		str = "db.Test.save({id:'56e0e4fb8f778c15692b9eaf',F3:{F31:[{id:'56e0e4fb8f778c15692b9ead',F311:{F3113 : 'F3113_12_1',F3111 : 'F3111_12_1',F3112 : 'F3112_12_1'}}]}})";
 		
-		str = "{F3:{F31:{id:'56e0e4fb8f778c15692b9ead'}}}";
+		//str = "db.Test.innerObjectById({F3:{F31:{id:'56e0e4fb8f778c15692b9ead'}}})";
+		//str = "{id:'56e0e4fb8f778c15692b9eaf'}";
 		Map<String,Object> params = (Map<String,Object>)ArithmeticExpression.execute(str,null);
-		System.out.println(params);
+		System.out.println("params : " + params);
 		
-		CollectionDao collDao = new CollectionDao();
-		DBCollection db = collDao.getDBCollection("Test");
-		db.find();
-		
-		Map<String,Object> query = buildQueryMap(params,null);
-		System.out.println("query : " + query);
-		
-		List<Map<String,Object>> list = collDao.findByMap(query, "Test");
-		System.out.println(list);
-		
-		//System.out.println("TEST : " + params);
-		
-//		ObjectMetadata meta = omDao.getByName("Test");
-//		List<Map<String,BasicDBObject>> updates = new ArrayList<Map<String,BasicDBObject>>();
-//		Map<String,Object> daoMap = buildUpdates(meta.getFields(),params,null,updates,query);
-//		
-//		if(daoMap != null && daoMap.size() > 0){
-//			Map<String,BasicDBObject> bdbMap = new HashMap<String,BasicDBObject>();
-//			bdbMap.put("query", query);
-//			bdbMap.put("update", new BasicDBObject("$set",daoMap));
-//			updates.add(bdbMap);
-//		}
-//		
-//		for(Map<String,BasicDBObject> um : updates){
-//			System.out.println(um);
-//			
-//			//WriteResult daoResult = dao.getDBCollection("Test").update(um.get("query"), um.get("update"));
-//			//System.out.println("daoResult : " + daoResult);
-//		}
-		
-//		daoMap = new HashMap<String,Object>();
-//		daoMap.put("F3.F31.$.F311.F3114.$1.F31143","F31143_1");
-//		
-//		WriteResult daoResult = dao.getDBCollection("Test").update(
-//				new BasicDBObject("F3.F31.F311.F3114._id",new ObjectId("56e0fbe28f77546a3d590d58")), 
-//				new BasicDBObject("$set",daoMap));
-//		System.out.println("daoResult : " + daoResult);
-		
-//		System.out.println("");
-//		System.out.println("============== after update =================");
-//		printTest("56e0e4fb8f778c15692b9eaf");
-		//System.out.println(updates);
-		
-//		DBCursor cursor = collDao.getDBCollection("Test").find(new BasicDBObject("F3.F31.F311.F3114._id",new ObjectId("56e0fbe28f77546a3d590d58")));
-//		
-//		while(cursor.hasNext()){
-//			BasicDBObject doc = (BasicDBObject)cursor.next();
-//			
-//			System.out.println(doc);
-//		}
-		
-		
-		//System.out.println("daoMap : " + daoMap);
-		
-		
-		
-//		ObjectMetadata meta = omDao.getByName("Test");
-//		List<String> updates = new ArrayList<String>();
-//		Map<String,Object> daoMap = encodeInner(meta.getFields(),params,null,updates);
-		
-		//System.out.println("daoMap : " + daoMap);
-		//testEncode();
+		System.out.println("============== after update =================");
+		printTest("56e0e4fb8f778c15692b9eaf");
 	}
-	
-	private static Map<String,Object> buildQueryMap(Map<String,Object> queryMap,String prefix){
-		
-		Map<String,Object> daoMap = new HashMap<String,Object>();
-		String preName = "";
-		if(prefix != null && prefix.trim().length() > 0){
-			preName = prefix+".";
-		}
-		
-		if(queryMap.containsKey("id") && queryMap.get("id") != null){
-			daoMap.put(preName+"_id", new ObjectId(queryMap.remove("id").toString()));
-		}
-		
-		for(String fname : queryMap.keySet()){
-			String key = preName+fname;
-			Object value = queryMap.get(fname);
-			
-			if(value != null && value instanceof Map && ((Map)value).size() > 0){
-				Map<String,Object> valMap = (Map<String,Object>)value;
 
-				Map<String,Object> m = buildQueryMap((Map<String,Object>)value,key);
-				daoMap.putAll(m);
-			}else {
-				daoMap.put(key, value);
-			}
-		}
-		
-		return daoMap;
-	}
-	
 	private static void printTest(String id){
 		String str = "db.Test.get('"+id+"')";
 		Map<String,Object> val = (Map<String,Object>)ArithmeticExpression.execute(str,null);
@@ -169,7 +75,7 @@ public class CollectionDao extends BasicDao {
 		return false;
 	}
 	
-	public void updateBySet(Map value,String collName) {
+	public Map<String,Object> updateBySet(Map value,String collName) {
 		String id = (String)value.remove("id");
 		BasicDBObject query = this.getObjectId(id);
 
@@ -179,12 +85,18 @@ public class CollectionDao extends BasicDao {
 		updates.add(buildSetUpdateMap(query,daoMap));
 		
 		DBCollection db = this.getDBCollection(collName);
+		DBObject result = null;
 		for(Map<String,BasicDBObject> um : updates){
 			if(um != null){
-				//System.out.println("um : " + um);
-				db.update(um.get("query"), um.get("update"));
+				result = db.findAndModify(um.get("query"), um.get("update"));
 			}
 		}
+		
+		if(result != null){
+			return this.toMap(result, collName);
+		}
+		
+		return null;
 	}
 	
 	public static Map<String,BasicDBObject> buildSetUpdateMap(BasicDBObject query,Map<String,Object> setMap){
@@ -259,35 +171,65 @@ public class CollectionDao extends BasicDao {
 		return daoMap;
 	}
 	
-	private static void testEncode(){
-		ObjectMetadataDao omDao = new ObjectMetadataDao();
-		ObjectMetadata meta = omDao.getByName("Account");
+	public Map<String,Object> innerObjectById(Map<String,Object> query,String collName){
+		Map<String,Object> dbQuery = buildDBQueryMap(query,null);
 		
-		
-		String str = "{account:{account:'zhanghui',password:'123456',"
-				+ "personal_profile:{real_name:'张惠',email:'zh@tm.com',age:100,"
-				+ "address:[{province:'江苏省',city:'南京市',zone:'鼓楼区'},{province:'浙江省',city:'湖州市',zone:'安吉县'}]}}}";
-		
-		//str = "{account:'zhanghui',password:'123456',personal_profile:{real_name:'张惠',email:'zh@tm.com',mobile:'1345678909',address:[{province:'江苏省',city:'南京市',zone:'鼓楼区'},{province:'浙江省',city:'湖州市',zone:'安吉县'}]}}";
-		str = "{personal_profile:{address:[{province:'江苏省',city:'南京市',zone:'鼓楼区',address:[{street:'龙园西路',village:'龙江小区蓝天园',house_number:'26号402室内',id:'222'}],id:'111'},{province:'浙江省',city:'湖州市',zone:'安吉县'}]}}";
-		Map<String,Object> account = (Map<String,Object>)ArithmeticExpression.execute(str,null);
-		System.out.println("account : " + account);
-		
-		List<Map<String,BasicDBObject>> updates = new ArrayList<Map<String,BasicDBObject>>();
-		Map<String,Object> daoMap = buildUpdates(meta.getFields(),account,null,updates,null);
-		//ObjectId id = new ObjectId(account.remove("id")+"");
-		
-		System.out.println("daoMap : " + daoMap);
+		List<Map<String,Object>> results = this.findByMap(dbQuery, collName);
+		if(results != null && results.size() > 0){
+			Map<String,Object> object = results.get(0);
+			Object objectId = object.get("id");
+			Map<String,Object> returnObject = null;
+			
+			for(String key : dbQuery.keySet()){
+				if(key.endsWith("_id")){
+					String idVal = dbQuery.get(key).toString();
+					
+					Object innerObj = object;
+					if(key.lastIndexOf(".") > 0){
+						String field = key.substring(0,key.lastIndexOf("."));
+						innerObj = MapHelper.readValue(object, field);
+					}
+					
+					if(innerObj instanceof List){
+						for(Object val : (List)innerObj){
+							if(val instanceof Map){
+								if(idVal.equals(((Map) val).get("id"))){
+									returnObject = (Map<String,Object>)val;
+									returnObject.put("_RootObjectId", objectId);
+									return returnObject;
+								}
+							}
+						}
+					}else if(innerObj instanceof Map){
+						if(idVal.equals(((Map) innerObj).get("id"))){
+							returnObject = (Map<String,Object>)innerObj;
+							returnObject.put("_RootObjectId", objectId);
+							return returnObject;
+						}
+					}
+				}
+			}
+		}
+		return null;
 	}
 	
-	public void save(Map value,String collName) {
+	public Map<String,Object> save(Map value,String collName) {
 		BasicDBObject doc = this.build(value);
 		if(doc == null){
-			return;
+			return null;
 		}
 		
 		this.getDBCollection(collName).save(doc);
+		
 		value.put("id", doc.getObjectId("_id").toByteArray());
+
+		return toMap(doc,collName);
+	}
+	
+	protected Map<String,Object> toMap(DBObject doc,String collName){
+		Map<String,Object> dataMap = doc.toMap();
+		mergeLinkedObject(dataMap,collName);
+		return dataMap;
 	}
 	
 	public void update22(Map value,String collName) {
@@ -338,6 +280,8 @@ public class CollectionDao extends BasicDao {
 		
 		return this.readCursor(cursor, collName);
 	}
+	
+	
 	
 	public List<Map<String,Object>> findByMap(Map<String,Object> query,String collName){
 		return this.find(build(query), collName);
@@ -401,8 +345,9 @@ public class CollectionDao extends BasicDao {
 		return results;
 	}
 	
-	public void remove(String oid,String collName){
-		this.getDBCollection(collName).remove(this.getObjectId(oid));
+	public int remove(String oid,String collName){
+		WriteResult result = this.getDBCollection(collName).remove(this.getObjectId(oid));
+		return result.getN();
 	}
 	
 	public void removeAll(String collName){
@@ -688,6 +633,93 @@ public class CollectionDao extends BasicDao {
 			
 			dao.save(m, collName);
 		}
+	}
+	
+	public static void testUpdateBySet() {
+//		String str = "{account:{account:'zhanghui',password:'123456',"
+//				+ "personal_profile:{real_name:'张惠',email:'zh@tm.com',age:100,"
+//				+ "address:[{province:'江苏省',city:'南京市',zone:'鼓楼区'},{province:'浙江省',city:'湖州市',zone:'安吉县'}]}}}";
+//		
+		
+		System.out.println("============== before update =================");
+		printTest("56e0e4fb8f778c15692b9eaf");
+		
+//		ObjectMetadataDao omDao = new ObjectMetadataDao();
+//		CollectionDao collDao = new CollectionDao();
+//		BasicDBObject query = new BasicDBObject("_id",new ObjectId("56e0e4fb8f778c15692b9eaf"));
+//		
+		//String str = "{F3:{F31:[{F311:{F3114:[{F31141:'F31141_1'}]},id:'56e0e4fb8f778c15692b9ead'}]}}";
+		String str = "db.Test.save({id:'56e0e4fb8f778c15692b9eaf',F3:{F31:[{F312:'F312_2',F313:'F313_2'},{F311:{F3114:[{F31142:'F31142_1',id:'56e0fbe28f77546a3d590d58'}]}}]}})";
+		str = "db.Test.save({id:'56e0e4fb8f778c15692b9eaf',F3:{F31:[{id:'56e0e4fb8f778c15692b9ead',F311:{F3113 : 'F3113_12_1',F3111 : 'F3111_12_1',F3112 : 'F3112_12_1'}}]}})";
+		
+		//str = "db.Test.innerObjectById({F3:{F31:{id:'56e0e4fb8f778c15692b9ead'}}})";
+		//str = "{id:'56e0e4fb8f778c15692b9eaf'}";
+		Map<String,Object> params = (Map<String,Object>)ArithmeticExpression.execute(str,null);
+		System.out.println("params : " + params);
+		
+		System.out.println("============== after update =================");
+		printTest("56e0e4fb8f778c15692b9eaf");
+		
+//		CollectionDao collDao = new CollectionDao();
+//		DBCollection db = collDao.getDBCollection("Test");
+//		db.find();
+//		
+//		Object f311 = collDao.innerObjectById(params,"Test");
+//		System.out.println("F311 : " + f311);
+		
+		
+		//System.out.println("TEST : " + params);
+		
+//		ObjectMetadata meta = omDao.getByName("Test");
+//		List<Map<String,BasicDBObject>> updates = new ArrayList<Map<String,BasicDBObject>>();
+//		Map<String,Object> daoMap = buildUpdates(meta.getFields(),params,null,updates,query);
+//		
+//		if(daoMap != null && daoMap.size() > 0){
+//			Map<String,BasicDBObject> bdbMap = new HashMap<String,BasicDBObject>();
+//			bdbMap.put("query", query);
+//			bdbMap.put("update", new BasicDBObject("$set",daoMap));
+//			updates.add(bdbMap);
+//		}
+//		
+//		for(Map<String,BasicDBObject> um : updates){
+//			System.out.println(um);
+//			
+//			//WriteResult daoResult = dao.getDBCollection("Test").update(um.get("query"), um.get("update"));
+//			//System.out.println("daoResult : " + daoResult);
+//		}
+		
+//		daoMap = new HashMap<String,Object>();
+//		daoMap.put("F3.F31.$.F311.F3114.$1.F31143","F31143_1");
+//		
+//		WriteResult daoResult = dao.getDBCollection("Test").update(
+//				new BasicDBObject("F3.F31.F311.F3114._id",new ObjectId("56e0fbe28f77546a3d590d58")), 
+//				new BasicDBObject("$set",daoMap));
+//		System.out.println("daoResult : " + daoResult);
+		
+//		System.out.println("");
+//		System.out.println("============== after update =================");
+//		printTest("56e0e4fb8f778c15692b9eaf");
+		//System.out.println(updates);
+		
+//		DBCursor cursor = collDao.getDBCollection("Test").find(new BasicDBObject("F3.F31.F311.F3114._id",new ObjectId("56e0fbe28f77546a3d590d58")));
+//		
+//		while(cursor.hasNext()){
+//			BasicDBObject doc = (BasicDBObject)cursor.next();
+//			
+//			System.out.println(doc);
+//		}
+		
+		
+		//System.out.println("daoMap : " + daoMap);
+		
+		
+		
+//		ObjectMetadata meta = omDao.getByName("Test");
+//		List<String> updates = new ArrayList<String>();
+//		Map<String,Object> daoMap = encodeInner(meta.getFields(),params,null,updates);
+		
+		//System.out.println("daoMap : " + daoMap);
+		//testEncode();
 	}
 	
 	static class TMDate{
