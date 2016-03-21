@@ -101,6 +101,19 @@ public class Function {
 			return ListFunction.execute(this, params);
 		}
 		
+		if("print".equalsIgnoreCase(key)){
+			System.out.println(this.executeExpression(params));
+			return null;
+		}
+		
+		if("dateFormat".equalsIgnoreCase(key) || "df".equalsIgnoreCase(key)){
+			return DateFunction.dateFormat(this, params);
+		}
+		
+		if("timestampFormat".equalsIgnoreCase(key) || "tsf".equalsIgnoreCase(key)){
+			return DateFunction.timestampFormat(this, params);
+		}
+		
 		if("between".equalsIgnoreCase(key)){
 			return Between.execute(this, params);
 			//return null;
@@ -111,7 +124,6 @@ public class Function {
 		}
 		
 		if("int".equalsIgnoreCase(key) || "Integer".equalsIgnoreCase(key)){
-			System.out.println("key value " + this.keyValue);
 			return TypeFunction.intExecute(this, params);
 		}
 		

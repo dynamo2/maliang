@@ -108,7 +108,9 @@ public class CollectionService {
 			dataMap = this.correctData(dataMap,this.collection,true);
 			dataMap = this.collectionDao.save(dataMap, this.collection);
 		}else { // Update
+			System.out.println(" dateMap : " + dataMap);
 			dataMap = this.correctData(dataMap,this.collection,false);
+			System.out.println("after dataMap : " + dataMap);
 			dataMap = this.collectionDao.updateBySet(dataMap, this.collection);
 		}
 		
@@ -160,6 +162,11 @@ public class CollectionService {
 				}
 				
 				return result;
+			}else if(fieldValue instanceof Map){
+				of.setType(of.getElementType());
+				
+				List<Object> result = new ArrayList<Object>();
+				result.add(correctFieldValue(of,fieldValue,dealWithId));
 			}else {
 				return null;
 			}

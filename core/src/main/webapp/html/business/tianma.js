@@ -77,19 +77,6 @@ function HtmlBuilder(){
 			});
 		}
 		
-		/*
-		for(var i = 0; i < data.options.length;i++){
-			var option = data.options[i];
-			var optObj = $("<option></option>");
-			selObj.append(optObj);
-			
-			optObj.attr("value",option.key);
-			optObj.text(option.label);
-			if(option.key == defaultValue){
-				optObj.attr("selected",true);
-			}
-		}*/
-		
 		return selObj;
 	};
 	
@@ -200,6 +187,7 @@ function HtmlBuilder(){
 	
 	this.newDateInput = function(data){
 		var txtObj = builder.newText(data);
+		txtObj.attr("type","date");
 		//txtObj.datepicker();
 		return txtObj;
 	};

@@ -41,8 +41,10 @@
 			<div id="html"></div>
 		</div>
 		
+		<!-- 
 		<textarea id="print" style="width:700px;height:500px;"></textarea>
-		
+		 -->
+		 
 		<div id="dialog">
 			<div id="dialogPanel">
 		</div>
@@ -92,7 +94,6 @@
 			});
 		}
 		
-		
 		function init(){
 			$("#dialog").dialog({
 				resizable: false,
@@ -118,37 +119,7 @@
 				build(json,$("#main"));
 			}
 		}
-		     
-		/*
-		$(function(){
-			$("#dialog").dialog({
-				resizable: false,
-				height:500,
-				width:500,
-				autoOpen: false,
-				buttons: {
-					"Save": function(){
-						$(this).dialog("close");
-					},
-					Cancel: function() {
-					  $(this).dialog( "close" );
-					}
-				}
-			});
-			
-			if(result && result.title){
-				$("#title").text(result.title);
-			}
-			
-			if(htmlCode){
-				$("#html").html(htmlCode);
-			}
-			
-			if(json){
-				build(json,$("#main"));
-			}
-		});*/
-		
+
 		function build(json,parent){
 			var type = json[0];
 			if(utils.isString(type)){
@@ -160,7 +131,7 @@
 					appendToDialog(json);
 				}else if(type === 'form'){
 					var options = readForm(json);
-					pt(ts(options));
+					//pt(ts(options));
 					
 					var ft = new FormTable();
 					ft.init(options);
@@ -211,26 +182,30 @@
 			$("#dialog").dialog("open");
 		}
 		
-		function ajax(data){
+		function ajax(data,doneFun){
 			$.ajax('/business/ajax.htm',{
 				data:data,
 				dataType:'json',
 				type:'POST',
 				async:false
-			}).done(function(result,status){
-				if(result && result.json){
-					build(result.json,$("#main"));
-				}
+			}).done(doneFun?doneFun:function(result,status){
+				var js = '/business/js.htm?bid='+data.bid+'&fid='+data.fid;
+				
+				$.getScript(js,function(){
+					if(result && result.json){
+						build(result.json,$("#main"));
+					}
+				});
 			});
 		}
 		
-		function ajaxForm(formId){
+		function ajaxForm(formId,doneFun){
 			var form = $("#"+formId);
 			var reqDatas = readFormDatas(form);
 			
-			pt(ts(reqDatas));
+			//pt(ts(reqDatas));
 			
-			ajax(reqDatas);
+			ajax(reqDatas,doneFun);
 		}
 		
 		function readFormDatas(form){

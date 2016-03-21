@@ -31,7 +31,7 @@ public class CollectionDao extends BasicDao {
 		
 		//String str = "{F3:{F31:[{F311:{F3114:[{F31141:'F31141_1'}]},id:'56e0e4fb8f778c15692b9ead'}]}}";
 		String str = "db.Test.save({id:'56e0e4fb8f778c15692b9eaf',F3:{F31:[{F312:'F312_2',F313:'F313_2'},{F311:{F3114:[{F31142:'F31142_1',id:'56e0fbe28f77546a3d590d58'}]}}]}})";
-		str = "db.Test.save({id:'56e0e4fb8f778c15692b9eaf',F3:{F31:[{id:'56e0e4fb8f778c15692b9ead',F311:{F3113 : 'F3113_12_1',F3111 : 'F3111_12_1',F3112 : 'F3112_12_1'}}]}})";
+		str = "db.Test.save({id:'56e0e4fb8f778c15692b9eaf',F3:{F31:[{id:'56e0e4fb8f778c15692b9ead',F311:{F3113 : 'F3113_12_111aaa',F3111 : 'F3111_12_111aaa',F3112 : 'F3112_12_111aaa'}}]}})";
 		
 		//str = "db.Test.innerObjectById({F3:{F31:{id:'56e0e4fb8f778c15692b9ead'}}})";
 		//str = "{id:'56e0e4fb8f778c15692b9eaf'}";
@@ -49,32 +49,6 @@ public class CollectionDao extends BasicDao {
 		System.out.println("");
 	}
 
-	private static boolean hasId(Object obj){
-		if(obj == null)return false;
-		
-		if(obj instanceof List){
-			for(Object oo : (List)obj){
-				if(hasId(oo)){
-					return true;
-				}
-			}
-		}
-		
-		if(obj instanceof Map){
-			if(((Map)obj).get("id") != null){
-				return true;
-			}
-			
-			for(Object oo : ((Map)obj).values()){
-				if(hasId(oo)){
-					return true;
-				}
-			}
-		}
-		
-		return false;
-	}
-	
 	public Map<String,Object> updateBySet(Map value,String collName) {
 		String id = (String)value.remove("id");
 		BasicDBObject query = this.getObjectId(id);
@@ -88,7 +62,7 @@ public class CollectionDao extends BasicDao {
 		DBObject result = null;
 		for(Map<String,BasicDBObject> um : updates){
 			if(um != null){
-				result = db.findAndModify(um.get("query"), um.get("update"));
+				result = db.findAndModify( um.get("query"), null, null, false, um.get("update"), true, false );
 			}
 		}
 		
@@ -98,127 +72,25 @@ public class CollectionDao extends BasicDao {
 		
 		return null;
 	}
-	
-	public static Map<String,BasicDBObject> buildSetUpdateMap(BasicDBObject query,Map<String,Object> setMap){
-		if(setMap == null || setMap.size() == 0)return null;
-		
-		Map<String,BasicDBObject> bdbMap = new HashMap<String,BasicDBObject>();
-		bdbMap.put("query", query);
-		bdbMap.put("update", new BasicDBObject("$set",setMap));
-		return bdbMap;
-	}
-	
-	private static Map<String,Object> buildUpdates(List<ObjectField> fields,Map<String,Object> innMap,
-			String prefix,List<Map<String,BasicDBObject>> updates,BasicDBObject updateQuery){
-		
-		Map<String,Object> daoMap = new HashMap<String,Object>();
-		String preName = "";
-		if(prefix != null && prefix.trim().length() > 0){
-			preName = prefix+".";
-		}
-		
-		for(ObjectField ff : fields){
-			if(!innMap.containsKey(ff.getName()))continue;
-			
-			String key = preName+ff.getName();
-			Object value = innMap.get(ff.getName());
-			
-			if(FieldType.INNER_COLLECTION.is(ff.getType())){
-				if(value != null && value instanceof Map && ((Map)value).size() > 0){
-					Map<String,Object> valMap = (Map<String,Object>)value;
 
-					Map<String,Object> m = buildUpdates(ff.getFields(),(Map<String,Object>)value,key,updates,updateQuery);
-					daoMap.putAll(m);
-				}
-			}else if(FieldType.ARRAY.is(ff.getType()) && FieldType.INNER_COLLECTION.is(ff.getElementType())){
-				if(value != null && value instanceof List && ((List)value).size() > 0){
-					List<Map<String,Object>> valList = (List<Map<String,Object>>)value;
-					for(Map<String,Object> valMap:valList){
-						if(hasId(valMap)){
-							String id = (String)valMap.remove("id");
-							BasicDBObject currQuery = updateQuery;
-							if(id != null){
-								currQuery = new BasicDBObject(key +"._id",new ObjectId(id));
-							}
-
-							Map<String,Object> updMap = buildUpdates(ff.getFields(),valMap,key+".$",updates,currQuery);
-							updates.add(buildSetUpdateMap(currQuery,updMap));
-							
-//							if(updMap != null && updMap.size() > 0){
-//								Map<String,BasicDBObject> bdbMap = new HashMap<String,BasicDBObject>();
-//								bdbMap.put("query", currQuery);
-//								bdbMap.put("update", new BasicDBObject("$set",updMap));
-//								updates.add(bdbMap);
-//							}
-						}else {
-							valMap.put("_id",new ObjectId());
-							
-							Map<String,BasicDBObject> bdbMap = new HashMap<String,BasicDBObject>();
-							bdbMap.put("query", updateQuery);
-							bdbMap.put("update", new BasicDBObject("$push",new BasicDBObject(key,valMap)));
-							updates.add(bdbMap);
-							
-//							dao.getDBCollection("Account").update(new BasicDBObject("personal_profile.address._id",new ObjectId("56dfe161ba594151e4e9ebd6")), 
-//									new BasicDBObject("$push",new BasicDBObject(key,valMap)));
-						}
-					}
-				}
-			}else {
-				daoMap.put(key, value);
-			}
-		}
-		
-		return daoMap;
-	}
-	
 	public Map<String,Object> innerObjectById(Map<String,Object> query,String collName){
 		Map<String,Object> dbQuery = buildDBQueryMap(query,null);
 		
 		List<Map<String,Object>> results = this.findByMap(dbQuery, collName);
 		if(results != null && results.size() > 0){
-			Map<String,Object> object = results.get(0);
-			Object objectId = object.get("id");
-			Map<String,Object> returnObject = null;
-			
-			for(String key : dbQuery.keySet()){
-				if(key.endsWith("_id")){
-					String idVal = dbQuery.get(key).toString();
-					
-					Object innerObj = object;
-					if(key.lastIndexOf(".") > 0){
-						String field = key.substring(0,key.lastIndexOf("."));
-						innerObj = MapHelper.readValue(object, field);
-					}
-					
-					if(innerObj instanceof List){
-						for(Object val : (List)innerObj){
-							if(val instanceof Map){
-								if(idVal.equals(((Map) val).get("id"))){
-									returnObject = (Map<String,Object>)val;
-									returnObject.put("_RootObjectId", objectId);
-									return returnObject;
-								}
-							}
-						}
-					}else if(innerObj instanceof Map){
-						if(idVal.equals(((Map) innerObj).get("id"))){
-							returnObject = (Map<String,Object>)innerObj;
-							returnObject.put("_RootObjectId", objectId);
-							return returnObject;
-						}
-					}
-				}
+			Map<String,Object> returnObject = findInnerById(results.get(0),dbQuery);
+			if(returnObject != null){
+				return returnObject;
 			}
 		}
 		return null;
 	}
-	
+
 	public Map<String,Object> save(Map value,String collName) {
 		BasicDBObject doc = this.build(value);
 		if(doc == null){
 			return null;
 		}
-		
 		this.getDBCollection(collName).save(doc);
 		
 		value.put("id", doc.getObjectId("_id").toByteArray());
