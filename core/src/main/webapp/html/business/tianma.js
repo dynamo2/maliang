@@ -57,28 +57,36 @@ function HtmlBuilder(){
 	this.newSelect = function(data){
 		var selObj = $("<select />");
 		selObj.attr("name",builder.addPrefix(data.prefix)+data.name);
-		var defaultValue = data.value;
 		
 		if($.isArray(data.options)){
 			$.each(data.options,function(){
-				var opts = this;
-				if(!$.isPlainObject(this)){
-					opts = {key:this,label:this};
-				}
-				
-				var optObj = $("<option />");
-				selObj.append(optObj);
-				
-				optObj.attr("value",opts.key);
-				optObj.text(opts.label);
-				if(opts.key == defaultValue){
+				var optObj = builder.newOption(this).appendTo(selObj);
+				if(optObj.val() == data.value){
 					optObj.attr("selected",true);
 				}
 			});
 		}
 		
+		if($.isPlainObject(data.events)){
+			for(x in data.events){
+				selObj.on(x,eval(data.events[x]));
+			}
+		}
+		
 		return selObj;
 	};
+	
+	this.newOption = function(opts){
+		if(!$.isPlainObject(opts)){
+			opts = {key:opts,label:opts};
+		}
+		
+		var optObj = $("<option />");
+		optObj.val(opts.key);
+		optObj.text(opts.label);
+		
+		return optObj;
+	}
 	
 	this.newImg = function(imgData){
 		var imgObj = $("<img />");

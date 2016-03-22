@@ -100,6 +100,10 @@ public class CollectionService {
 		//return this.collectionDao.findByMap(query, this.collection);
 	}
 	
+	public List<Map<String,Object>> aggregate(List<Map<String,Object>> query){
+		return this.collectionDao.aggregateByMap(query, this.collection);
+	}
+	
 	public Map<String,Object> save(Object obj){
 		if(obj == null || !(obj instanceof Map))return null;
 		
@@ -108,9 +112,7 @@ public class CollectionService {
 			dataMap = this.correctData(dataMap,this.collection,true);
 			dataMap = this.collectionDao.save(dataMap, this.collection);
 		}else { // Update
-			System.out.println(" dateMap : " + dataMap);
 			dataMap = this.correctData(dataMap,this.collection,false);
-			System.out.println("after dataMap : " + dataMap);
 			dataMap = this.collectionDao.updateBySet(dataMap, this.collection);
 		}
 		
@@ -119,6 +121,10 @@ public class CollectionService {
 	
 	public int remove(String oid){
 		return this.collectionDao.remove(oid,this.collection);
+	}
+	
+	public int remove(Map<String,Object> query){
+		return this.collectionDao.remove(query,this.collection);
 	}
 	
 	private Map<String,Object> correctData(Map<String,Object> dataMap,String collName,boolean dealWithId){
@@ -253,6 +259,9 @@ public class CollectionService {
 		}
 		
 		if("delete".equals(method) || "remove".equals(method) || "del".equals(method)){
+			if(value instanceof Map){
+				return this.remove((Map<String,Object>)value);
+			}
 			return this.remove(value.toString());
 		}
 		
@@ -260,6 +269,10 @@ public class CollectionService {
 			return this.save(value);
 		}
 		
+		if("aggregate".equals(method)){
+			return this.aggregate((List<Map<String,Object>>)value);
+		}
+
 		if(QUERIES_ALIAS.contains(method)){
 			return this.find(value);
 		}

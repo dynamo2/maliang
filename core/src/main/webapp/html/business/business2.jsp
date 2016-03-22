@@ -419,6 +419,21 @@
 				}
 			};
 			
+			this.readEvents = function(defOpts){
+				if(!defOpts)return EMPTY;
+				
+				var events = {};
+				var eventNames = ['change','click','dbclick','blur','focus'];
+				$.each(eventNames,function(){
+					if(defOpts[this]){
+						events[this] = defOpts[this];
+						defOpts[this] = EMPTY;
+					}
+				});
+				
+				return events;
+			};
+			
 			this.readType = function (){
 				var type = opts[2];
 				if(!type){
@@ -430,6 +445,12 @@
 					var list = type.length >= 2?type[1]:null;
 					if(topts.name == 'select'){
 						topts.options = list;
+						
+						if(type.length >= 3 && $.isPlainObject(type[2])){
+							var defOpts = type[2];
+							topts.events = _.readEvents(defOpts);
+							utils.copy(defOpts,topts,['options']);
+						}
 					}else if(topts.name == 'group'){
 						if($.isArray(list)){
 							topts.inputs = [];

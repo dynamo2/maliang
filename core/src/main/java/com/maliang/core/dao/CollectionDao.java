@@ -25,21 +25,40 @@ import com.mongodb.WriteResult;
 
 public class CollectionDao extends BasicDao {
 	public static void main(String[] args) {
-
-		System.out.println("============== before update =================");
-		printTest("56e0e4fb8f778c15692b9eaf");
-		
 		//String str = "{F3:{F31:[{F311:{F3114:[{F31141:'F31141_1'}]},id:'56e0e4fb8f778c15692b9ead'}]}}";
 		String str = "db.Test.save({id:'56e0e4fb8f778c15692b9eaf',F3:{F31:[{F312:'F312_2',F313:'F313_2'},{F311:{F3114:[{F31142:'F31142_1',id:'56e0fbe28f77546a3d590d58'}]}}]}})";
 		str = "db.Test.save({id:'56e0e4fb8f778c15692b9eaf',F3:{F31:[{id:'56e0e4fb8f778c15692b9ead',F311:{F3113 : 'F3113_12_111aaa',F3111 : 'F3111_12_111aaa',F3112 : 'F3112_12_111aaa'}}]}})";
 		
 		//str = "db.Test.innerObjectById({F3:{F31:{id:'56e0e4fb8f778c15692b9ead'}}})";
 		//str = "{id:'56e0e4fb8f778c15692b9eaf'}";
-		Map<String,Object> params = (Map<String,Object>)ArithmeticExpression.execute(str,null);
-		System.out.println("params : " + params);
 		
-		System.out.println("============== after update =================");
-		printTest("56e0e4fb8f778c15692b9eaf");
+		//str = "each(['浙江','江苏','安徽','江西','湖南','湖北','福建','广东','广西','山西','陕西','上海','北京','天津','重庆','四川']){db.Region.save({province:{name:this}})}";
+		str = "db.Region.get('56f0e61b8f772c9814bdedb7')";
+		str = "db.Region.remove({province:null})";
+		str = "db.Region.save({id:'56f0e61b8f772c9814bdedb7',province:{id:'56f0e61b8f772c9814bdedb6',cities:each(['绍兴','台州']){{name:this}}}})";
+		str = "db.Region.save({id:'56f0e61b8f772c9814bdedb7',province:{cities:{id:'56f0f0ef8f77e0edd2b5a130',districts:['东阳','义乌','永康','磐安']}}})";
+		//str = "db.Region.query({province.name:'浙江'})";
+		// districts
+		
+//		str = "db.Region.aggregate([{$project:{province.cities:1}},{$match:{province.name:'浙江'}}])";
+//		Object val = ArithmeticExpression.execute(str,null);
+//		System.out.println("params : " + val);
+		
+		
+		//db.Region.aggregate([{$project:{city:"$province.cities.name",_id:0}},{$match:{province.name:"浙江"}}])
+		//db.Region.aggregate([{$project:{"province.cities.name":1,_id:0}},{$match:{"province.name":"浙江"}}])
+		
+		str = "db.Region.aggregate([{$project:{province.name:1,city:'$province.cities.name',_id:0}},{$match:{province.name:'浙江'}}])";
+		//str = "db.Region.aggregate([{$match:{province.name:'浙江'}},{$group:{_id:'$province.cities.name'}}])";
+		str = "db.Region.aggregate([{$match:{province.name:'浙江'}},{$project:{city:'$province.cities.name',_id:0}}])";
+		//str = "db.Region.aggregate([{$group:{_id:'$province.name'}}])";
+		//str = "db.Region.aggregate([{$project:{province:{cities:{name:1}},_id:0}},{$match:{province.name:'浙江'}}])";
+		Object val = ArithmeticExpression.execute(str,null);
+		System.out.println("params : " + val);
+		
+//		CollectionDao dao = new CollectionDao();
+//		List<Map<String,Object>> list = dao.aggregateByMap((List<Map<String,Object>>)val,"Region");
+//		System.out.println("cities : " + list);
 	}
 
 	private static void printTest(String id){
@@ -98,6 +117,16 @@ public class CollectionDao extends BasicDao {
 		return toMap(doc,collName);
 	}
 	
+	public int remove(Map value,String collName) {
+		BasicDBObject doc = this.build(value);
+		if(doc == null){
+			return 0;
+		}
+		
+		WriteResult result = this.getDBCollection(collName).remove(doc);
+		return result.getN();
+	}
+	
 	protected Map<String,Object> toMap(DBObject doc,String collName){
 		Map<String,Object> dataMap = doc.toMap();
 		mergeLinkedObject(dataMap,collName);
@@ -117,11 +146,7 @@ public class CollectionDao extends BasicDao {
 		
 		while(cursor.hasNext()){
 			BasicDBObject doc = (BasicDBObject)cursor.next();
-			
-			Map<String,Object> map = doc.toMap();
-			mergeLinkedObject(map,collName);
-			
-			return map;
+			return toMap(doc,collName);
 		}
 		
 		return this.emptyResult();
@@ -212,7 +237,7 @@ public class CollectionDao extends BasicDao {
 		
 		List<Map<String,Object>> results = new ArrayList<Map<String,Object>>();
 		while(ie.hasNext()){
-			results.add(ie.next().toMap());
+			results.add(toMap(ie.next(),collName));
 		}
 		return results;
 	}
@@ -260,6 +285,7 @@ public class CollectionDao extends BasicDao {
 
 		for(ObjectField field : fields){
 			String fieldName = field.getName();
+			
 			if(FieldType.LINK_COLLECTION.is(field.getType())){
 				String linkCollName = getLinkedCollectionName(field.getLinkedObject());
 				if(linkCollName == null)return;
@@ -276,12 +302,14 @@ public class CollectionDao extends BasicDao {
 					Map<String,Object> innMap = (Map<String,Object>)fValue;
 					correctField(innMap,field.getFields());
 				}
-			}else if(FieldType.ARRAY.is(field.getType()) && FieldType.INNER_COLLECTION.is(field.getElementType())){
-				Object fValue = dataMap.get(fieldName);
-				if(fValue instanceof List){
-					List<Map<String,Object>> innList = (List<Map<String,Object>>)fValue;
-					for(Map<String,Object> map:innList){
-						correctField(map,field.getFields());
+			}else if(FieldType.ARRAY.is(field.getType())){
+				if(FieldType.INNER_COLLECTION.is(field.getElementType())){
+					Object fValue = dataMap.get(fieldName);
+					if(fValue instanceof List){
+						List<Map<String,Object>> innList = (List<Map<String,Object>>)fValue;
+						for(Map<String,Object> map:innList){
+							correctField(map,field.getFields());
+						}
 					}
 				}
 			}
