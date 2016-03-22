@@ -106,6 +106,10 @@ public class Function {
 			return null;
 		}
 		
+		if("exe".equalsIgnoreCase(key)){
+			return ExecuteFunction.execute(this, params);
+		}
+		
 		if("dateFormat".equalsIgnoreCase(key) || "df".equalsIgnoreCase(key)){
 			return DateFunction.dateFormat(this, params);
 		}

@@ -25,6 +25,8 @@ public class Each {
 	}
 	
 	public static List<Object> execute(Function function,Map<String,Object> params){
+		if(params == null)params = new HashMap<String,Object>();
+		
 		List<Object> resultList = new ArrayList<Object>();
 		Object value = function.executeExpression(params);
 		if(value == null){
