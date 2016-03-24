@@ -104,6 +104,10 @@ public class CollectionService {
 		return this.collectionDao.aggregateByMap(query, this.collection);
 	}
 	
+	public Map<String,Object> aggregateOne(List<Map<String,Object>> query){
+		return this.collectionDao.aggregateOne(query, this.collection);
+	}
+	
 	public Map<String,Object> save(Object obj){
 		if(obj == null || !(obj instanceof Map))return null;
 		
@@ -271,6 +275,10 @@ public class CollectionService {
 		
 		if("aggregate".equals(method)){
 			return this.aggregate((List<Map<String,Object>>)value);
+		}
+		
+		if("aggregateOne".equals(method)){
+			return this.aggregateOne((List<Map<String,Object>>)value);
 		}
 
 		if(QUERIES_ALIAS.contains(method)){

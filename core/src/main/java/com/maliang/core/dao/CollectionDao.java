@@ -36,7 +36,7 @@ public class CollectionDao extends BasicDao {
 		str = "db.Region.get('56f0e61b8f772c9814bdedb7')";
 		str = "db.Region.remove({province:null})";
 		str = "db.Region.save({id:'56f0e61b8f772c9814bdedb7',province:{id:'56f0e61b8f772c9814bdedb6',cities:each(['绍兴','台州']){{name:this}}}})";
-		str = "db.Region.save({id:'56f0e61b8f772c9814bdedb7',province:{cities:{id:'56f0f0ef8f77e0edd2b5a130',districts:['东阳','义乌','永康','磐安']}}})";
+		str = "db.Region.save({id:'56f0e61b8f772c9814bdedb7',province:{cities:{id:'56f0f0ef8f77e0edd2b5a12f',districts:['西湖','拱墅','江干','下城','上城','滨江','萧山','余杭']}}})";
 		//str = "db.Region.query({province.name:'浙江'})";
 		// districts
 		
@@ -44,15 +44,14 @@ public class CollectionDao extends BasicDao {
 //		Object val = ArithmeticExpression.execute(str,null);
 //		System.out.println("params : " + val);
 		
-		
-		//db.Region.aggregate([{$project:{city:"$province.cities.name",_id:0}},{$match:{province.name:"浙江"}}])
-		//db.Region.aggregate([{$project:{"province.cities.name":1,_id:0}},{$match:{"province.name":"浙江"}}])
-		
 		str = "db.Region.aggregate([{$project:{province.name:1,city:'$province.cities.name',_id:0}},{$match:{province.name:'浙江'}}])";
 		//str = "db.Region.aggregate([{$match:{province.name:'浙江'}},{$group:{_id:'$province.cities.name'}}])";
-		str = "db.Region.aggregate([{$match:{province.name:'浙江'}},{$project:{city:'$province.cities.name',_id:0}}])";
-		//str = "db.Region.aggregate([{$group:{_id:'$province.name'}}])";
-		//str = "db.Region.aggregate([{$project:{province:{cities:{name:1}},_id:0}},{$match:{province.name:'浙江'}}])";
+		str = "db.Region.aggregateOne([{$match:{province.name:'浙江'}},{ $unwind :'$province.cities'},"
+				    + "{$group:{_id:{$cond:{if:{$eq:['$province.cities.name','绍兴']},then:{ $ifNull:[ '$province.cities.districts',[]]},else:[]}}}},"
+					+ "{$redact:{$cond:{if:{$gt:[{$size:'$_id'},0]},then:'$$DESCEND',else:'$$PRUNE'}}}])";
+		
+		//str = "db.Region.save({id:'56f0e61b8f772c9814bdedb7',province:{cities:{id:'56f0f0ef8f77e0edd2b5a12f',districts:['西湖','拱墅','江干','下城','上城','滨江','萧山','余杭']}}})";
+		
 		Object val = ArithmeticExpression.execute(str,null);
 		System.out.println("params : " + val);
 		
@@ -203,6 +202,13 @@ public class CollectionDao extends BasicDao {
 		return results;
 	}
 	
+	public Map<String,Object> aggregateOne(List<Map<String,Object>> query,String collName){
+		List<Map<String,Object>> results = aggregateByMap(query,collName);
+		if(results != null && results.size() > 0){
+			return results.get(0);
+		}
+		return null;
+	}
 	public List<Map<String,Object>> aggregateByMap(List<Map<String,Object>> query,String collName){
 		if(query == null || query.isEmpty()){
 			return this.emptyResults();
@@ -280,7 +286,11 @@ public class CollectionDao extends BasicDao {
 	
 	private void correctField(Map<String,Object> dataMap,List<ObjectField> fields){
 		if(dataMap.get("_id") != null){
-			dataMap.put("id",dataMap.remove("_id").toString());
+			Object id = dataMap.remove("_id");
+			if(id instanceof ObjectId){
+				id = id.toString();
+			}
+			dataMap.put("id",id);
 		}
 
 		for(ObjectField field : fields){

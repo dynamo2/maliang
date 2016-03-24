@@ -57,15 +57,7 @@ function HtmlBuilder(){
 	this.newSelect = function(data){
 		var selObj = $("<select />");
 		selObj.attr("name",builder.addPrefix(data.prefix)+data.name);
-		
-		if($.isArray(data.options)){
-			$.each(data.options,function(){
-				var optObj = builder.newOption(this).appendTo(selObj);
-				if(optObj.val() == data.value){
-					optObj.attr("selected",true);
-				}
-			});
-		}
+		selObj.append(builder.buildOptions(data.options,data.value));
 		
 		if($.isPlainObject(data.events)){
 			for(x in data.events){
@@ -76,7 +68,21 @@ function HtmlBuilder(){
 		return selObj;
 	};
 	
-	this.newOption = function(opts){
+	this.buildOptions = function(data,selectedVal){
+		if($.isArray(data)){
+			var list = [];
+			$.each(data,function(){
+				list.push(builder.newOption(this,selectedVal));
+			});
+			return list;
+		}else {
+			return builder.newOption(data,selectedVal);
+		}
+	};
+	
+	this.newOption = function(opts,selectedVal){
+		if(!opts)return null;
+		
 		if(!$.isPlainObject(opts)){
 			opts = {key:opts,label:opts};
 		}
@@ -84,6 +90,12 @@ function HtmlBuilder(){
 		var optObj = $("<option />");
 		optObj.val(opts.key);
 		optObj.text(opts.label);
+		
+		if(selectedVal){
+			if(optObj.val() == selectedVal){
+				optObj.attr("selected",true);
+			}
+		}
 		
 		return optObj;
 	}
