@@ -168,9 +168,7 @@ public class CollectionDao extends BasicDao {
 		
 		return this.readCursor(cursor, collName);
 	}
-	
-	
-	
+
 	public List<Map<String,Object>> findByMap(Map<String,Object> query,String collName){
 		return this.find(build(query), collName);
 	}
@@ -184,11 +182,7 @@ public class CollectionDao extends BasicDao {
 	private List<Map<String,Object>> readCursor(DBCursor cursor,String collName){
 		List<Map<String,Object>> results = new ArrayList<Map<String,Object>>();
 		for(DBObject dob : cursor.toArray()){
-			Map<String,Object> dataMap = dob.toMap();
-			mergeLinkedObject(dataMap,collName);
-			
-			//dataMap.remove("_id");
-			results.add(dataMap);
+			results.add(toMap(dob,collName));
 		}
 		
 		return results;
