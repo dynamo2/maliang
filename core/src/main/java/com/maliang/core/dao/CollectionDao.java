@@ -132,14 +132,6 @@ public class CollectionDao extends BasicDao {
 		return dataMap;
 	}
 	
-	public void update22(Map value,String collName) {
-		DBCollection db = this.getDBCollection(collName);
-		String id = (String)value.remove("id");
-		
-		BasicDBObject doc = this.build(value);
-		db.update(this.getObjectId(id), new BasicDBObject("$set",doc));
-	}
-	
 	public Map<String,Object> getByID(String oid,String collName){
 		DBCursor cursor = this.getDBCollection(collName).find(this.getObjectId(oid));
 		
