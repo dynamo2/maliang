@@ -542,6 +542,50 @@ public class ArithmeticExpression {
 			if(valueRight instanceof Date){
 				return DateCalculator.calculate((Date)valueRight,valueLeft.toString(),this.operator);
 			}
+			
+			if(valueLeft instanceof List){
+				List list = (List)valueLeft;
+				if(valueRight == null){
+					return list;
+				}else if(valueRight instanceof List){
+					if(!this.operator.isPlus()){
+						throw new RuntimeException("Error operator '"+this.operator.getOperatorKey()+"' for String");
+					}
+					
+					list.addAll((List)valueRight);
+					return list;
+				}else {
+					return calculateString(valueLeft.toString(),valueRight.toString());
+				}
+			}
+			
+			if(valueLeft instanceof Map){
+				Map map = (Map)valueLeft;
+				if(valueRight == null){
+					return map;
+				}else if(valueRight instanceof Map){
+					if(!this.operator.isPlus()){
+						throw new RuntimeException("Error operator '"+this.operator.getOperatorKey()+"' for String");
+					}
+					
+					map.putAll((Map)valueRight);
+					return map;
+				}else {
+					return calculateString(valueLeft.toString(),valueRight.toString());
+				}
+			}
+			
+			if(valueRight instanceof List){
+				if(valueLeft == null){
+					return (List)valueRight;
+				}
+			}
+			
+			if(valueRight instanceof Map){
+				if(valueLeft == null){
+					return (Map)valueRight;
+				}
+			}
 
 			if(valueLeft instanceof String || valueRight instanceof String){
 				return calculateString(valueLeft==null?null:valueLeft.toString(),valueRight==null?null:valueRight.toString());

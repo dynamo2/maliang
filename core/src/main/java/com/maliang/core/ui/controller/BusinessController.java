@@ -22,8 +22,8 @@ import com.maliang.core.arithmetic.ArithmeticExpression;
 import com.maliang.core.arithmetic.function.SessionFunction;
 import com.maliang.core.dao.BusinessDao;
 import com.maliang.core.exception.TianmaException;
+import com.maliang.core.exception.TurnToPage;
 import com.maliang.core.model.Business;
-import com.maliang.core.model.FieldType;
 import com.maliang.core.model.WorkFlow;
 
 @Controller
@@ -80,8 +80,10 @@ public class BusinessController extends BasicController {
 			System.out.println("resultJson : " + resultJson);
 			model.addAttribute("resultJson", resultJson);
 			return "/business/business2";
+		}catch(TurnToPage page){
+			model.addAttribute("resultJson", json(page.getResult()));
+			return "/business/business2";
 		}catch(TianmaException e){
-			//e.printStackTrace();
 			model.addAttribute("errorMsg", e.getMessage());
 			return "/business/error";
 		}

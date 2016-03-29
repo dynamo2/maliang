@@ -22,6 +22,7 @@
 		<script src="../js/wysiwyg/wysiwyg.js"></script>
 		<script src="../js/wysiwyg/wysiwyg-editor.js"></script>
 		<script src="../js/wysiwyg/config.js"></script>
+		<link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.min.css">
 		<link href="../style/wysiwyg/wysiwyg-editor.css" rel="stylesheet" type="text/css"/>
 		
 		<!-- tianma -->
@@ -127,6 +128,10 @@
 					parent.append(TableBlock(json));
 				}else if(type === 'tableList'){
 					parent.append(TableList(json));
+				}else if(type === 'menu'){
+					parent.append(Menu(json));
+				}else if(type === 'error'){
+					parent.append(Error(json));
 				}else if(type === 'dialog'){
 					appendToDialog(json);
 				}else if(type === 'form'){
@@ -140,7 +145,7 @@
 				}
 			}else {
 				$.each(json,function(){
-					build(this);
+					build(this,parent);
 				});
 			}
 		}
@@ -249,12 +254,12 @@
 		}
 		
 		function addChildren(parent,json){
-			if(utils.isString(json)){
-				parent.text(json);
-			}else if($.isArray(json)){
+			if($.isArray(json)){
 				parent.append(build2(json));
 			}else if($.isPlainObject(json)){
 				parent.html(json.html);
+			}else {
+				parent.text(json);
 			}
 			return parent;
 		}
@@ -307,6 +312,53 @@
 			}
 			
 			return span;
+		}
+		
+		function Error(json){
+			var err = $("<div class='error'/>");
+			
+			if(json.length > 1){
+				addChildren(err,json[1]);
+			}
+			return err;
+		}
+		
+		function Menu(json){
+			var menu = $("<p class='menu' />");
+			
+			if($.isArray(json) && json.length > 1){
+				var menuList = json[1];
+				var bid = menuList[0];
+				
+				if(utils.isString(bid) && $.trim(bid).length > 0){
+					bid = 'bid='+bid;
+				}else bid = '';
+				
+				var href = '/business/business2.htm?'+bid;
+				for(var i = 1; i < menuList.length; i++){
+					var opts = menuList[i];
+					
+					var a = $("<a />").appendTo(menu);
+					if(utils.isString(opts)){
+						a.attr('href',href);
+						a.text(opts);
+					}else if($.isPlainObject(opts)){
+						for(var x in opts){
+							a.text(x);
+							
+							var tail = opts[x];
+							if(utils.isString(tail)){
+								a.attr('href',href+tail);
+							}else if($.isNumeric(tail)){
+								a.attr('href',href+'&fid='+tail);
+							}
+						}
+					}
+				}
+			}
+			
+			
+			return menu;
 		}
 		
 		/**
@@ -493,8 +545,6 @@
 			_.read();
 			return input;
 		}
-
-		
 		
 		function ts(obj){
 			return JSON.stringify(obj);
@@ -540,10 +590,18 @@
 		.tableBlock td {
 			padding:8px 10px;
 			border-bottom:1px dashed #ccc;
+			max-width:700px;
 		}
 		
 		.tableBlock .label {
 			text-align:right;
+			font-weight:bold;
+			vertical-align:top;
+		}
+		
+		.tableBlock img {
+			max-width:200px;
+			max-height:200px;
 		}
 		
 		.tableList {
@@ -556,6 +614,10 @@
 			min-width:150px;
 		}
 		
+		.tableList a{
+			margin-left:10px;
+		}
+		
 		#title {
 			border-bottom:2px solid #AFE2E4;
 			width:600px;
@@ -565,6 +627,19 @@
 		
 		#main {
 			margin:30px;
+		}
+		
+		.menu a {
+			margin:10px;
+		}
+		
+		.error {
+			border:0px solid red;
+			margin-top:30px;
+			margin-left:200px;
+			font-size:20px;
+			font-weight:bold;
+			color:red;
 		}
 		</style>
 		

@@ -106,6 +106,10 @@ public class Function {
 			return null;
 		}
 		
+		if("to".equalsIgnoreCase(key)){
+			return BusinessFunction.toPage(this, params);
+		}
+		
 		if("exe".equalsIgnoreCase(key)){
 			return ExecuteFunction.execute(this, params);
 		}
@@ -163,6 +167,14 @@ public class Function {
 			return NotNull.execute(this, params);
 		}
 		
+		if("isNull".equals(key)){
+			return IsNull.execute(this, params);
+		}
+		
+		if("not".equals(key)){
+			return Not.execute(this, params);
+		}
+		
 		if("check".equals(key)){
 			return Check.execute(this, params);
 		}
@@ -181,6 +193,10 @@ public class Function {
 		
 		if(this.isDBFun()){
 			return DBFunction.execute(this, params);
+		}
+
+		if(this.isHtmlFun()){
+			return HtmlFunction.execute(this, params);
 		}
 		
 		/*
@@ -226,8 +242,12 @@ public class Function {
 		return key != null && key.startsWith("db.");
 	}
 	
+	private boolean isHtmlFun(){
+		return key != null && (key.startsWith("h.") || key.startsWith("html."));
+	}
+	
 	private void executeKey(Map<String,Object> params){
-		if(this.isDBFun()){
+		if(this.isDBFun() || this.isHtmlFun()){
 			return;
 		}
 		

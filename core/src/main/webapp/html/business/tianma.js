@@ -323,7 +323,17 @@ function FormBuilder(){
 			return spanObj;
 		}else if(inputData.type == "list"){
 			return TM_ulListBuilder.newInputs(inputData);
+		}else if(inputData.type == "html"){
+			return builder.newHtmlEditor(inputData);
 		}
+	};
+	
+	this.newHtmlEditor = function(options){
+		var divObj = $("<div />").css("width","600px").css("margin","10px");
+		var areaObj = $("<textarea />").prop("name",options.name).
+						text(options.value).appendTo(divObj);
+		areaObj.wysiwyg(wysiwygFullBars);
+		return divObj;
 	};
 	
 	this.newLabel = function(data){

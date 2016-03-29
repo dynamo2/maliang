@@ -123,6 +123,10 @@ public class CollectionService {
 		return dataMap;
 	}
 	
+	public void removeAll(){
+		this.collectionDao.removeAll(this.collection);
+	}
+	
 	public int remove(String oid){
 		return this.collectionDao.remove(oid,this.collection);
 	}
@@ -267,6 +271,11 @@ public class CollectionService {
 				return this.remove((Map<String,Object>)value);
 			}
 			return this.remove(value.toString());
+		}
+		
+		if("removeAll".equals(method)){
+			this.removeAll();
+			return null;
 		}
 		
 		if("save".equals(method)){
