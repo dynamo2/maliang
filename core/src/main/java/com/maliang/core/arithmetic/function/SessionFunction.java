@@ -6,6 +6,9 @@ import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
+
 import com.maliang.core.arithmetic.ArithmeticExpression;
 
 public class SessionFunction {
@@ -13,42 +16,31 @@ public class SessionFunction {
 	
 	public static Object execute(Function function ,Map<String,Object> params){
 		Object obj = function.executeExpression(params);
-		if(obj != null && obj instanceof Map){
-			Map mv = (Map)obj;
-			if(mv.size() > 0){
-				HttpSession session = getSession(params);
-				for(Object k :mv.keySet()){
-					session.setAttribute(k.toString(), mv.get(k));
-				}
-			}
-			
-			return mv;
-		}
-		
 		if(obj != null){
-			HttpSession session = getSession(params);
-			
-//			Enumeration<String> es = session.getAttributeNames();
-//			System.out.println("***** get user *****");
-//			while(es.hasMoreElements()){
-//				System.out.println(es.nextElement()+",");
-//			}
-//			System.out.println("=====");
-			
-			return session.getAttribute(obj.toString());
+			HttpSession session = getSession();
+			if(obj instanceof Map){
+				Map<String,Object> mv = (Map<String,Object>)obj;
+				if(mv.size() > 0){
+					for(String k :mv.keySet()){
+						session.setAttribute(k, mv.get(k));
+					}
+				}
+				
+				return mv;
+			}else {
+				return session.getAttribute(obj.toString());
+			}
 		}
 		
 		return null;
 	}
 	
-	private static HttpSession getSession(Map<String,Object> params){
-		if(params != null && params.containsKey(HTTP_REQUEST_KEY)){
-			HttpServletRequest request = (HttpServletRequest)params.get(HTTP_REQUEST_KEY);
-			
-			if(request != null){
-				return request.getSession();
-			}
+	private static HttpSession getSession(){
+		HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest(); 
+		if(request != null){
+			return request.getSession();
 		}
+		
 		return null;
 	}
 	

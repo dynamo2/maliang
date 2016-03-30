@@ -1,5 +1,6 @@
 package com.maliang.core.arithmetic.function;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import com.maliang.core.exception.TurnToPage;
@@ -10,11 +11,11 @@ public class BusinessFunction {
 	
 	public static String toPage(Function function,Map<String,Object> params){
 		Object value = function.executeExpression(params);
+		if(params == null)params = new HashMap<String,Object>();
+		
 		if(value != null && value instanceof Map){
-			Map<String,Object> map = (Map<String,Object>)value;
-
-			throw new TurnToPage(service.business(map));
+			params.putAll((Map<String,Object>)value);
 		}
-		return null;
+		throw new TurnToPage(service.business(params));
 	}
 }

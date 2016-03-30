@@ -117,42 +117,65 @@
 			}
 			
 			if(json){
-				build(json,$("#main"));
+				$("#main").append(build(json));
 			}
 		}
 
-		function build(json,parent){
+		function build(json){
 			var type = json[0];
 			if(utils.isString(type)){
-				if(type === 'tableBlock'){
-					parent.append(TableBlock(json));
-				}else if(type === 'tableList'){
-					parent.append(TableList(json));
-				}else if(type === 'menu'){
-					parent.append(Menu(json));
-				}else if(type === 'error'){
-					parent.append(Error(json));
-				}else if(type === 'dialog'){
-					appendToDialog(json);
-				}else if(type === 'form'){
-					var options = readForm(json);
-					//pt(ts(options));
-					
-					var ft = new FormTable();
-					ft.init(options);
-					
-					parent.append(ft.form);
-				}
+				return buildOne(json);
 			}else {
+				var comps = [];
 				$.each(json,function(){
-					build(this,parent);
+					var ccs = build(this);
+					if($.isArray(ccs)){
+						comps = comps.concat(css);
+					}else {
+						comps.push(ccs);
+					}
 				});
+				
+				return comps;
 			}
 		}
 		
+		function buildOne(json){
+			var type = json[0];
+			
+			if(type === 'tableBlock'){
+				return TableBlock(json);
+			}else if(type === 'tableList'){
+				return TableList(json);
+			}else if(type === 'menu'){
+				return Menu(json);
+			}else if(type === 'error'){
+				return Error(json);
+			}else if(type === 'dialog'){
+				appendToDialog(json);
+				return null;
+			}else if(type === 'form'){
+				var options = readForm(json);
+				var ft = new FormTable();
+				ft.init(options);
+				
+				return ft.form;
+			}else if(type === 'a'){
+				return buildA(json);
+			}else if(type === 'img'){
+				return buildImg(json);
+			}else if(type === 'button'){
+				return buildButton(json);
+			}else if(type === 'div'){
+				return buildDiv(json);
+			}else if(type === 'span'){
+				return buildSpan(json);
+			}
+		}
+
 		function appendToDialog(json){
 			$("#dialogPanel").empty();
-			build(json[1],$("#dialogPanel"));
+			$("#dialogPanel").append(build(json[1]));
 			
 			/**
 			** Dialog options
@@ -198,7 +221,8 @@
 				
 				$.getScript(js,function(){
 					if(result && result.json){
-						build(result.json,$("#main"));
+						$("#main").append(build(result.json));
+						//build(,$("#main"));
 					}
 				});
 			});
@@ -224,38 +248,9 @@
 			return reqDatas;
 		}
 		
-		function build2(json){
-			var type = json[0];
-			if(utils.isString(type)){
-				if(type === 'a'){
-					return buildA(json);
-				}else if(type === 'img'){
-					return buildImg(json);
-				}else if(type === 'button'){
-					return buildButton(json);
-				}else if(type === 'div'){
-					return buildDiv(json);
-				}else if(type === 'span'){
-					return buildSpan(json);
-				}
-			}else {
-				var comps = [];
-				$.each(json,function(){
-					var ccs = build2(this);
-					if($.isArray(ccs)){
-						comps = comps.concat(css);
-					}else {
-						comps.push(ccs);
-					}
-				});
-				
-				return comps;
-			}
-		}
-		
 		function addChildren(parent,json){
 			if($.isArray(json)){
-				parent.append(build2(json));
+				parent.append(build(json));
 			}else if($.isPlainObject(json)){
 				parent.html(json.html);
 			}else {
@@ -559,6 +554,63 @@
 			$("#print").text(str);
 		}
 		
+		/**
+		function build(json,parent){
+			var type = json[0];
+			if(utils.isString(type)){
+				if(type === 'tableBlock'){
+					parent.append(TableBlock(json));
+				}else if(type === 'tableList'){
+					parent.append(TableList(json));
+				}else if(type === 'menu'){
+					parent.append(Menu(json));
+				}else if(type === 'error'){
+					parent.append(Error(json));
+				}else if(type === 'dialog'){
+					appendToDialog(json);
+				}else if(type === 'form'){
+					var options = readForm(json);
+					var ft = new FormTable();
+					ft.init(options);
+					parent.append(ft.form);
+				}
+			}else {
+				$.each(json,function(){
+					build(this,parent);
+				});
+			}
+		}
+		
+		function build2(json){
+			var type = json[0];
+			if(utils.isString(type)){
+				if(type === 'a'){
+					return buildA(json);
+				}else if(type === 'img'){
+					return buildImg(json);
+				}else if(type === 'button'){
+					return buildButton(json);
+				}else if(type === 'div'){
+					return buildDiv(json);
+				}else if(type === 'span'){
+					return buildSpan(json);
+				}
+			}else {
+				var comps = [];
+				$.each(json,function(){
+					var ccs = build2(this);
+					if($.isArray(ccs)){
+						comps = comps.concat(css);
+					}else {
+						comps.push(ccs);
+					}
+				});
+				
+				return comps;
+			}
+		}
+		
+		**/
 		</script>
 		<style>
 		form table td {
