@@ -222,7 +222,6 @@
 				$.getScript(js,function(){
 					if(result && result.json){
 						$("#main").append(build(result.json));
-						//build(,$("#main"));
 					}
 				});
 			});
@@ -231,9 +230,7 @@
 		function ajaxForm(formId,doneFun){
 			var form = $("#"+formId);
 			var reqDatas = readFormDatas(form);
-			
-			//pt(ts(reqDatas));
-			
+
 			ajax(reqDatas,doneFun);
 		}
 		
