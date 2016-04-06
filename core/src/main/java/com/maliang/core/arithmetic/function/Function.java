@@ -4,6 +4,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Stack;
 
+import org.apache.commons.collections.map.LinkedMap;
+
 import com.maliang.core.arithmetic.ArithmeticExpression;
 import com.maliang.core.arithmetic.Substring;
 import com.maliang.core.service.BusinessService;
@@ -22,6 +24,7 @@ public class Function {
 	private final String source;
 	private final int startIndex;
 	private int endIndex;
+	private IfFunction ifFunction;
 	
 	public Function(String k,String s,int startIndex){
 		this.key = k;
@@ -30,7 +33,12 @@ public class Function {
 		
 		if(key != null)key = key.trim();
 		
-		readOthers();
+		if("if".equals(key)){
+			ifFunction = new IfFunction(this.source,this.startIndex);
+			this.endIndex = ifFunction.getEndIndex();
+		}else {
+			readOthers();
+		}
 	}
 	
 	public void setKeyValue(Object kv){
@@ -148,7 +156,11 @@ public class Function {
 		}
 		
 		if("if".equals(key)){
-			return If.execute(this, params);
+			//return If.execute(this, params);
+			if(this.ifFunction != null){
+				return this.ifFunction.execute(params);
+			}
+			return null;
 		}
 		
 		if("addToParams".equals(key)){
@@ -246,6 +258,11 @@ public class Function {
 		return key != null && (key.startsWith("h.") || key.startsWith("html."));
 	}
 	
+	/**
+	 * execute key value
+	 * example:a.b.c.e()
+	 *     a.b.c is e function's parameter
+	 * **/
 	private void executeKey(Map<String,Object> params){
 		if(this.isDBFun() || this.isHtmlFun()){
 			return;
@@ -342,6 +359,8 @@ public class Function {
 		
 		return false;
 	}
+	
+	
 	
 	private void readOthers(){
 		int i = this.startIndex;

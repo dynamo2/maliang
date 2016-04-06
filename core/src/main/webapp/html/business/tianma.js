@@ -108,61 +108,36 @@ function HtmlBuilder(){
 	};
 	
 	this.newRadio = function(data){
-		var radioSpan = $("<span></span>");
+		var radioSpan = $("<span />");
 		
-		for(var idx in data.options){
-			var option = data.options[idx];
-			
-			var radioObj = $("<input type='radio'>");
-			radioObj.attr("name",builder.addPrefix(data.prefix)+data.name);
-			radioObj.attr("value",option.key);
-			
-			var radioText = $("<label></label>");
-			radioText.text(option.label);
-			
-			if(option.key == data.value){
-				radioObj.attr("selected",true);
-			}
-			
-			radioSpan.append(radioObj);
-			radioSpan.append(radioText);
-		}
+		$.each(data.options,function(){
+			builder.newInput(data).prop("type","radio")
+				.prop("checked",this.key == data.value)
+				.appendTo(radioSpan);
+		
+			$("<label />").text(this.label).appendTo(radioSpan);
+		});
 		
 		return radioSpan;
 	};
 	
 	this.newCheckbox = function(data){
-		var checkboxSpan = $("<span></span>");
+		var span = $("<span />");
 		
-		for(var idx in data.options){
-			var option = data.options[idx];
-			
-			var checkboxObj = $("<input type='checkbox'>");
-			
-			checkboxObj.attr("name",builder.addPrefix(data.prefix)+data.name);
-			checkboxObj.attr("value",option.key);
-			checkboxObj.attr("checked",false);
-			if(option.key == data.value){
-				checkboxObj.attr("checked",true);
-			}
-			
-			var checkboxText = $("<label></label>");
-			checkboxText.text(option.label);
-			
-			checkboxSpan.append(checkboxObj);
-			checkboxSpan.append(checkboxText);
-		}
+		$.each(data.options,function(){
+			builder.newInput(data).prop("type","checkbox")
+				.prop("checked",this.key == data.value)
+				.appendTo(span);
 		
-		return checkboxSpan;
+			$("<label />").text(this.label).appendTo(span);
+		});
+		
+		return span;
 	};
 	
 	this.newInput = function(data){
-		var txtObj = $("<input />");
-
-		txtObj.attr("value",data.value);
-		txtObj.attr("name",builder.addPrefix(data.prefix)+data.name);
-		
-		return txtObj;
+		return $("<input />").attr("value",data.value)
+					.attr("name",builder.addPrefix(data.prefix)+data.name);
 	};
 	
 	this.addPrefix = function(prefix){
@@ -173,12 +148,8 @@ function HtmlBuilder(){
 	}
 	
 	this.newTextarea = function(data){
-		var txtObj = $("<textarea />");
-
-		txtObj.text(data.value);
-		txtObj.attr("name",builder.addPrefix(data.prefix)+data.name);
-		
-		return txtObj;
+		return $("<textarea />").text(data.value)
+					.attr("name",builder.addPrefix(data.prefix)+data.name);
 	};
 	
 	this.newText = function(data){
@@ -200,23 +171,16 @@ function HtmlBuilder(){
 	};
 	
 	this.newNumberInput = function(data){
-		var txtObj = builder.newInput(data);
-		txtObj.attr("type","number");
-		return txtObj;
+		return builder.newInput(data).attr("type","number");
 	};
 	
 	this.newDateInput = function(data){
-		var txtObj = builder.newText(data);
-		txtObj.attr("type","date");
+		return builder.newText(data).attr("type","date");
 		//txtObj.datepicker();
-		return txtObj;
 	};
 	
 	this.newLabel = function(data){
-		var labelObj = $("<label></label>");
-		labelObj.attr("name",builder.addPrefix(data.prefix)+data.name);
-		labelObj.text(data.text);
-		return labelObj;
+		return $("<label />").attr("name",builder.addPrefix(data.prefix)+data.name).text(data.text);
 	};
 	
 	this.newA = function(data){
@@ -258,7 +222,7 @@ function FormBuilder(){
 	};
 	
 	this.newInputsDiv = function(inputs){
-		var divObj = $("<div></div>");
+		var divObj = $("<div />");
 		for(var idx in inputs){
 			var inputData = inputs[idx];
 			divObj.append(builder.newItem(inputData));
@@ -268,14 +232,11 @@ function FormBuilder(){
 	};
 	
 	this.newItem = function(inputData){
-		var divObj = $("<div></div>");
-		var labelObj = $("<label></label>");
-		labelObj.text(inputData.label);
-		divObj.append(labelObj);
+		var divObj = $("<div />");
 		
-		var inputObj = builder.newInputElement(inputData);
+		$("<label />").text(inputData.label).appendTo(divObj);
+		builder.newInputElement(inputData).appendTo(divObj);
 		
-		divObj.append(inputObj);
 		return divObj;
 	};
 	
@@ -329,18 +290,15 @@ function FormBuilder(){
 	};
 	
 	this.newHtmlEditor = function(options){
-		var divObj = $("<div />").css("width","600px").css("margin","10px");
-		var areaObj = $("<textarea />").prop("name",options.name).
-						text(options.value).appendTo(divObj);
+		var divObj = $("<div style='width:600px;margin:10px;' />");
+		var areaObj = $("<textarea />").prop("name",options.name)
+							.text(options.value).appendTo(divObj);
 		areaObj.wysiwyg(wysiwygFullBars);
 		return divObj;
 	};
 	
 	this.newLabel = function(data){
-		var labelObj = $("<label></label>");
-		labelObj.attr("name",data.name);
-		labelObj.text(data.value);
-		return labelObj;
+		return $("<label />").attr("name",data.name).text(data.value);
 	};
 	
 };
@@ -348,7 +306,7 @@ function UIListBuilder(){
 	var builder = this;
 	
 	this.newInputs = function(itemData){
-		var divObj = $("<div></div>").addClass("ul-list");
+		var divObj = $("<div />").addClass("ul-list");
 		
 		var addBntObj = $("<input type='button' id='addNewItemRow' />").val('添加新'+itemData.label).appendTo(divObj);
 		$("<input type='submit' />").val('保存').appendTo(divObj);
@@ -388,7 +346,7 @@ function UIListBuilder(){
 	};
 	
 	this.newItemInputs = function(inputItem,options){
-		var ulObj = $("<ul></ul>");
+		var ulObj = $("<ul />");
 		ulObj.attr("row",options.maxIndex.value);
 		
 		var col = 0;
@@ -396,7 +354,7 @@ function UIListBuilder(){
 			$.each(options.headers,function(idx){
 				var fieldInput = inputItem[idx];
 				
-				var liObj = $("<li></li>").attr("column",col++).appendTo(ulObj);
+				var liObj = $("<li />").attr("column",col++).appendTo(ulObj);
 				if(fieldInput instanceof Array){
 					$.each(fieldInput,function(key,value){
 						if(!value)return true;
@@ -433,7 +391,7 @@ function UIListBuilder(){
 		delBntObj.click(function(){
 			ulObj.remove();
 		});
-		var liObj = $("<li></li>");
+		var liObj = $("<li />");
 		if(col){
 			liObj.attr("column",col);
 		}
@@ -442,7 +400,7 @@ function UIListBuilder(){
 	}
 	
 	this.newUIList = function(listData){
-		var divObj = $("<div></div>").addClass("ul-list");
+		var divObj = $("<div />").addClass("ul-list");
 		
 		divObj.append(builder.newListHeader(listData.header));
 
@@ -625,7 +583,7 @@ function FormTable(){
 	};
 	
 	this.appendInput = function(td,opts){
-		if(_.isSelect(opts)){
+		if(_.canSelect(opts)){
 			var selOpts = opts.type;
 			if($.isPlainObject(selOpts)){
 				opts.type = selOpts.name;
@@ -648,8 +606,8 @@ function FormTable(){
 		return _.isType(opts,'group');
 	};
 	
-	this.isSelect = function(opts){
-		return _.isType(opts,'select');
+	this.canSelect = function(opts){
+		return _.isType(opts,'select') || _.isType(opts,'radio');
 	};
 	
 	this.isType = function(opts,tname){

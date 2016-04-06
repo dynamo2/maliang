@@ -290,7 +290,6 @@
 				}
 			}
 			
-			
 			return div;
 		}
 		
@@ -348,8 +347,6 @@
 					}
 				}
 			}
-			
-			
 			return menu;
 		}
 		
@@ -380,7 +377,6 @@
 			
 			return table;
 		}
-		
 
 		function TableBlock(json){
 			var table = $("<table class='tableBlock' cellpadding='0' cellspacing='0' />");
@@ -487,7 +483,7 @@
 					topts.name = type[0];
 					
 					var list = type.length >= 2?type[1]:null;
-					if(topts.name == 'select'){
+					if(topts.name == 'select' || topts.name == 'radio'){
 						topts.options = list;
 						
 						if(type.length >= 3 && $.isPlainObject(type[2])){
