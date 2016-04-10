@@ -52,19 +52,73 @@ public class CollectionDao extends BasicDao {
 		
 		//str = "db.Region.save({id:'56f0e61b8f772c9814bdedb7',province:{cities:{id:'56f0f0ef8f77e0edd2b5a12f',districts:['西湖','拱墅','江干','下城','上城','滨江','萧山','余杭']}}})";
 		
-		Object val = ArithmeticExpression.execute(str,null);
-		System.out.println("params : " + val);
+		printTest("56dd3903e45701ce0113bdda","Account");
 		
-//		CollectionDao dao = new CollectionDao();
-//		List<Map<String,Object>> list = dao.aggregateByMap((List<Map<String,Object>>)val,"Region");
-//		System.out.println("cities : " + list);
+		CollectionDao dao = new CollectionDao();
+		
+		BasicDBObject query = dao.executeDBObject("{id:'56dd3903e45701ce0113bdda',personal_profile:{address:{default:2}}}");
+		BasicDBObject set = dao.executeDBObject("{$set:{personal_profile:{address:[{province:'江苏省',city:'南京市',zone:'鼓楼区'} , {province:'浙江省',city:'湖州市',zone:'安吉县'}]}}}");
+		set = dao.executeDBObject("{$set:{personal_profile:{address.$:{default:0}}}}");
+		//WriteResult result = dao.getDBCollection("Account").update(query, set);
+		//System.out.println("result : " + result);
+		
+		str = "{$group:{_id:{$cond:{if:{$eq:['$province.cities.name','绍兴']},then:{ $ifNull:[ '$province.cities.districts',[]]},else:[]}}}}";
+					//+ "{$redact:{$cond:{if:{$gt:[{$size:'$_id'},0]},then:'$$DESCEND',else:'$$PRUNE'}}}";
+		set = dao.executeDBObject(str);
+		//System.out.println("set : " + set);
+		//set = dao.executeDBObject("{personal_profile.address.$.default:3}");
+		
+		query = dao.executeDBObject("{id:'56dd3903e45701ce0113bdda',personal_profile:{address:{province:'浙江省'}}}");
+		//query = dao.executeDBObject("{id:'56dd3903e45701ce0113bdda',personal_profile.address.city:'湖州市'}");
+		set = dao.executeDBObject("{$set:{personal_profile:{address:{province:'浙江省'}}}}");
+		//set = dao.executeDBObject("{$set:{personal_profile.address.$.province:'浙江省'}}");
+		//dao.dbSet(query, set, "Account",true);
+		
+//		System.out.println("query : " + set);
+//		set = dao.executeDBObject("{personal_profile.address.$:1,_id:0}");
+//		DBCursor c = dao.getDBCollection("Account").find(query, set);
+//		while(c.hasNext()){
+//			System.out.println(c.next());
+//		}
+		
+		str = "db.Account.set([{id:'56dd3903e45701ce0113bdda',personal_profile:{address:{default:1}}},{personal_profile.address.$.default:8}])";
+		
+		str = "db.Account.get('56dfa951ba59a3035d169d79')";
+		Object val = ArithmeticExpression.execute(str,null);
+		System.out.println("val : " + val);
+		
+		printTest("56dd3903e45701ce0113bdda","Account");
+	}
+	
+	//public 
+	
+	// For test
+	private BasicDBObject executeDBObject(String str){
+		Map<String,Object> map = (Map<String,Object>)ArithmeticExpression.execute(str,null);
+		return this.build(this.buildDBQueryMap(map, null));
 	}
 
-	private static void printTest(String id){
-		String str = "db.Test.get('"+id+"')";
+	private static void printTest(String id,String collName){
+		String str = "db."+collName+".get('"+id+"')";
 		Map<String,Object> val = (Map<String,Object>)ArithmeticExpression.execute(str,null);
 		System.out.println("val : " + val);
 		System.out.println("");
+	}
+	
+	public void dbSet(Map qMap,Map sMap,String collName,boolean all){
+		BasicDBObject query = this.build(this.buildDBQueryMap(qMap, null));
+		BasicDBObject set = this.build(this.buildDBQueryMap(sMap, null));
+		
+		this.dbSet(query, set,collName, all);
+	}
+	
+	public void dbSet(BasicDBObject query,BasicDBObject set,String collName,boolean all){
+		int max = 100;
+		int i = 0;
+		WriteResult result = null;
+		do{
+			result = this.getDBCollection(collName).update(query, new BasicDBObject("$set",set));
+		}while(result.isUpdateOfExisting() && all && (i++ < max));
 	}
 
 	public Map<String,Object> updateBySet(Map value,String collName) {
@@ -538,7 +592,7 @@ public class CollectionDao extends BasicDao {
 //		
 		
 		System.out.println("============== before update =================");
-		printTest("56e0e4fb8f778c15692b9eaf");
+		printTest("56e0e4fb8f778c15692b9eaf","Test");
 		
 //		ObjectMetadataDao omDao = new ObjectMetadataDao();
 //		CollectionDao collDao = new CollectionDao();
@@ -554,7 +608,7 @@ public class CollectionDao extends BasicDao {
 		System.out.println("params : " + params);
 		
 		System.out.println("============== after update =================");
-		printTest("56e0e4fb8f778c15692b9eaf");
+		printTest("56e0e4fb8f778c15692b9eaf","Test");
 		
 //		CollectionDao collDao = new CollectionDao();
 //		DBCollection db = collDao.getDBCollection("Test");

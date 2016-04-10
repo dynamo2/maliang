@@ -120,6 +120,9 @@ public class Operator implements Comparable<Operator> {
 		return this.optChar + "";
 	}
 
+	/**
+	 * 运算符优先级
+	 * **/
 	private int priority() {
 		if (this.isDot()) {
 			return 0;

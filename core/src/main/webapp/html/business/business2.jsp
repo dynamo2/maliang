@@ -239,6 +239,11 @@
 			
 			var reqDatas = {};
 			$.each(inputs,function(){
+				if($(this).attr("type") == "radio"){
+					if(!this.checked){
+						return;
+					}
+				}
 				reqDatas[$(this).attr("name")] = $(this).val();
 			});
 

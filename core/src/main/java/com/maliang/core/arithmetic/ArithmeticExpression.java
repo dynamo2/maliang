@@ -165,6 +165,42 @@ public class ArithmeticExpression {
 		}
 	}
 	
+	/*
+	 * 
+	 * 三元表达式：?:
+	 * example: i>2?3:4
+	static class TernaryExpression extends Node {
+		Node condition;
+		Node first;
+		Node second;
+		int endIndex;
+		
+		TernaryExpression(Node cond,String source,int idx){
+			this.condition = cond;
+			read(source,idx);
+		}
+		
+		int getEndIndex(){
+			return this.endIndex;
+		}
+		
+		private void read(String source,int sidx){
+			Parentheses pt = Parentheses.compile(source, sidx, new char[':']);
+			this.first = pt.getExpression();
+			
+			pt = Parentheses.compile(source, pt.getEndIndex(), null);
+			this.second = pt.getExpression();
+			
+			this.endIndex = pt.getEndIndex();
+		}
+		
+		public String toString(){
+			return new StringBuffer().append(this.condition).append('?')
+						.append(this.first).append(':')
+						.append(this.second).toString();
+		}
+	}*/
+	
 	static class FunctionNode extends Node {
 		private Function function;
 		

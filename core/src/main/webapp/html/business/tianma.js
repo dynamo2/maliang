@@ -111,7 +111,7 @@ function HtmlBuilder(){
 		var radioSpan = $("<span />");
 		
 		$.each(data.options,function(){
-			builder.newInput(data).prop("type","radio")
+			builder.newInput(data).prop("type","radio").val(this.key)
 				.prop("checked",this.key == data.value)
 				.appendTo(radioSpan);
 		
@@ -136,7 +136,7 @@ function HtmlBuilder(){
 	};
 	
 	this.newInput = function(data){
-		return $("<input />").attr("value",data.value)
+		return $("<input></input>").attr("value",data.value)
 					.attr("name",builder.addPrefix(data.prefix)+data.name);
 	};
 	

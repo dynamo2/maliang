@@ -17,6 +17,20 @@ import com.mongodb.DBObject;
 public class BasicDao extends AbstractDao{
 	private static String OBJECT_METADATA_KEY = "_object_metadata_";
 	protected ObjectMetadataDao metaDao = new ObjectMetadataDao();
+	public static final String[] DB_KEYWORDS = {"if","then","else"};
+	
+	public static boolean isDBKeyword(String name){
+		if(StringUtil.isEmpty(name))return false;
+		name = name.trim();
+		
+		if(name.startsWith("$"))return true;
+		for(String key : DB_KEYWORDS){
+			if(key.equals(name)){
+				return true;
+			}
+		}
+		return false;
+	}
 	
 	public void save(BasicDBObject doc,String collName) {
 		this.getDBCollection(collName).save(doc);
@@ -86,16 +100,30 @@ public class BasicDao extends AbstractDao{
 			}catch(IllegalArgumentException ae){}
 		}
 		
+		boolean isKeyword = false;
 		for(String fname : queryMap.keySet()){
+			if(isDBKeyword(fname)){
+				isKeyword = true;
+			}else {
+				isKeyword = false;
+			}
+			
 			String key = preName+fname;
 			Object value = queryMap.get(fname);
-			
 			if(value != null && value instanceof Map && ((Map)value).size() > 0){
 				Map<String,Object> valMap = (Map<String,Object>)value;
 
-				Map<String,Object> m = buildDBQueryMap((Map<String,Object>)value,key);
-				daoMap.putAll(m);
+				Map<String,Object> m = buildDBQueryMap((Map<String,Object>)value,isKeyword?null:key);
+				if(isKeyword){
+					daoMap.put(fname,m);
+				}else {
+					daoMap.putAll(m);
+				}
 			}else {
+				if(isKeyword){
+					key = fname;
+				}
+				
 				daoMap.put(key, value);
 			}
 		}

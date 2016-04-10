@@ -4,6 +4,7 @@ import java.beans.BeanInfo;
 import java.beans.Introspector;
 import java.beans.PropertyDescriptor;
 import java.util.ArrayList;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -11,6 +12,7 @@ import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
 
+import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 
 import org.springframework.stereotype.Controller;
@@ -25,6 +27,7 @@ import com.maliang.core.exception.TianmaException;
 import com.maliang.core.exception.TurnToPage;
 import com.maliang.core.model.Business;
 import com.maliang.core.model.WorkFlow;
+import com.maliang.core.service.MapHelper;
 
 @Controller
 @RequestMapping(value = "business")
@@ -87,6 +90,62 @@ public class BusinessController extends BasicController {
 			model.addAttribute("errorMsg", e.getMessage());
 			return "/business/error";
 		}
+	}
+	
+	@RequestMapping(value = "request.htm")
+	@ResponseBody
+	public String request(Model model,HttpServletRequest request) {
+		Map<String,Object> params = readRequestParameters(request);
+		System.out.println("================ params : " + params);
+		System.out.println("================ province : " + MapHelper.readValue(params, "request.order.address.province"));
+		
+		return params.toString();
+	}
+	
+	protected Map<String,Object> readRequestMap(HttpServletRequest request){
+		JSONObject json = JSONObject.fromObject(request.getParameterMap());
+		List<String> reqNames = json.names();
+		
+		Map<String,Object> reqMap = new HashMap<String,Object>();
+		List<String> ignorePrefix = new ArrayList<String>();
+		if(reqNames == null || reqNames.size() == 0)return reqMap;
+		
+		for(String reqName:reqNames){
+			if(reqName.endsWith(".maxIndex")){
+				String prefix = reqName.substring(0,reqName.length()-".maxIndex".length());
+				readList(request,prefix,reqMap);
+				ignorePrefix.add(prefix);
+			}
+		}
+		
+		for(String reqName:reqNames){
+			boolean ingore = false;
+			for(String inPre:ignorePrefix){
+				if(reqName.startsWith(inPre)){
+					ingore = true;
+					break;
+				}
+			}
+			if(ingore)continue;
+			
+			Object reqValue = ((JSONArray)json.get(reqName)).get(0);
+			if(reqValue == null)continue;
+			
+			String[] reqs = reqName.split("\\.");
+			Map<String,Object> parentMap = reqMap;
+			for(int i = 0; i < reqs.length-1; i++){
+				String req = reqs[i];
+				Map<String,Object> preMap = (Map<String,Object>)parentMap.get(req);
+				if(preMap == null){
+					preMap = new HashMap<String,Object>();
+					parentMap.put(req, preMap);
+				}
+				parentMap = preMap;
+			}
+			parentMap.put(reqs[reqs.length-1], reqValue);
+		}
+		
+		return reqMap;
 	}
 	
 	/*************** new code end ***********************/
@@ -264,7 +323,6 @@ public class BusinessController extends BasicController {
 	
 	private Map<String,Object> executeCode(WorkFlow flow,HttpServletRequest request){
 		//Map<String,Object> params = readRequestParameters(flow.getRequestType(),request);
-		
 		Map<String,Object> params = readRequestParameters(request);
 		
 		System.out.println("=========== params ==============");

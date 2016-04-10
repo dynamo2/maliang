@@ -52,6 +52,18 @@ public class CollectionService {
 		return this.collectionDao.getByID(id, this.collection);
 	}
 	
+	//command $set
+	public Object dbSet(Map<String,Object> query,Map<String,Object> set){
+		this.collectionDao.dbSet(query,set,this.collection,true);
+		return null;
+	}
+	
+	//command $set
+	public Object dbSetOne(Map<String,Object> query,Map<String,Object> set){
+		this.collectionDao.dbSet(query,set,this.collection,false);
+		return null;
+	}
+	
 	public Map<String,Object> innerObjectById(Object query){
 		Map v = null;
 		if(query != null && query instanceof Map){
@@ -133,6 +145,11 @@ public class CollectionService {
 	
 	public int remove(Map<String,Object> query){
 		return this.collectionDao.remove(query,this.collection);
+	}
+	
+	private Map<String,Object> convert(Map<String,Object> dataMap){
+		if(dataMap == null || dataMap.size() == 0)return dataMap;
+		return correctData(dataMap,this.collection,false);
 	}
 	
 	private Map<String,Object> correctData(Map<String,Object> dataMap,String collName,boolean dealWithId){
@@ -238,9 +255,7 @@ public class CollectionService {
 		
 		return value;
 	}
-	
-	
-	
+
 	public static void main(String[] args) {
 		String s = "db.User.save({birthday:'1981-4-9', real_name:'www', password:'123456', user:'wmx', id:'', user_grade:'55c8be3f1b970b1ff3fc2f6c'})";
 		//s = "db.Product.search({})";
@@ -262,6 +277,14 @@ public class CollectionService {
 			return this.get(v);
 		}
 		
+		if("convert".equals(method)){
+			if(value != null && value instanceof Map){
+				return this.convert((Map<String,Object>)value);
+			}
+			
+			return null;
+		}
+		
 		if("innerObjectById".equals(method)){
 			return this.innerObjectById(value);
 		}
@@ -271,6 +294,32 @@ public class CollectionService {
 				return this.remove((Map<String,Object>)value);
 			}
 			return this.remove(value.toString());
+		}
+		
+		if("set".equals(method)){
+			if(value != null && value instanceof List && ((List)value).size() == 2){
+				Object query = ((List)value).get(0);
+				if(query == null || !(query instanceof Map))return null;
+				
+				Object set = ((List)value).get(1);
+				if(set == null || !(set instanceof Map))return null;
+				
+				return this.dbSet((Map<String,Object>)query,(Map<String,Object>)set);
+			}
+			return null;
+		}
+		
+		if("setOne".equals(method)){
+			if(value != null && value instanceof List && ((List)value).size() == 2){
+				Object query = ((List)value).get(0);
+				if(query == null || !(query instanceof Map))return null;
+				
+				Object set = ((List)value).get(1);
+				if(set == null || !(set instanceof Map))return null;
+				
+				return this.dbSetOne((Map<String,Object>)query,(Map<String,Object>)set);
+			}
+			return null;
 		}
 		
 		if("removeAll".equals(method)){

@@ -26,7 +26,7 @@ public class IfFunction {
 	}
 	
 	public static void main(String[] args) {
-		String s = "{a:555}";
+		String s = "{a:555,i:1}";
 		Map<String,Object> params = (Map<String,Object>)ArithmeticExpression.execute(s, null);
 		
 		s = "{c:if(i=1){{key:1,l:'a'}}elseif(i=2){{key:2,l:'b'}}elseif(a=4){{key:3,l:'c'}}else{[1,2,3,4]},b:333,d:'ggg'}";
