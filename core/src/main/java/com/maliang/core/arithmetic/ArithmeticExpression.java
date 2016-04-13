@@ -142,9 +142,14 @@ public class ArithmeticExpression {
 		System.out.println(v);
 	}
 	
+	public static Object execute(String expre){
+		return execute(expre,null);
+	}
+	
 	public static Object execute(String expre,Map<String,Object> params){
 		if(StringUtil.isEmpty(expre))return null;
 		
+		if(params == null) params = new HashMap<String,Object>();
 		Object value = MapHelper.readValue(params, expre);
 		if(value == null){
 			Parentheses pt = Parentheses.compile(expre, 0);

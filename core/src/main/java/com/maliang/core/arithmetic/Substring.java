@@ -61,17 +61,61 @@ public class Substring {
 			return;
 		}
 		
-		int[] coors = readCoors();
+		int[] coors = readCoors();		
 		
 		this.startIndex = coors[0];
 		this.endIndex = coors[1];
 		
+		//System.out.println("s: " + this.startIndex+", e : " + this.endIndex);
+		
 		if(this.checkIndex()){
+//			this.completeContent = filteEsc(source.substring(this.startIndex,this.endIndex+1));
+//			this.innerContent = filteEsc(source.substring(this.startIndex+1,this.endIndex));
+			
 			this.completeContent = source.substring(this.startIndex,this.endIndex+1);
 			this.innerContent = source.substring(this.startIndex+1,this.endIndex);
 			
 			isMatched = true;
 		}
+	}
+	
+	public static void main(String[] args) {
+		String s = "'aaa|'ddd|'ccc'";
+		
+		Substring sbs = new Substring(s,'\'',0);
+		System.out.println(sbs.innerContent);
+		
+		s = "'aaa'.wrap(|')";
+		//s = "'|''";
+		Object v = ArithmeticExpression.execute(s, null);
+		System.out.println("v : "+v);
+	}
+	
+	private String filteEsc(String str){
+		StringBuffer ns = new StringBuffer();
+		for(int i = 0; i < str.length(); i++){
+			if(isEsc(str,i))continue;
+			
+			ns.append(str.charAt(i));
+		}
+		
+		return ns.toString();
+	}
+	
+	private boolean isEsc(int i){
+		return this.isEsc(this.source, i);
+	}
+	
+	/***
+	 * 是否是转义字符
+	 * **/
+	private boolean isEsc(String s,int i){
+		if(i >= 0){
+			if(s.charAt(i) == '|'){
+				return true;
+			}
+		}
+		return false;
 	}
 	
 	private int[] readCoors(){
@@ -82,6 +126,8 @@ public class Substring {
 			
 			if(this.startChar == this.endChar){
 				if(c == startChar){
+					//if(isEsc(i-1))continue;
+					
 					if(coors[0] == -1){
 						coors[0] = i;
 						continue;

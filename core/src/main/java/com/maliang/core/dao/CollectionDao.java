@@ -52,7 +52,7 @@ public class CollectionDao extends BasicDao {
 		
 		//str = "db.Region.save({id:'56f0e61b8f772c9814bdedb7',province:{cities:{id:'56f0f0ef8f77e0edd2b5a12f',districts:['西湖','拱墅','江干','下城','上城','滨江','萧山','余杭']}}})";
 		
-		printTest("56dd3903e45701ce0113bdda","Account");
+		//printTest("56dd3903e45701ce0113bdda","Account");
 		
 		CollectionDao dao = new CollectionDao();
 		
@@ -84,10 +84,12 @@ public class CollectionDao extends BasicDao {
 		str = "db.Account.set([{id:'56dd3903e45701ce0113bdda',personal_profile:{address:{default:1}}},{personal_profile.address.$.default:8}])";
 		
 		str = "db.Account.get('56dfa951ba59a3035d169d79')";
+		str = "db.Cart.get('570da7958f77400ffbc705e2')";
+		str = "db.Cart.search()";
 		Object val = ArithmeticExpression.execute(str,null);
 		System.out.println("val : " + val);
 		
-		printTest("56dd3903e45701ce0113bdda","Account");
+		//printTest("56dd3903e45701ce0113bdda","Account");
 	}
 	
 	//public 
@@ -337,9 +339,12 @@ public class CollectionDao extends BasicDao {
 			String fieldName = field.getName();
 			
 			if(FieldType.LINK_COLLECTION.is(field.getType())){
-				String linkCollName = getLinkedCollectionName(field.getLinkedObject());
-				if(linkCollName == null)return;
+//				String linkCollName = this.getLinkedCollectionName(field.getLinkedObject());
+//				if(linkCollName == null)return;
 				
+				System.out.println(fieldName + " : " + field.getLinkedObject());
+				
+				String linkCollName = field.getLinkedObject();
 				Object fieldValue = dataMap.get(fieldName);
 				if(fieldValue != null && fieldValue instanceof String && !((String)fieldValue).trim().isEmpty()){
 					String linkOid = ((String)fieldValue).trim();
@@ -354,11 +359,16 @@ public class CollectionDao extends BasicDao {
 				}
 			}else if(FieldType.ARRAY.is(field.getType())){
 				if(FieldType.INNER_COLLECTION.is(field.getElementType())){
+					System.out.println("==========="+field.getName()+"====================");
+					
+					
 					Object fValue = dataMap.get(fieldName);
 					if(fValue instanceof List){
 						List<Map<String,Object>> innList = (List<Map<String,Object>>)fValue;
 						for(Map<String,Object> map:innList){
+							System.out.println("before : " + map);
 							correctField(map,field.getFields());
+							System.out.println("after : " + map);
 						}
 					}
 				}
@@ -373,6 +383,14 @@ public class CollectionDao extends BasicDao {
 		}
 		return null;
 	}
+	
+//	private String getLinkedByName(String objName){
+//		ObjectMetadata linkMeta = this.metaDao.getByName(objName);
+//		if(linkMeta != null){
+//			return linkMeta.getName();
+//		}
+//		return null;
+//	}
 
 	/********************** Test ****************************/
 	public static void printList(List<Map<String,Object>> ps){

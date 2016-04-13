@@ -4,8 +4,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Stack;
 
-import org.apache.commons.collections.map.LinkedMap;
-
 import com.maliang.core.arithmetic.ArithmeticExpression;
 import com.maliang.core.arithmetic.Substring;
 import com.maliang.core.service.BusinessService;
@@ -19,6 +17,7 @@ public class Function {
 	public String expression;
 	private String body;
 	private Object keyValue;
+	private String keySource;
 	private boolean useKeyValue = false;
 	
 	private final String source;
@@ -30,6 +29,7 @@ public class Function {
 		this.key = k;
 		this.source = s;
 		this.startIndex = startIndex;
+		this.keySource = k;
 		
 		if(key != null)key = key.trim();
 		
@@ -52,6 +52,10 @@ public class Function {
 	
 	public Object getKeyValue(){
 		return this.keyValue;
+	}
+	
+	public String getKeySource(){
+		return this.keySource;
 	}
 	
 	public Function(String body){
@@ -117,6 +121,14 @@ public class Function {
 		if("to".equalsIgnoreCase(key)){
 			return BusinessFunction.toPage(this, params);
 		}
+		
+		if("set".equalsIgnoreCase(key)){
+			return AssignFunction.set(this, params);
+		}
+		
+//		if("wrap".equalsIgnoreCase(key)){
+//			return WrapFunction.execute(this, params);
+//		}
 		
 		if("exe".equalsIgnoreCase(key)){
 			return ExecuteFunction.execute(this, params);
@@ -196,7 +208,13 @@ public class Function {
 		}
 		
 		if("max".equals(key)){
-			return MaxFunction.execute(this, params);
+			//return MaxFunction.execute(this, params);
+			return AggregationFunction.max(this, params);
+		}
+		
+		if("min".equals(key)){
+			//return MaxFunction.execute(this, params);
+			return AggregationFunction.min(this, params);
 		}
 		
 		if("tree".equals(key)){

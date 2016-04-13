@@ -5,23 +5,18 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Stack;
 
+import com.maliang.core.arithmetic.AE;
 import com.maliang.core.arithmetic.ArithmeticExpression;
-import com.maliang.core.service.DBData;
 
 public class Each {
 	public static void main(String[] args) {
-		String str = "each(  products  ){product:this,"
-				+ "num:request.product.num(index),"
-				+ "price:user.user_grade.discount*0.01*this.price}";
-		
-		List<Map<String,Object>> products = DBData.list("Product");
-		Map<String,Object> params = new HashMap<String,Object>();
-		Map<String,Object> user = DBData.getRandom("User");
-		
-		params.put("products", products);
-		params.put("user", user);
+		String str = "{p:{name:'鱼子酱眼霜',price:345,num:54},ps:[{name:'全能乳液',price:800,num:3},{name:'防晒霜',price:321,num:2}],"
+						+ "c:each(ps){{p:this.aaa.set('aaa'),p:this,totalPrice:p.price*p.num,name:p.name}},"
+						+ "c:p.name,ccc:ps}";
+
+		Object val = AE.execute(str);
+		System.out.println(val);
 	}
 	
 	public static List<Object> execute(Function function,Map<String,Object> params){
@@ -38,8 +33,13 @@ public class Each {
 		if(!(value instanceof Object[])){
 			throw new RuntimeException("Error parameter to each() function");
 		}
+		
+		Map<String,Object> eachParams = new HashMap<String,Object>();
+		eachParams.putAll(params);
+		
+		//eachParams = params;
 
-		Function.pushThis(params);
+		Function.pushThis(eachParams);
 		//FunctionBody body = FunctionBody.readBody(function);
 		Object[] dataList = (Object[])value;
 		int i = 0;
@@ -50,16 +50,16 @@ public class Each {
 
 			Object v = data;
 			if(!function.isEmptyBody()){
-				params.put("this", data);
-				params.put("EACH_CURRENT_INDEX", i++);
+				eachParams.put("this", data);
+				eachParams.put("EACH_CURRENT_INDEX", i++);
 
-				v = ArithmeticExpression.execute(function.getBody(), params);
+				v = ArithmeticExpression.execute(function.getBody(), eachParams);
 			}
 			resultList.add(v);
 		}
 		
-		params.remove("this");
-		params.remove("EACH_CURRENT_INDEX");
+		eachParams.remove("this");
+		eachParams.remove("EACH_CURRENT_INDEX");
 		
 		Function.popThis(params);
 		return resultList;

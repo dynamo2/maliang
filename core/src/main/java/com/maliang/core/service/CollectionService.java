@@ -198,6 +198,7 @@ public class CollectionService {
 				
 				List<Object> result = new ArrayList<Object>();
 				result.add(correctFieldValue(of,fieldValue,dealWithId));
+				return result;
 			}else {
 				return null;
 			}

@@ -60,6 +60,7 @@ class MapCompiler {
 		this.cursor = s;
 		this.source = source;
 		this.params = params;
+		this.addToParams = true;
 		
 		this.map = readToMap();
 	}
@@ -86,6 +87,8 @@ class MapCompiler {
 	}
 	
 	private Map<String,Object> readToMap(){
+		//System.out.println("addToParams : " + this.addToParams);
+		
 		Map<String,Object> map = new HashMap<String,Object>();
 		char c = 0;
 		this.clearCache();

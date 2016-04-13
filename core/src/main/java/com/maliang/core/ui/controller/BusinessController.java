@@ -135,10 +135,13 @@ public class BusinessController extends BasicController {
 			Map<String,Object> parentMap = reqMap;
 			for(int i = 0; i < reqs.length-1; i++){
 				String req = reqs[i];
-				Map<String,Object> preMap = (Map<String,Object>)parentMap.get(req);
-				if(preMap == null){
+				Object val = parentMap.get(req);
+				Map<String,Object> preMap = null;//(Map<String,Object>)parentMap.get(req);
+				if(val == null || !(val instanceof Map)){
 					preMap = new HashMap<String,Object>();
 					parentMap.put(req, preMap);
+				}else {
+					preMap = (Map<String,Object>)val;
 				}
 				parentMap = preMap;
 			}
