@@ -1,6 +1,5 @@
 package com.maliang.core.exception;
 
-import java.util.Map;
 
 public class TurnToPage extends RuntimeException{
 	private static final long serialVersionUID = 1L;

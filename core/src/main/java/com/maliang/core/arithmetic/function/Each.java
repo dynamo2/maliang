@@ -8,6 +8,7 @@ import java.util.Map;
 
 import com.maliang.core.arithmetic.AE;
 import com.maliang.core.arithmetic.ArithmeticExpression;
+import com.maliang.core.exception.Break;
 
 public class Each {
 	public static void main(String[] args) {
@@ -43,6 +44,7 @@ public class Each {
 		//FunctionBody body = FunctionBody.readBody(function);
 		Object[] dataList = (Object[])value;
 		int i = 0;
+		boolean isBreak = false;
 		for(Object data : dataList){
 			if(data == null){
 				continue;
@@ -53,9 +55,16 @@ public class Each {
 				eachParams.put("this", data);
 				eachParams.put("EACH_CURRENT_INDEX", i++);
 
-				v = ArithmeticExpression.execute(function.getBody(), eachParams);
+				try {
+					v = ArithmeticExpression.execute(function.getBody(), eachParams);
+				}catch(Break be){
+					isBreak = true;
+				}
+				
 			}
 			resultList.add(v);
+			
+			if(isBreak)break;
 		}
 		
 		eachParams.remove("this");

@@ -53,19 +53,32 @@ public class AggregationFunction {
 	}
 	
 	private static boolean match(Comparable c1,Comparable c2,String match){
+		int result = compare(c1,c2);
 		if("max".equals(match)){
-			return c1.compareTo(c2) > 0;
+			return result > 0;
 		}
 		
 		if("min".equals(match)){
-			return c1.compareTo(c2) < 0;
+			return result < 0;
 		}
 		
 		if("eq".equals(match)){
-			return c1.compareTo(c2) == 0;
+			return result == 0;
 		}
 		
 		return false;
+	}
+	
+	private static int compare(Comparable c1,Comparable c2){
+		if(c1 instanceof String || c2 instanceof String){
+			return c1.toString().compareTo(c2.toString());
+		}
+		
+		if(c1 instanceof Number && c2 instanceof Number){
+			return new Double(((Number)c1).doubleValue()).compareTo(new Double(((Number)c2).doubleValue()));
+		}
+		
+		return -1;
 	}
 	
 	private static Object readOperand(Function fun,Map<String,Object> params){
@@ -77,7 +90,7 @@ public class AggregationFunction {
 	}
 	
 	public static void main(String[] args) {
-		String s = "min([1,2,3])";
+		String s = "max([1.00,2.99,3,5,6])";
 		Object v = AE.execute(s);
 		System.out.println(v);
 	}

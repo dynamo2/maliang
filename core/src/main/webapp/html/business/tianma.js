@@ -520,6 +520,27 @@ function FormTable(){
 					_.append(lastLine,this);
 				});
 			}
+		}else if(_.isList(opts)){
+			var listTable = $("<table class='tableList' cellpadding='0' cellspacing='1' />").appendTo(etd);
+			var tr = $("<tr />").appendTo(listTable);
+			
+			$.each(opts.type.header,function(){
+				$("<th class='header' />").text(this).appendTo(tr);
+			});
+			
+			$.each(opts.type.inputs,function(){
+				tr = $("<tr />").appendTo(listTable);
+				$.each(this,function(){
+					var td = $("<td />").appendTo(tr);
+					if($.isArray(this)){
+						$.each(this,function(){
+							_.appendInput(td,this);
+						});
+					}else {
+						_.appendInput(td,this);
+					}
+				});
+			});
 		}else {
 			_.appendInput(etd,opts);
 		}
@@ -604,6 +625,10 @@ function FormTable(){
 	
 	this.isGroup = function(opts){
 		return _.isType(opts,'group');
+	};
+	
+	this.isList = function(opts){
+		return _.isType(opts,'list');
 	};
 	
 	this.canSelect = function(opts){

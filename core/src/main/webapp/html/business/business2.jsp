@@ -42,9 +42,9 @@
 			<div id="html"></div>
 		</div>
 		
-		<!-- 
+		
 		<textarea id="print" style="width:700px;height:500px;"></textarea>
-		 -->
+		 
 		 
 		<div id="dialog">
 			<div id="dialogPanel">
@@ -80,6 +80,7 @@
 		//h.form('Account.personalProfile',{ex:[2,3,'email'],bid:'uuuuu',fid:2})
 		
 		var result = ${resultJson};
+		var data = result.data;
 
 		var json = result.json;
 		var htmlCode = result.html;
@@ -122,22 +123,32 @@
 		}
 
 		function build(json){
-			var type = json[0];
-			if(utils.isString(type)){
-				return buildOne(json);
-			}else {
-				var comps = [];
-				$.each(json,function(){
-					var ccs = build(this);
-					if($.isArray(ccs)){
-						comps = comps.concat(css);
-					}else {
-						comps.push(ccs);
-					}
-				});
-				
-				return comps;
+			if(utils.isString(json)){
+				return $("<span />").text(json);
+			}else if($.isPlainObject(json)){
+				if(json.html){
+					return $(json.html);
+				}
+			}else if($.isArray(json)){
+				var type = json[0];
+				if(utils.isString(type)){
+					return buildOne(json);
+				}else {
+					var comps = [];
+					$.each(json,function(){
+						var ccs = build(this);
+						if($.isArray(ccs)){
+							comps = comps.concat(css);
+						}else {
+							comps.push(ccs);
+						}
+					});
+					
+					return comps;
+				}
 			}
+			
+			return null;
 		}
 		
 		function buildOne(json){
@@ -156,6 +167,7 @@
 				return null;
 			}else if(type === 'form'){
 				var options = readForm(json);
+				pt(ts(options));
 				var ft = new FormTable();
 				ft.init(options);
 				
@@ -170,6 +182,8 @@
 				return buildDiv(json);
 			}else if(type === 'span'){
 				return buildSpan(json);
+			}else if(type === 'input'){
+				return buildInput(json);
 			}
 		}
 
@@ -266,9 +280,36 @@
 			
 			addChildren(a,json[1]);
 			
-			var href = "/business/business2.htm?"+json[2];
+			var reqs = json[2];
+			var href = "/business/business2.htm?";
+			if(utils.isString(reqs)){
+				href += reqs;
+			}else if($.isPlainObject(reqs)){
+				if(!reqs.bid){
+					reqs.bid = data.bid;
+				}
+				
+				var s = "";
+				$.each(reqs,function(k,v){
+					if(s.length > 0){
+						s += "&";
+					}
+					s += k+"="+v;
+				});
+				href += s;
+			}
 			a.attr("href",href);
 			return a;
+		}
+		
+		function buildInput(json){
+			var input = $("<input />");
+			var type = json[1];
+			type = type&&type.length>0?type:'text';
+			var name = json[2];
+			var val = json[3];
+			
+			return input.attr("type",type).attr("name",name).val(val);
 		}
 
 		function buildButton(json){
@@ -448,11 +489,19 @@
 			this.read = function (){
 				var obj = opts;
 				if($.isArray(obj)){
-					input.newLine = _.newLine();
-					input.name = _.readName();
-					input.label = _.readLabel();
-					input.type = _.readType();
-					input.value = _.readValue();
+					if($.isArray(obj[0])){
+						input = [];
+						
+						$.each(obj,function(){
+							input.push(readInput(this,prefix));
+						});
+					}else {
+						input.newLine = _.newLine();
+						input.name = _.readName();
+						input.label = _.readLabel();
+						input.type = _.readType();
+						input.value = _.readValue();
+					}
 				}else if($.isPlainObject(obj)){
 					input = {
 							name:obj.name?obj.name:obj.n,
@@ -503,6 +552,15 @@
 								topts.inputs.push(readInput(this,input.name));
 							});
 						}
+					}else if(topts.name == 'list'){
+						topts.header = type[1];
+						topts.inputs = [];
+						$.each(type[2],function(idx,val){
+							topts.inputs[idx] = [];
+							$.each(val,function(){
+								topts.inputs[idx].push(readInput(this,input.name));
+							});
+						});
 					}
 					
 					type = topts;
@@ -549,6 +607,9 @@
 		}
 		
 		function pt(str){
+			if($.isPlainObject(str)){
+				str = ts(str);
+			}
 			$("#print").text(str);
 		}
 		
@@ -662,10 +723,15 @@
 			padding:8px 10px;
 			background-color:#fff;
 			min-width:150px;
+			border:0px;
 		}
 		
 		.tableList a{
 			margin-left:10px;
+		}
+		
+		.tableList input{
+			max-width:80px;
 		}
 		
 		#title {

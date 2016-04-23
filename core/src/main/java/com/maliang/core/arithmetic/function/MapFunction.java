@@ -60,7 +60,7 @@ class MapCompiler {
 		this.cursor = s;
 		this.source = source;
 		this.params = params;
-		this.addToParams = true;
+		//this.addToParams = true;
 		
 		this.map = readToMap();
 	}

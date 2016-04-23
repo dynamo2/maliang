@@ -6,6 +6,7 @@ import java.util.Stack;
 
 import com.maliang.core.arithmetic.ArithmeticExpression;
 import com.maliang.core.arithmetic.Substring;
+import com.maliang.core.exception.Break;
 import com.maliang.core.service.BusinessService;
 import com.maliang.core.service.MapHelper;
 
@@ -116,6 +117,10 @@ public class Function {
 		if("print".equalsIgnoreCase(key)){
 			System.out.println(this.executeExpression(params));
 			return null;
+		}
+		
+		if("break".equalsIgnoreCase(key)){
+			throw new Break();
 		}
 		
 		if("to".equalsIgnoreCase(key)){
@@ -245,11 +250,12 @@ public class Function {
 		}else {
 			val = ArithmeticExpression.execute(this.key, params);
 		}
- 
+
 		if(val != null){
 			if(val instanceof List){
 				List<Object> list = (List<Object>)val;
 				Object idx = this.executeExpression(params);
+				
 				if(idx != null && idx instanceof Integer && list.size() > (Integer)idx){
 					return list.get((Integer)idx);
 				}

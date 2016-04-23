@@ -2,9 +2,11 @@ package com.maliang.core.arithmetic.function;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.maliang.core.arithmetic.AE;
 import com.maliang.core.arithmetic.ArithmeticExpression;
 
 public class QueryFunction {
@@ -14,28 +16,22 @@ public class QueryFunction {
 				+ "{name:'wzq',age:4,grade:{id:4,name:'高级会员'}},"
 				+ "{name:'wzq',age:5,grade:{id:8,name:'高级会员'}}].query(((age>10 & name='wmx') | grade.id=8 | (age=grade.id))).max(grade.id)";
 		
-		Object ov = ArithmeticExpression.execute(str,null);
-		System.out.println(ov);
-		
-		str = "[1,2,3,4,5].max()";
-		ov = ArithmeticExpression.execute(str,null);
-		System.out.println("ov : " + ov);
+//		Object ov = ArithmeticExpression.execute(str,null);
+//		System.out.println(ov);
+//		
+//		str = "[1,2,3,4,5].max()";
+//		ov = ArithmeticExpression.execute(str,null);
+//		System.out.println("ov : " + ov);
+//		
+		str = "db.Product.search()";
+		Object o = AE.execute(str);
+		System.out.println(o);
 	}
 	
 	private static boolean isArray(Object ob){
 		if(ob != null && ((ob instanceof Collection) || (ob instanceof Object[]))){
 			return true;
 		}
-		
-		try {
-			ob.wait();
-			Thread.sleep(100);
-		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		
-		Thread.currentThread().interrupt();
 		
 		return false;
 	}
@@ -58,12 +54,17 @@ public class QueryFunction {
 
 			List<Object> resultList = new ArrayList<Object>();
 			Object[] dataList = (Object[])operatedObj;
+			
 			for(Object obj : dataList){
 				if(!(obj instanceof Map)){
 					continue;
 				}
 				
-				Object ov = ArithmeticExpression.execute(function.expression, (Map)obj);
+				Map newParams = new HashMap();
+				newParams.putAll((Map)obj);
+				newParams.putAll(params);
+				
+				Object ov = ArithmeticExpression.execute(function.expression, newParams);
 				if(ov instanceof Boolean && (Boolean)ov){
 					resultList.add(obj);
 				}
