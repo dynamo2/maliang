@@ -225,6 +225,10 @@ public class Function {
 		if("tree".equals(key)){
 			return TreeFunction.execute(this, params);
 		}
+
+		if("group".equals(key)){
+			return GroupFunction.execute(this, params);
+		}
 		
 		if(this.isDBFun()){
 			return DBFunction.execute(this, params);

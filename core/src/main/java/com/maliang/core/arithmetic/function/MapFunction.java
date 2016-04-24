@@ -55,6 +55,7 @@ class MapCompiler {
 	private Map<String,Object> params;
 	private char[] endChars = new char[]{',','}'};
 	private boolean addToParams = false;
+	private boolean isExecute = true; //是否计算
 	
 	MapCompiler(String source,int s,Map<String,Object> params){
 		this.cursor = s;
@@ -65,11 +66,12 @@ class MapCompiler {
 		this.map = readToMap();
 	}
 	
-	MapCompiler(String source,int s,Map<String,Object> params,boolean isAddToParams){
+	MapCompiler(String source,int s,Map<String,Object> params,boolean isAddToParams,boolean isExe){
 		this.cursor = s;
 		this.source = source;
 		this.params = params;
 		this.addToParams = isAddToParams;
+		this.isExecute = isExe;
 		
 		this.map = readToMap();
 	}
@@ -87,8 +89,6 @@ class MapCompiler {
 	}
 	
 	private Map<String,Object> readToMap(){
-		//System.out.println("addToParams : " + this.addToParams);
-		
 		Map<String,Object> map = new HashMap<String,Object>();
 		char c = 0;
 		this.clearCache();
@@ -111,7 +111,12 @@ class MapCompiler {
 			
 			if(key != null){
 				ArithmeticExpression.Parentheses pt = ArithmeticExpression.Parentheses.compile(source, this.cursor-1, endChars);
-				Object value = pt.getValue(this.params);
+				Object value = null;
+				if(this.isExecute){
+					value = pt.getValue(this.params);
+				}else {
+					value = pt.expressionStr();
+				}
 				map.put(key, value);
 				
 				if(addToParams && params != null){

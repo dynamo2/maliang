@@ -33,16 +33,10 @@ public class AggregationFunction {
 					if(match(currValue,lastValue,match)){
 						result = obj;
 					}
-//					if(currValue.compareTo(lastValue) > 0){
-//						result = obj;
-//					}
 				}else if(obj instanceof Comparable){
 					if(match((Comparable)obj,(Comparable)result,match)){
 						result = obj;
 					}
-//					if(((Comparable)obj).compareTo((Comparable)result) > 0){
-//						result = obj;
-//					}
 				}
 			}
 			

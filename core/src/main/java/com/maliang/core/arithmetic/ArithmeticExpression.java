@@ -159,17 +159,6 @@ public class ArithmeticExpression {
 		return value;
 	}
 	
-	static abstract class Node {
-		
-		public Object getValue(Map<String,Object> paramsMap){
-			return null;
-		}
-		
-		public Object getValue(Object obj){
-			return null;
-		}
-	}
-	
 	/*
 	 * 
 	 * 三元表达式：?:
@@ -206,7 +195,7 @@ public class ArithmeticExpression {
 		}
 	}*/
 	
-	static class FunctionNode extends Node {
+	public static class FunctionNode extends Node {
 		private Function function;
 		
 		public FunctionNode(Function fun){
@@ -244,6 +233,10 @@ public class ArithmeticExpression {
 				return ((MapNode)value).getValue(paramsMap);
 			}
 			return value;
+		}
+		
+		public Node getExpression(){
+			return this.expression;
 		}
 		
 		public String expressionStr(){
@@ -509,7 +502,7 @@ public class ArithmeticExpression {
 			this.endIndex = endIndex;
 		}
 
-		public Node getExpression() {
+		public Node getNode() {
 			return expression;
 		}
 
