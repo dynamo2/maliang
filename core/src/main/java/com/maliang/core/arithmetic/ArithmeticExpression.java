@@ -14,6 +14,7 @@ import java.util.Set;
 
 import com.maliang.core.arithmetic.function.Function;
 import com.maliang.core.arithmetic.node.Node;
+import com.maliang.core.arithmetic.node.Parentheses;
 import com.maliang.core.service.MapHelper;
 import com.maliang.core.util.StringUtil;
 

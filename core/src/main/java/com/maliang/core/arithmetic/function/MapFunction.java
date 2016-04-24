@@ -4,7 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.maliang.core.arithmetic.ArithmeticExpression;
-import com.maliang.core.arithmetic.Parentheses;
+import com.maliang.core.arithmetic.node.Parentheses;
 import com.maliang.core.service.MapHelper;
 
 public class MapFunction {
