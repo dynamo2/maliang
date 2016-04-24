@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.maliang.core.arithmetic.ArithmeticExpression;
+import com.maliang.core.arithmetic.Parentheses;
 
 public class ListFunction {
 	public static Object execute(Function function ,Map<String,Object> params){
@@ -72,7 +73,7 @@ class ListCompiler {
 				continue;
 			}
 			
-			ArithmeticExpression.Parentheses pt = ArithmeticExpression.Parentheses.compile(source, this.cursor-1, endChars);
+			Parentheses pt = Parentheses.compile(source, this.cursor-1, endChars);
 			list.add(pt.getValue(this.params));
 			
 			this.cursor = pt.getEndIndex()+1;

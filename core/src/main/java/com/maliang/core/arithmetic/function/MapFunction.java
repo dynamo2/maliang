@@ -4,7 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.maliang.core.arithmetic.ArithmeticExpression;
-import com.maliang.core.arithmetic.Substring;
+import com.maliang.core.arithmetic.Parentheses;
 import com.maliang.core.service.MapHelper;
 
 public class MapFunction {
@@ -110,7 +110,7 @@ class MapCompiler {
 			}
 			
 			if(key != null){
-				ArithmeticExpression.Parentheses pt = ArithmeticExpression.Parentheses.compile(source, this.cursor-1, endChars);
+				Parentheses pt = Parentheses.compile(source, this.cursor-1, endChars);
 				Object value = null;
 				if(this.isExecute){
 					value = pt.getValue(this.params);

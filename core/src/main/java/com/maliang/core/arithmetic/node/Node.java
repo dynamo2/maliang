@@ -1,4 +1,4 @@
-package com.maliang.core.arithmetic;
+package com.maliang.core.arithmetic.node;
 
 import java.util.Map;
 
