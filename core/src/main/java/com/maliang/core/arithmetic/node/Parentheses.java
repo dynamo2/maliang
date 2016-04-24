@@ -8,7 +8,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import com.maliang.core.arithmetic.Operator;
 import com.maliang.core.arithmetic.Substring;
 import com.maliang.core.arithmetic.function.Function;
 

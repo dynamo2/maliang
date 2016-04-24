@@ -1,4 +1,6 @@
-package com.maliang.core.arithmetic;
+package com.maliang.core.arithmetic.calculator;
+
+import com.maliang.core.arithmetic.node.Operator;
 
 
 public class IntegerCalculator {

@@ -1,4 +1,4 @@
-package com.maliang.core.arithmetic;
+package com.maliang.core.arithmetic.node;
 
 public class Operator implements Comparable<Operator> {
 	private final static char[] OPERATOR_CHAR = {'+','-','*','/','&','|','>','<','='};//,'.'};
