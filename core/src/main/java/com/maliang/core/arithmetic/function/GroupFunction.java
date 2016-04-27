@@ -8,14 +8,10 @@ import java.util.List;
 import java.util.Map;
 
 import com.maliang.core.arithmetic.AE;
-import com.maliang.core.arithmetic.node.ExpressionNode;
 import com.maliang.core.arithmetic.node.FunctionNode;
-import com.maliang.core.arithmetic.node.MapNode;
 import com.maliang.core.arithmetic.node.Node;
-import com.maliang.core.arithmetic.node.Operand;
 import com.maliang.core.arithmetic.node.Parentheses;
 import com.maliang.core.service.MapHelper;
-import com.maliang.core.util.StringUtil;
 import com.maliang.core.util.Utils;
 
 public class GroupFunction {
@@ -29,8 +25,8 @@ public class GroupFunction {
 		Map params = (Map)AE.execute(s);
 		// s = "orders.group({totalPrice:sum(this.items.price*this.item.num),id:this.items.product})";
 		// s = "orders.group({totalPrice:sum(this.items.sum(this.price*this.num))})";
-		s = "orders.group({total:sum(this.items.sum(this.price*this.num)),count:count(),id:{date:this.date}})";
-		s = "orders.items.distributeItems.sum(this.num*this.ware)";
+		s = "orders.group({total:sum(this.items.sum(this.price*this.num)),count:count()})";
+		//s = "orders.items.distributeItems.sum(this.num*this.ware)";
 		
 		//System.out.println("g : " + s);
 		Object v = AE.execute(s,params);
@@ -66,16 +62,6 @@ public class GroupFunction {
 		return (Object[])rootObj;
 	}
 	
-	
-	
-	public static Object add(Object o1,Object o2){
-		Object[] os = new Object[2];
-		os[0] = o1;
-		os[1] = o2;
-		
-		return Sum.doSum(os);
-	}
-	
 	static class GroupCompiler {
 		public static final String DEFAULT_ID = "ALL";
 
@@ -96,7 +82,10 @@ public class GroupFunction {
 			for(String key : this.expressionMap.keySet()){
 				String valExpre = (String)this.expressionMap.get(key);
 				Parentheses pt = Parentheses.compile(valExpre,0);
-				this.getValue(params,((FunctionNode)pt.getNode()).getFunction(),key);
+				Node node = pt.getNode();
+				if(node instanceof FunctionNode){
+					this.getValue(params,((FunctionNode)node).getFunction(),key);
+				}
 			}
 		}
 		
@@ -147,11 +136,11 @@ public class GroupFunction {
 		}		
 		public void sum(Object idVal,Function fun,Map<String,Object> params,String resultKey){
 			Object newVal = fun.executeExpression(params);
-			setResult(idVal, add(getResult(idVal,resultKey),newVal),resultKey);
+			setResult(idVal, Sum.sum(getResult(idVal,resultKey),newVal),resultKey);
 		}
 		
 		public void count(Object idVal,String resultKey){
-			setResult(idVal, add(getResult(idVal,resultKey),1),resultKey);
+			setResult(idVal, Sum.sum(getResult(idVal,resultKey),1),resultKey);
 		}
 		
 		public Object getResult(Object idVal,String resultKey){
@@ -174,7 +163,5 @@ public class GroupFunction {
 			}
 			return (Map)matchedResult;
 		}
-		
 	}
-	
 }

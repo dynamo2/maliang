@@ -37,6 +37,10 @@ public class Sum {
 		return resultValue;
 	}
 	
+	public static Object sum(Object...os){
+		return doSum(os);
+	}
+	
 	private static Object getOperandValue(Function function,Map<String,Object> params){
 		Object value = function.getKeyValue();
 		if(!function.useKeyValue()){
@@ -57,7 +61,7 @@ public class Sum {
 		}
 	}
 	
-	public static Object doSum(Object[] datas){
+	private static Object doSum(Object...datas){
 		int type = checkDataType(datas);
 		
 		if(TYPE_STRING == type){
