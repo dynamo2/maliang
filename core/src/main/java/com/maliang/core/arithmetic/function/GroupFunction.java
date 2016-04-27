@@ -30,7 +30,9 @@ public class GroupFunction {
 		// s = "orders.group({totalPrice:sum(this.items.price*this.item.num),id:this.items.product})";
 		// s = "orders.group({totalPrice:sum(this.items.sum(this.price*this.num))})";
 		s = "orders.group({total:sum(this.items.sum(this.price*this.num)),count:count(),id:{date:this.date}})";
-		System.out.println("g : " + s);
+		s = "orders.items.distributeItems.sum(this.num*this.ware)";
+		
+		//System.out.println("g : " + s);
 		Object v = AE.execute(s,params);
 		System.out.println("v : " + v);
 	}
@@ -54,7 +56,7 @@ public class GroupFunction {
 			rootObj = l;
 		}
 		if(names.length > 2){
-			rootObj = expand((Object[])rootObj,Arrays.copyOfRange(names, 1, names.length-1));
+			rootObj = MapHelper.expand((Object[])rootObj,Arrays.copyOfRange(names, 1, names.length-1));
 		}
 		
 		if(rootObj instanceof Collection){
@@ -64,46 +66,7 @@ public class GroupFunction {
 		return (Object[])rootObj;
 	}
 	
-	public static Object[] expand(Object[] expandList,String[] names){
-		if(Utils.isEmpty(expandList))return expandList;
-		if(Utils.isEmpty(names))return expandList;
-		
-		int end = 0;
-		List<Object> newDatas = new ArrayList<Object>();
-		for(Object obj:expandList){
-			boolean isExpand = false;
-			List<String> expands = new ArrayList<String>();
-			end = 0;
-			Object parent = obj;
-			for(String n: names){
-				expands.add(n);
-				Object val = MapHelper.readValue(parent,n);
-				if(val instanceof List){
-					for(Object listObj : (List)val){
-						Object nd = Utils.clone(obj);
-						MapHelper.setValue(nd,expands,listObj);
-						newDatas.add(nd);
-					}
-
-					isExpand = true;
-					break;
-				}
-				
-				end++;
-				parent = val;
-			}
-			if(!isExpand){
-				newDatas.add(obj);
-			}
-		}
-		
-		Object[] results = newDatas.toArray();
-		if(end < names.length){
-			results = expand(results,names);
-		}
-		
-		return results;
-	}
+	
 	
 	public static Object add(Object o1,Object o2){
 		Object[] os = new Object[2];
@@ -212,128 +175,48 @@ public class GroupFunction {
 			return (Map)matchedResult;
 		}
 		
-//		public Object sum2(Map params){
-//			Object sumValue = null;
-//			for(Object obj : datas){
-//				Map newParams = new HashMap();
-//				newParams.putAll(params);
-//				newParams.put("this",obj);
-//				
-//				Parentheses pt = Parentheses.compile(this.function.expression,0);
-//				Node node = pt.getExpression();
-//				Object val = null;
-//				
-//				if(node instanceof Operand){
-//					val = node.getValue(newParams);
-//				}else if(node instanceof ExpressionNode){
-//					
-//				}
-//
-//				if(val instanceof MapNode){
-//					MapNode mn = (MapNode)val;
-//					String expre = mn.getExpression();
-//					
-//					String[] fns = expre.split("\\.");
-//					Object parent = newParams;
-//					Object temp = null;
-//					for(String n:fns){
-//						if(parent instanceof Collection){
-//							temp = new ArrayList();
-//							
-//							for(Object oo : (Collection)parent){
-//								((Collection)temp).add(MapHelper.readValue(oo,n));
-//							}
-//						}else {
-//							temp = MapHelper.readValue(parent,n);
-//						}
-//						
-//						parent = temp;
+	}
+	
+//	public static Object[] expand(Object[] expandList,String[] names){
+//		if(Utils.isEmpty(expandList))return expandList;
+//		if(Utils.isEmpty(names))return expandList;
+//		
+//		int end = 0;
+//		List<Object> newDatas = new ArrayList<Object>();
+//		for(Object obj:expandList){
+//			boolean isExpand = false;
+//			List<String> expands = new ArrayList<String>();
+//			end = 0;
+//			Object parent = obj;
+//			for(String n: names){
+//				expands.add(n);
+//				Object val = MapHelper.readValue(parent,n);
+//				if(val instanceof List){
+//					for(Object listObj : (List)val){
+//						Object nd = Utils.clone(obj);
+//						MapHelper.setValue(nd,expands,listObj);
+//						newDatas.add(nd);
 //					}
-//					
-//					val = temp;
+//
+//					isExpand = true;
+//					break;
 //				}
 //				
-//				if(val instanceof Collection){
-//					Object temp = null;
-//					for(Object o : (Collection)val){
-//						if(temp == null){
-//							temp = o;
-//						}else {
-//							temp = add(temp,o);
-//						}
-//					}
-//					val = temp;
-//				}
-//
-//				if(sumValue == null){
-//					sumValue = val;
-//				}else {
-//					sumValue = add(sumValue,val);
-//				}
+//				end++;
+//				parent = val;
 //			}
-//			System.out.println("group sum : " + sumValue);
-//			return sumValue;
+//			if(!isExpand){
+//				newDatas.add(obj);
+//			}
 //		}
-		
-		
-		
-		public List<Object> expand(List<Object> expandList,String name,String rootName){
-			String[] fns = name.split("\\.");
-			int end = 0;
-			
-			List<Object> newDatas = new ArrayList<Object>();
-			for(Object obj:expandList){
-				Map<String,Object> newParams = new HashMap<String,Object>();
-				newParams.put(rootName,obj);
-			
-				boolean isExpand = false;
-				List<String> expands = new ArrayList<String>();
-				Object parent = newParams;
-				end = 0;
-				for(String n: fns){
-					if(!n.equals(rootName)){
-						expands.add(n);
-					}
-					
-					Object val = MapHelper.readValue(parent,n);
-					if(val instanceof List){
-						for(Object listObj : (List)val){
-							Object nd = Utils.clone(obj);
-							MapHelper.setValue(nd,expands,listObj);
-							
-							newDatas.add(nd);
-						}
-
-						isExpand = true;
-						break;
-					}
-					
-					end++;
-					parent = val;
-				}
-				if(!isExpand){
-					newDatas.add(obj);
-				}
-			}
-			
-			if(end < fns.length){
-				newDatas = expand(newDatas,name,rootName);
-			}
-			
-			System.out.println("new datas : " + newDatas);
-			return newDatas;
-		}
-		
-		
-	}
-	
-	static class GroupOperand {
-		
-	}
-	
-	static class GroupExpressionNode {
-		
-	}
+//		
+//		Object[] results = newDatas.toArray();
+//		if(end < names.length){
+//			results = expand(results,names);
+//		}
+//		
+//		return results;
+//	}
 	
 	
 }

@@ -2,6 +2,7 @@ package com.maliang.core.service;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -9,6 +10,7 @@ import java.util.Map;
 import com.maliang.core.arithmetic.ArithmeticExpression;
 import com.maliang.core.util.BeanUtil;
 import com.maliang.core.util.StringUtil;
+import com.maliang.core.util.Utils;
 
 public class MapHelper {
 	public static void main(String[] args) {
@@ -127,9 +129,69 @@ public class MapHelper {
 		
 		Object value = obj;
 		for(String k:keys){
-			value = readBeanValue(value,k);
+			if(Utils.isArray(value)){
+				List tempVal = new ArrayList();
+
+				value = expand(Utils.toArray(value),new String[]{k});
+				for(Object item : (Object[])value){
+					Object val = readBeanValue(item,k);
+					
+					// 待定
+					if(val != null){
+						tempVal.add(val);
+					}
+				}
+				
+				value = null;
+				if(tempVal.size() > 0){
+					value = tempVal;
+				}
+			}else {
+				value = readBeanValue(value,k);
+			}
 		}
 		return value;
+	}
+	
+	public static Object[] expand(Object[] expandList,String[] names){
+		if(Utils.isEmpty(expandList))return expandList;
+		if(Utils.isEmpty(names))return expandList;
+		
+		int end = 0;
+		List<Object> newDatas = new ArrayList<Object>();
+		for(Object obj:expandList){
+			boolean isExpand = false;
+			List<String> expands = new ArrayList<String>();
+			end = 0;
+			Object parent = obj;
+			for(String n: names){
+				expands.add(n);
+				Object val = MapHelper.readValue(parent,n);
+				if(val instanceof List){
+					for(Object listObj : (List)val){
+						Object nd = Utils.clone(obj);
+						MapHelper.setValue(nd,expands,listObj);
+						newDatas.add(nd);
+					}
+
+					isExpand = true;
+					break;
+				}
+				
+				end++;
+				parent = val;
+			}
+			if(!isExpand){
+				newDatas.add(obj);
+			}
+		}
+		
+		Object[] results = newDatas.toArray();
+		if(end < names.length){
+			results = expand(results,names);
+		}
+		
+		return results;
 	}
 	
 	@SuppressWarnings("rawtypes")

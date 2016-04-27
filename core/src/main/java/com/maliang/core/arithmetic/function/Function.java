@@ -31,7 +31,7 @@ public class Function {
 		this.source = s;
 		this.startIndex = startIndex;
 		this.keySource = k;
-		
+
 		if(key != null)key = key.trim();
 		
 		if("if".equals(key)){
@@ -229,6 +229,10 @@ public class Function {
 		if("group".equals(key)){
 			return GroupFunction.execute(this, params);
 		}
+		
+//		if("filter".equals(key)){
+//			return FilterFunction.execute(this, params);
+//		}
 		
 		if(this.isDBFun()){
 			return DBFunction.execute(this, params);

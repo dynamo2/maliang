@@ -8,11 +8,7 @@ import java.util.Map;
 
 public class Utils {
 	public static boolean isArray(Object ob){
-		if(ob != null && ((ob instanceof Collection) || (ob instanceof Object[]))){
-			return true;
-		}
-		
-		return false;
+		return ob != null && ((ob instanceof Collection) || (ob instanceof Object[]));
 	}
 	
 	public static Map<Object,Object> clone(Map<Object,Object> map){
@@ -51,7 +47,7 @@ public class Utils {
 	}
 	
 	public static Object[] toArray(Object ob){
-		if(ob != null && ((ob instanceof Collection) || (ob instanceof Object[]))){
+		if(isArray(ob)){
 			if(ob instanceof Collection){
 				return ((Collection)ob).toArray();
 			}
@@ -59,7 +55,9 @@ public class Utils {
 			if(ob instanceof Object[]){
 				return (Object[])ob;
 			}
-			
+		}
+		
+		if(ob != null){
 			return new Object[]{ob};
 		}
 		

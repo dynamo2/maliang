@@ -6,6 +6,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.maliang.core.util.Utils;
+
 public class Sum {
 	private static final int TYPE_STRING = 1;
 	private static final int TYPE_INT = 2;
@@ -20,13 +22,9 @@ public class Sum {
 			return null;
 		}
 		
-		if(expressionData instanceof Collection){
-			expressionData = ((Collection)expressionData).toArray();
-		}
-		
 		Object resultValue = expressionData;
-		if(expressionData instanceof Object[]){
-			Object[] datas = (Object[])expressionData;
+		if(Utils.isArray(expressionData)){
+			Object[] datas = Utils.toArray(expressionData);
 			
 			int type = checkDataType(datas);
 			if(type == TYPE_MAP){
