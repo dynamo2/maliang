@@ -7,8 +7,12 @@ import com.maliang.core.service.MapHelper;
 public class MapNode extends Node {
 	String key;
 	
-	MapNode(String k){
+	public MapNode(String k){
 		this.key = k;
+	}
+	
+	public String getExpression(){
+		return this.key;
 	}
 	
 	public Object getValue(Object obj){

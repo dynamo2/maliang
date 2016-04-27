@@ -1,6 +1,9 @@
 package com.maliang.core.util;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class Utils {
@@ -10,6 +13,41 @@ public class Utils {
 		}
 		
 		return false;
+	}
+	
+	public static Map<Object,Object> clone(Map<Object,Object> map){
+		if(map == null)return null;
+		if(map.size() == 0)return new HashMap<Object,Object>();
+		
+		Map<Object,Object> newMap = new HashMap<Object,Object>();
+		for(Object k : map.keySet()){
+			Object val = clone(map.get(k));
+			newMap.put(k,val);
+		}
+		return newMap;
+	}
+	
+	public static List<Object> clone(List<Object> list){
+		if(list == null)return null;
+		if(list.size() == 0)return new ArrayList<Object>();
+		
+		List<Object> newList = new ArrayList<Object>();
+		for(Object v:newList){
+			Object nv = clone(v);
+			newList.add(nv);
+		}
+		return newList;
+	}
+	
+	public static Object clone(Object obj){
+		if(obj == null)return null;
+		if(obj instanceof Map){
+			return clone((Map)obj);
+		}
+		if(obj instanceof List){
+			return clone((List)obj);
+		}
+		return obj;
 	}
 	
 	public static Object[] toArray(Object ob){

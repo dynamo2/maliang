@@ -1,12 +1,12 @@
 package com.maliang.core.service;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import com.maliang.core.arithmetic.ArithmeticExpression;
-import com.maliang.core.model.ObjectField;
 import com.maliang.core.util.BeanUtil;
 import com.maliang.core.util.StringUtil;
 
@@ -103,11 +103,28 @@ public class MapHelper {
 	}
 	
 	public static Object readValue(Object obj,String fname){
-		if(obj == null  || StringUtil.isEmpty(fname)){
+		if(obj == null  || fname == null){
 			return null;
 		}
 		
-		String[] keys = fname.split("\\.");
+		return readValue(obj,fname.split("\\."));
+	}
+	
+	public static Object readValue(Object obj,List<String> names){
+		if(obj == null  || names == null){
+			return null;
+		}
+		
+		return readValue(obj,names.toArray(new String[0]));
+	}
+	
+	public static Object readValue(Object obj,String[] keys){
+		if(obj == null  || keys == null){
+			return null;
+		}
+		
+		if(keys.length == 0)return obj;
+		
 		Object value = obj;
 		for(String k:keys){
 			value = readBeanValue(value,k);
@@ -125,6 +142,32 @@ public class MapHelper {
 		return BeanUtil.readValue(obj, fname);
 	}
 	
+	public static void setValue(Object obj,String name,Object keyValue){
+		if(StringUtil.isEmpty(name))return;
+		
+		setValue(obj,name.split("\\."),keyValue);
+	}
+	
+	public static void setValue(Object obj,List<String> names,Object keyValue){
+		if(names == null)return;
+		
+		setValue(obj,names.toArray(new String[0]),keyValue);
+	}
+	
+	public static void setValue(Object obj,String[] keys,Object keyValue){
+		if(obj == null  || keys == null){
+			return;
+		}
+		
+		if(keys.length == 0)return;
+		
+		Object value = readValue(obj,Arrays.copyOf(keys,keys.length-1));
+		String keyName = keys[keys.length-1];
+		if(value instanceof Map){
+			((Map)value).put(keyName,keyValue);
+		}
+	}
+
 	/*
 	public static Object readValue(Map<String,Object> paramMap,String paramKey){
 		if(paramMap == null || paramMap.size() == 0 

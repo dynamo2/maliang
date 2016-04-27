@@ -14,6 +14,10 @@ public class Operand extends Node {
 		}
 	}
 	
+	public String getOperand(){
+		return this.operand;
+	}
+	
 	public Object getValue(Map<String,Object> paramsMap){
 		if(this.operand.equalsIgnoreCase("true")){
 			return true;
