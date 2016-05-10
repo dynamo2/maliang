@@ -335,7 +335,7 @@ function UIListBuilder(){
 			divObj.append(ulObj);
 		}
 		
-		TM_formBuilder.newInputElement(options.maxIndex).appendTo(divObj);
+//		TM_formBuilder.newInputElement(options.maxIndex).appendTo(divObj);
 		
 		addBntObj.click(function(){
 			var ulObj = builder.newItemInputs(options.emptyItem,options);
@@ -510,35 +510,21 @@ function FormTable(){
 		
 		ltd.text(_.readLabel(opts));
 		if(_.isGroup(opts)){
-			var groupInps = opts.type.inputs;
-			if($.isArray(groupInps)){
-				var lastLine = null;
-				$.each(groupInps,function(){
-					if(!lastLine || _.isNewLine(this)){
-						lastLine = $("<div />").appendTo(etd);
-					}
-					_.append(lastLine,this);
-				});
-			}
+			_.append(opts);
 		}else if(_.isList(opts)){
 			var listTable = $("<table class='tableList' cellpadding='0' cellspacing='1' />").appendTo(etd);
 			var tr = $("<tr />").appendTo(listTable);
 			
-			$.each(opts.type.header,function(){
-				$("<th class='header' />").text(this).appendTo(tr);
-			});
+			if($.isArray(opts.type.header)){
+				$.each(opts.type.header,function(){
+					$("<th class='header' />").text(this).appendTo(tr);
+				});
+			}
 			
 			$.each(opts.type.inputs,function(){
 				tr = $("<tr />").appendTo(listTable);
 				$.each(this,function(){
-					var td = $("<td />").appendTo(tr);
-					if($.isArray(this)){
-						$.each(this,function(){
-							_.appendInput(td,this);
-						});
-					}else {
-						_.appendInput(td,this);
-					}
+					_.append($("<td />").appendTo(tr),this);
 				});
 			});
 		}else {
@@ -554,15 +540,15 @@ function FormTable(){
 	this.append = function(td,opts){
 		if(_.isGroup(opts)){
 			var groupInps = opts.type && opts.type.inputs;
-			if($.isArray(groupInps)){
-				var lastLine = $("<div />").appendTo(td);
-				$.each(groupInps,function(){
-					if(_.isNewLine(this)){
-						lastLine = $("<div />").appendTo(td);
-					}
-					_.append(lastLine,this);
-				});
-			}
+			_.append(td,groupInps);
+		}else if($.isArray(opts)){
+			var lastLine = $("<div />").appendTo(td);
+			$.each(opts,function(){
+				if(_.isNewLine(this)){
+					lastLine = $("<div />").appendTo(td);
+				}
+				_.append(lastLine,this);
+			});
 		}else {
 			if(_.isPreLabel(opts)){
 				_.appendLabel(td,opts);

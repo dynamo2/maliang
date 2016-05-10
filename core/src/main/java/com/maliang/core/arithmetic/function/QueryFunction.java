@@ -8,6 +8,7 @@ import java.util.Map;
 
 import com.maliang.core.arithmetic.AE;
 import com.maliang.core.arithmetic.ArithmeticExpression;
+import com.maliang.core.util.Utils;
 
 public class QueryFunction {
 	public static void main(String[] args) {
@@ -24,16 +25,13 @@ public class QueryFunction {
 //		System.out.println("ov : " + ov);
 //		
 		str = "db.Product.search()";
-		Object o = AE.execute(str);
-		System.out.println(o);
-	}
-	
-	private static boolean isArray(Object ob){
-		if(ob != null && ((ob instanceof Collection) || (ob instanceof Object[]))){
-			return true;
-		}
 		
-		return false;
+		str = "{users:{name:'wzq',age:5,grade:{id:8,name:'高级会员'}},rn:'name'}";
+		Map ps = (Map)AE.execute(str);
+		
+		str = "users.remove(rn)";
+		Object o = AE.execute(str,ps);
+		System.out.println(o);
 	}
 	
 	private static boolean isMap(Object ob){
@@ -43,11 +41,11 @@ public class QueryFunction {
 		
 		return false;
 	}
-	
+
 	public static Object execute(Function function,Map<String,Object> params){
 		Object operatedObj = function.getKeyValue();
 		
-		if(isArray(operatedObj)){
+		if(Utils.isArray(operatedObj)){
 			if(operatedObj instanceof Collection){
 				operatedObj = ((Collection)operatedObj).toArray();
 			}
@@ -60,10 +58,7 @@ public class QueryFunction {
 					continue;
 				}
 				
-				Map newParams = new HashMap();
-				newParams.putAll((Map)obj);
-				newParams.putAll(params);
-				
+				Map newParams = Utils.connect(params,(Map)obj);
 				Object ov = ArithmeticExpression.execute(function.expression, newParams);
 				if(ov instanceof Boolean && (Boolean)ov){
 					resultList.add(obj);
@@ -79,6 +74,36 @@ public class QueryFunction {
 				return operatedObj;
 			}
 			return null;
+		}
+
+		return null;
+	}
+	
+	public static Object remove(Function function,Map<String,Object> params){
+		Object operatedObj = function.getKeyValue();
+		if(Utils.isArray(operatedObj)){
+			
+			List<Object> resultList = new ArrayList<Object>();
+			for(Object obj : Utils.toArray(operatedObj)){
+				Map newParams = Utils.connect(params);
+				if(obj instanceof Map){
+					newParams = Utils.connect(newParams,(Map)obj);
+				}
+				
+				Object ov = ArithmeticExpression.execute(function.expression, newParams);
+				if((ov == null && obj == null) || (ov instanceof Boolean && (Boolean)ov)){
+					continue;
+				}
+				resultList.add(obj);
+			}
+			
+			return resultList;
+		}
+		
+		if(isMap(operatedObj)){
+			Object ov = ArithmeticExpression.execute(function.expression, Utils.connect(params,(Map)operatedObj));
+			((Map)operatedObj).remove(ov);
+			return operatedObj;
 		}
 
 		return null;

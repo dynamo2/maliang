@@ -172,6 +172,10 @@ public class Function {
 			return Each.execute(this, params);
 		}
 		
+		if("size".equals(key)){
+			return SizeFunction.execute(this, params);
+		}
+		
 		if("if".equals(key)){
 			//return If.execute(this, params);
 			if(this.ifFunction != null){
@@ -210,6 +214,10 @@ public class Function {
 		
 		if("query".equals(key)){
 			return QueryFunction.execute(this, params);
+		}
+		
+		if("remove".equals(key)){
+			return QueryFunction.remove(this, params);
 		}
 		
 		if("max".equals(key)){

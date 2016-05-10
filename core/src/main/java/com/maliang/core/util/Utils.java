@@ -11,6 +11,14 @@ public class Utils {
 		return ob != null && ((ob instanceof Collection) || (ob instanceof Object[]));
 	}
 	
+	public static Map connect(Map...maps){
+		Map newParams = new HashMap();
+		for(Map m:maps){
+			newParams.putAll(m);
+		}
+		return newParams;
+	}
+	
 	public static Map<Object,Object> clone(Map<Object,Object> map){
 		if(map == null)return null;
 		if(map.size() == 0)return new HashMap<Object,Object>();

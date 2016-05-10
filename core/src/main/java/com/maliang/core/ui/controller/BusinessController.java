@@ -4,11 +4,13 @@ import java.beans.BeanInfo;
 import java.beans.Introspector;
 import java.beans.PropertyDescriptor;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -28,6 +30,7 @@ import com.maliang.core.exception.TurnToPage;
 import com.maliang.core.model.Business;
 import com.maliang.core.model.WorkFlow;
 import com.maliang.core.service.MapHelper;
+import com.maliang.core.util.StringUtil;
 
 @Controller
 @RequestMapping(value = "business")
@@ -80,7 +83,6 @@ public class BusinessController extends BasicController {
 			WorkFlow workFlow = readWorkFlow(request);
 			String resultJson = executeWorkFlow(workFlow,request);
 			
-			System.out.println("resultJson : " + resultJson);
 			model.addAttribute("resultJson", resultJson);
 			return "/business/business2";
 		}catch(TurnToPage page){
@@ -95,7 +97,7 @@ public class BusinessController extends BasicController {
 	@RequestMapping(value = "request.htm")
 	@ResponseBody
 	public String request(Model model,HttpServletRequest request) {
-		Map<String,Object> params = readRequestParameters(request);
+		Map<String,Object> params = readRequestMap(request);
 		System.out.println("================ params : " + params);
 		System.out.println("================ province : " + MapHelper.readValue(params, "request.order.address.province"));
 		
@@ -103,6 +105,108 @@ public class BusinessController extends BasicController {
 	}
 	
 	protected Map<String,Object> readRequestMap(HttpServletRequest request){
+		JSONObject json = JSONObject.fromObject(request.getParameterMap());
+		List<String> reqNames = json.names();
+		
+		Map<String,Object> reqMap = new HashMap<String,Object>();
+		if(reqNames == null || reqNames.size() == 0){
+			return reqMap;
+		}
+		
+		for(String reqName:reqNames){
+			Object reqValue = ((JSONArray)json.get(reqName)).get(0);
+			if(reqValue == null)continue;
+
+			setValue(reqMap,reqName,reqValue);
+		}
+		
+		return reqMap;
+	}
+	
+	private static void setValue(Map<String,Object> rootMap,String reqName,Object reqValue){
+		if(reqName == null)return;
+		
+		Object lastKey = null;
+		Object lastParent = rootMap;
+		Object parent = rootMap;
+		String[] parents = reqName.split("\\.");
+		for(int i = 0; i < parents.length; i++){
+			String name = parents[i];
+			boolean last = i == parents.length-1;
+
+			Integer index = null;
+			try {
+				index = Integer.parseInt(name);
+			}catch(Exception e){
+				index = null;
+			}
+			
+			if(index != null && index >= 0){
+				List list = null;
+				if(parent instanceof List){
+					list = (List)parent;
+				}else {
+					list = new ArrayList();
+					
+					if(lastParent instanceof Map){
+						((Map)lastParent).put(lastKey, list);
+					}else if(lastParent instanceof List){
+						if(lastKey instanceof Integer){
+							((List)lastParent).set((Integer)lastKey,list);
+						}
+					}
+				}
+				
+				if(index >= list.size()){
+					int ii = index - list.size();
+					while(ii-- >= 0){
+						list.add(null);
+					}
+				}
+				
+				if(last){
+					list.set(index,reqValue);
+					break;
+				}
+				
+				Object temp = list.get(index);
+				if(temp == null){
+					temp = new HashMap();
+					list.set(index, temp);
+				}
+				
+				parent = temp;
+				lastParent = list;
+				lastKey = index;
+			}else {
+				if(!(parent instanceof Map)){
+					parent = new HashMap();
+					if(lastParent instanceof Map){
+						((Map)lastParent).put(lastKey, parent);
+					}else if(lastParent instanceof List && lastKey instanceof Integer){
+						((List)lastParent).set((Integer)lastKey, parent);
+					}
+				}
+				
+				if(last){
+					((Map)parent).put(name,reqValue);
+					break;
+				}
+				
+				Object temp = ((Map)parent).get(name);
+				if(temp == null){
+					temp = new HashMap<String,Object>();
+					((Map)parent).put(name,temp);
+				}
+				
+				lastKey = name;
+				lastParent = parent;
+				parent = temp;
+			}
+		}
+	}
+	
+	protected Map<String,Object> readRequestMap222(HttpServletRequest request){
 		JSONObject json = JSONObject.fromObject(request.getParameterMap());
 		List<String> reqNames = json.names();
 		
@@ -186,6 +290,7 @@ public class BusinessController extends BasicController {
 	public String save(Model model,HttpServletRequest request) {
 		Map<String,Object> reqMap = this.readRequestMap(request);
 		Map<String,Object> busMap = (Map<String,Object>)reqMap.get("business");
+		
 		Business busi = buildToObject(busMap,Business.class);
 
 		businessDao.save(busi);
@@ -469,13 +574,36 @@ public class BusinessController extends BasicController {
 				+ "ajax:'/business/ajax.htm?bid=2',"
 				+ "header:['名称','品牌','价格','图片','操作']}]}";
 		
-		str = "{accounts:db.Account.search()}";
-		Map<String,Object> params = (Map<String,Object>)ArithmeticExpression.execute(str, null);
+//		str = "{accounts:db.Account.search()}";
+//		Map<String,Object> params = (Map<String,Object>)ArithmeticExpression.execute(str, null);
+//		
+//		str = "{html:'<table cellspacing='0' cellpadding='0' class='list'>'+sum(each(accounts){'<tr><td>'+this.account+'</td></td>'+this.password+'</td></tr>'})+'</table>'}";
+//		Object ov = ArithmeticExpression.execute(str, params);
 		
-		str = "{html:'<table cellspacing='0' cellpadding='0' class='list'>'+sum(each(accounts){'<tr><td>'+this.account+'</td></td>'+this.password+'</td></tr>'})+'</table>'}";
-		Object ov = ArithmeticExpression.execute(str, params);
+		//System.out.println(ov);
 		
-		System.out.println(ov);
+		Map<String,Object> rootMap = new HashMap<String,Object>();
+		
+		setValue(rootMap,"order.info.number","200103040505");
+		setValue(rootMap,"order.info.name","淘宝订单");
+		setValue(rootMap,"order.info.date","2015-03-04");
+		setValue(rootMap,"order.items.0.0.product","神仙水330ml");
+		setValue(rootMap,"order.items.0.0.warehouse","六合仓库");
+		setValue(rootMap,"order.items.0.0.num","3");
+		setValue(rootMap,"order.items.1.0","A");
+		setValue(rootMap,"order.items.1.1","B");
+		setValue(rootMap,"order.items.1.2","C");
+		setValue(rootMap,"product","神仙水330ml");
+		setValue(rootMap,"product.name","神仙水330ml");
+		setValue(rootMap,"product.brand","SK2");
+		
+//		setValue(rootMap,"order.items.1.product","HR/赫莲娜绿宝瓶悦活新生精华30ml");
+//		setValue(rootMap,"order.items.0.product","神仙水330ml");
+//		setValue(rootMap,"order.items.0.num","3");
+//		setValue(rootMap,"order.items.1.num","8");
+		
+		System.out.println(rootMap);
+		
 	}
 	
 	/**

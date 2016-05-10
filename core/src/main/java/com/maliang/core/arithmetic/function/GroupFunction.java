@@ -25,7 +25,7 @@ public class GroupFunction {
 		Map params = (Map)AE.execute(s);
 		// s = "orders.group({totalPrice:sum(this.items.price*this.item.num),id:this.items.product})";
 		// s = "orders.group({totalPrice:sum(this.items.sum(this.price*this.num))})";
-		s = "orders.group({total:sum(this.items.sum(this.price*this.num)),count:count()})";
+		s = "orders.group({total:sum(this.items.sum(this.price*this.num)),count:count(),id:{date:this.date}})";
 		//s = "orders.items.distributeItems.sum(this.num*this.ware)";
 		
 		//System.out.println("g : " + s);
@@ -82,10 +82,7 @@ public class GroupFunction {
 			for(String key : this.expressionMap.keySet()){
 				String valExpre = (String)this.expressionMap.get(key);
 				Parentheses pt = Parentheses.compile(valExpre,0);
-				Node node = pt.getNode();
-				if(node instanceof FunctionNode){
-					this.getValue(params,((FunctionNode)node).getFunction(),key);
-				}
+				this.getValue(params,pt.getNode(),key);
 			}
 		}
 		
@@ -103,7 +100,7 @@ public class GroupFunction {
 			}
 		}
 
-		public Object getValue(Map<String,Object> params,Function function,String resultKey){
+		public Object getValue(Map<String,Object> params,Node node ,String resultKey){
 			Object idVal = DEFAULT_ID;
 			for(Object obj : datas){
 				Map<String,Object> newParams = new HashMap<String,Object>();
@@ -113,10 +110,17 @@ public class GroupFunction {
 				idVal = AE.execute(idExpression,newParams);
 				if(idVal == null)idVal = DEFAULT_ID;
 
-				if(this.isSum(function)){
-					sum(idVal,function,newParams,resultKey);
-				}else if(this.isCount(function)){
-					count(idVal,resultKey);
+				if(node instanceof FunctionNode){
+					Function function = ((FunctionNode)node).getFunction();
+					
+					if(this.isSum(function)){
+						sum(idVal,function,newParams,resultKey);
+					}else if(this.isCount(function)){
+						count(idVal,resultKey);
+					}
+				}else {
+					Object newVal = node.getValue(newParams);
+					setResult(idVal,newVal,resultKey);
 				}
 			}
 
@@ -133,7 +137,8 @@ public class GroupFunction {
 		
 		private boolean isFunction(Function fun,String name){
 			return fun.getKey().equals(name);
-		}		
+		}
+		
 		public void sum(Object idVal,Function fun,Map<String,Object> params,String resultKey){
 			Object newVal = fun.executeExpression(params);
 			setResult(idVal, Sum.sum(getResult(idVal,resultKey),newVal),resultKey);
