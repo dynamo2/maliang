@@ -1,7 +1,6 @@
 package com.maliang.core.service;
 
 import java.text.DateFormat;
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -12,12 +11,14 @@ import org.bson.types.ObjectId;
 
 import com.maliang.core.arithmetic.ArithmeticExpression;
 import com.maliang.core.dao.CollectionDao;
+import com.maliang.core.dao.DaoHelper;
 import com.maliang.core.dao.ObjectMetadataDao;
 import com.maliang.core.model.FieldType;
 import com.maliang.core.model.ObjectField;
 import com.maliang.core.model.ObjectMetadata;
 import com.maliang.core.ui.controller.Pager;
 import com.maliang.core.util.StringUtil;
+import com.maliang.core.util.Utils;
 
 public class CollectionService {
 	public final static DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
@@ -148,8 +149,19 @@ public class CollectionService {
 	}
 	
 	private Map<String,Object> convert(Map<String,Object> dataMap){
-		if(dataMap == null || dataMap.size() == 0)return dataMap;
-		return correctData(dataMap,this.collection,false);
+		return convert(dataMap,false);
+	}
+	
+	private Map<String,Object> deepConvert(Map<String,Object> dataMap){
+		return convert(dataMap,true);
+	}
+	
+	private Map<String,Object> convert(Map<String,Object> dataMap,boolean isDeep){
+		if(Utils.isEmpty(dataMap)){
+			return dataMap;
+		}
+		
+		return this.collectionDao.correctData(dataMap, this.collection,false,isDeep);
 	}
 	
 	private Map<String,Object> correctData(Map<String,Object> dataMap,String collName,boolean dealWithId){
@@ -222,40 +234,10 @@ public class CollectionService {
 			}
 		}
 
-		return correctFieldValue(of.getType(),fieldValue);
+		return DaoHelper.correctFieldValue(of.getType(),fieldValue);
 	}
 	
-	private Object correctFieldValue(int ftype,Object value){
-		if(FieldType.DOUBLE.is(ftype)){
-			try {
-				return Double.valueOf(value.toString().trim());
-			}catch(Exception e){
-				return null;
-			}
-		}
-		
-		if(FieldType.INT.is(ftype)){
-			try {
-				return Integer.valueOf(value.toString().trim());
-			}catch(Exception e){
-				return null;
-			}
-		}
-		
-		if(FieldType.DATE.is(ftype)){
-			try {
-				return timestampFormat.parse(value.toString().trim());
-			}catch(ParseException e){
-				try {
-					return dateFormat.parse(value.toString().trim());
-				}catch(ParseException ee){
-					return null;
-				}
-			}
-		}
-		
-		return value;
-	}
+	
 
 	public static void main(String[] args) {
 		String s = "db.User.save({birthday:'1981-4-9', real_name:'www', password:'123456', user:'wmx', id:'', user_grade:'55c8be3f1b970b1ff3fc2f6c'})";
@@ -281,6 +263,14 @@ public class CollectionService {
 		if("convert".equals(method)){
 			if(value != null && value instanceof Map){
 				return this.convert((Map<String,Object>)value);
+			}
+			
+			return null;
+		}
+		
+		if("deepConvert".equals(method)){
+			if(value != null && value instanceof Map){
+				return this.deepConvert((Map<String,Object>)value);
 			}
 			
 			return null;
@@ -372,4 +362,44 @@ public class CollectionService {
 		
 		return null;
 	}
+	
+//	private Object correctFieldValue(int ftype,Object value){
+//		if(FieldType.DOUBLE.is(ftype)){
+//			try {
+//				return Double.valueOf(value.toString().trim());
+//			}catch(Exception e){
+//				return null;
+//			}
+//		}
+//		
+//		if(FieldType.INT.is(ftype)){
+//			try {
+//				return Integer.valueOf(value.toString().trim());
+//			}catch(Exception e){
+//				return null;
+//			}
+//		}
+//		
+//		if(FieldType.DATE.is(ftype)){
+//			try {
+//				return timestampFormat.parse(value.toString().trim());
+//			}catch(ParseException e){
+//				try {
+//					return dateFormat.parse(value.toString().trim());
+//				}catch(ParseException ee){
+//					return null;
+//				}
+//			}
+//		}
+//		
+//		if(FieldType.STRING.is(ftype)){
+//			try {
+//				return value.toString();
+//			}catch(Exception e){
+//				return null;
+//			}
+//		}
+//
+//		return value;
+//	}
 }

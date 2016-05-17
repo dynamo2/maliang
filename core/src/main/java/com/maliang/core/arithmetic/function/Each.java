@@ -28,6 +28,7 @@ public class Each {
 		if(value == null){
 			return resultList;
 		}
+		
 		if(value instanceof Collection){
 			value = ((Collection)value).toArray();
 		}

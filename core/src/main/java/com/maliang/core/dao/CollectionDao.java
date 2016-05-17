@@ -266,10 +266,6 @@ public class CollectionDao extends BasicDao {
 		return this.aggregate(pipeline, collName);
 	}
 	
-	private Map<String,Object> emptyResult(){
-		return new HashMap<String,Object>();
-	}
-	
 	private List<Map<String,Object>> emptyResults(){
 		return new ArrayList<Map<String,Object>>();
 	}
@@ -341,9 +337,7 @@ public class CollectionDao extends BasicDao {
 			if(FieldType.LINK_COLLECTION.is(field.getType())){
 //				String linkCollName = this.getLinkedCollectionName(field.getLinkedObject());
 //				if(linkCollName == null)return;
-				
-				System.out.println(fieldName + " : " + field.getLinkedObject());
-				
+
 				String linkCollName = field.getLinkedObject();
 				Object fieldValue = dataMap.get(fieldName);
 				if(fieldValue != null && fieldValue instanceof String && !((String)fieldValue).trim().isEmpty()){
@@ -359,16 +353,11 @@ public class CollectionDao extends BasicDao {
 				}
 			}else if(FieldType.ARRAY.is(field.getType())){
 				if(FieldType.INNER_COLLECTION.is(field.getElementType())){
-					System.out.println("==========="+field.getName()+"====================");
-					
-					
 					Object fValue = dataMap.get(fieldName);
 					if(fValue instanceof List){
 						List<Map<String,Object>> innList = (List<Map<String,Object>>)fValue;
 						for(Map<String,Object> map:innList){
-							System.out.println("before : " + map);
 							correctField(map,field.getFields());
-							System.out.println("after : " + map);
 						}
 					}
 				}

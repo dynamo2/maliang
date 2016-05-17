@@ -1,14 +1,13 @@
 package com.maliang.core.arithmetic.function;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import com.maliang.core.arithmetic.AE;
 import com.maliang.core.arithmetic.node.FunctionNode;
+import com.maliang.core.arithmetic.node.MapNode;
 import com.maliang.core.arithmetic.node.Node;
 import com.maliang.core.arithmetic.node.Parentheses;
 import com.maliang.core.service.MapHelper;
@@ -46,20 +45,13 @@ public class GroupFunction {
 		String[] names = fun.getKeySource().split("\\.");
 		String rootName = names[0];
 		Object rootObj = MapHelper.readValue(params,rootName);
-		if(!Utils.isArray(rootObj)){
-			List l = new ArrayList();
-			l.add(rootObj);
-			rootObj = l;
-		}
+		
+		rootObj = Utils.toArray(rootObj);
 		if(names.length > 2){
 			rootObj = MapHelper.expand((Object[])rootObj,Arrays.copyOfRange(names, 1, names.length-1));
 		}
 		
-		if(rootObj instanceof Collection){
-			rootObj = ((Collection)rootObj).toArray();
-		}
-		
-		return (Object[])rootObj;
+		return Utils.toArray(rootObj);
 	}
 	
 	static class GroupCompiler {
@@ -120,6 +112,9 @@ public class GroupFunction {
 					}
 				}else {
 					Object newVal = node.getValue(newParams);
+					if(newVal instanceof MapNode){
+						newVal = ((MapNode)newVal).getValue(newParams);
+					}
 					setResult(idVal,newVal,resultKey);
 				}
 			}

@@ -238,6 +238,10 @@ public class Function {
 			return GroupFunction.execute(this, params);
 		}
 		
+		if("join".equals(key)){
+			return JoinFunction.execute(this, params);
+		}
+		
 //		if("filter".equals(key)){
 //			return FilterFunction.execute(this, params);
 //		}
