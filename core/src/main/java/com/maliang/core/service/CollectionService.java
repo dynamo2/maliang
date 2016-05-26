@@ -70,7 +70,7 @@ public class CollectionService {
 		if(query != null && query instanceof Map){
 			v = (Map)query;
 		}
-		
+
 		return this.collectionDao.innerObjectById(v, this.collection);
 	}
 	
@@ -161,7 +161,7 @@ public class CollectionService {
 			return dataMap;
 		}
 		
-		return this.collectionDao.correctData(dataMap, this.collection,false,isDeep);
+		return this.collectionDao.correctData(dataMap, this.collection,isDeep);
 	}
 	
 	private Map<String,Object> correctData(Map<String,Object> dataMap,String collName,boolean dealWithId){
@@ -249,15 +249,34 @@ public class CollectionService {
 		System.out.println(u);
 	}
 	
+	private boolean isInnerObject(){
+		return this.collection.contains(".");
+	}
+	
+	
 	@SuppressWarnings("rawtypes")
 	public Object invoke(String method,Object value){
+		boolean isInner = isInnerObject();
+		String innerName = null;
+		if(isInner){
+			int idx = this.collection.indexOf(".");
+			//innerName = this.collection.substring(idx+1);
+			innerName = this.collection;
+			this.collection = this.collection.substring(0,idx);
+		}
+		
 		if("get".equals(method)){
 			if(value != null && value instanceof Map){
 				return this.findOne(value);
 			}
 			
 			String v = value==null?null:value.toString();
-			return this.get(v);
+			if(isInner){
+				Map query = this.collectionDao.buildInnerGetMap(innerName, v);
+				return this.innerObjectById(query);
+			}else {
+				return this.get(v);
+			}
 		}
 		
 		if("convert".equals(method)){
@@ -277,7 +296,8 @@ public class CollectionService {
 		}
 		
 		if("innerObjectById".equals(method)){
-			return this.innerObjectById(value);
+			Object obj = this.innerObjectById(value);
+			return obj;
 		}
 		
 		if("delete".equals(method) || "remove".equals(method) || "del".equals(method)){

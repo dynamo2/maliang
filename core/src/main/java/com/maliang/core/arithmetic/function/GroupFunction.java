@@ -22,9 +22,15 @@ public class GroupFunction {
 		
 		System.out.println("s : " + s);
 		Map params = (Map)AE.execute(s);
+		
+		Object[] exp = MapHelper.expand(Utils.toArray(params.get("orders")),"items.disributeItems".split("\\."));
+		for(Object obj:exp){
+			System.out.println("== " + obj);
+		}
+		
 		// s = "orders.group({totalPrice:sum(this.items.price*this.item.num),id:this.items.product})";
 		// s = "orders.group({totalPrice:sum(this.items.sum(this.price*this.num))})";
-		s = "orders.group({total:sum(this.items.sum(this.price*this.num)),count:count(),id:{date:this.date}})";
+		s = "orders.group({total:sum(this.items.sum(this.price*this.num)),count:count(),id:{date:this.date,price:this.price}})";
 		//s = "orders.items.distributeItems.sum(this.num*this.ware)";
 		
 		//System.out.println("g : " + s);
@@ -33,7 +39,9 @@ public class GroupFunction {
 	}
 	
 	public static Object execute(Function function,Map<String,Object> params){
-		Object[] datas = rootDatas(function,params);
+		Object val = function.getKeyValue();
+		Object[] datas = Utils.toArray(val);
+		//Object[] datas = rootDatas(function,params);
 		
 		GroupCompiler compiler = new GroupCompiler(datas,function.getExpression());
 		compiler.execute(params);
@@ -47,6 +55,7 @@ public class GroupFunction {
 		Object rootObj = MapHelper.readValue(params,rootName);
 		
 		rootObj = Utils.toArray(rootObj);
+
 		if(names.length > 2){
 			rootObj = MapHelper.expand((Object[])rootObj,Arrays.copyOfRange(names, 1, names.length-1));
 		}
@@ -101,7 +110,7 @@ public class GroupFunction {
 				
 				idVal = AE.execute(idExpression,newParams);
 				if(idVal == null)idVal = DEFAULT_ID;
-
+				
 				if(node instanceof FunctionNode){
 					Function function = ((FunctionNode)node).getFunction();
 					

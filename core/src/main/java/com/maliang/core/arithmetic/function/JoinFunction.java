@@ -12,6 +12,7 @@ import com.maliang.core.arithmetic.node.FunctionNode;
 import com.maliang.core.arithmetic.node.Node;
 import com.maliang.core.arithmetic.node.Parentheses;
 import com.maliang.core.service.MapHelper;
+import com.maliang.core.util.StringUtil;
 import com.maliang.core.util.Utils;
 
 public class JoinFunction {
@@ -27,9 +28,9 @@ public class JoinFunction {
 		
 		//s = "list.query(isNull(right.n)|left.n>right.n)";
 		s = "list.group({n:this.left.n-this.right.n,id:this.left.w})";
-		Object v = AE.execute(s,params);
+		//Object v = AE.execute(s,params);
 		
-		System.out.println("v : " + v);
+		//System.out.println("v : " + v);
 	}
 	
 	public static Object execute(Function function,Map<String,Object> params){
@@ -40,6 +41,7 @@ public class JoinFunction {
 		
 		Object right = null;
 		String on = null;
+		String matchExpression = null;
 		Object val = function.executeExpression(params);
 		if(val != null && val instanceof Map){
 			Map map = (Map)val;
@@ -49,6 +51,7 @@ public class JoinFunction {
 			}
 			right = map.get("right");
 			on = (String)map.get("on");
+			matchExpression = (String)map.get("match");
 		}
 		
 		if(left == null){
@@ -99,10 +102,21 @@ public class JoinFunction {
 					}
 				}
 				
-				result.add(join);
+				if(!StringUtil.isEmpty(matchExpression)){
+					newParams = new HashMap();
+					newParams.putAll(params);
+					newParams.putAll(join);
+					
+					Object match = AE.execute(matchExpression, newParams);
+					if(match != null && match instanceof Boolean && (Boolean)match){
+						result.add(join);
+					}
+				}else {
+					result.add(join);
+				}
 			}
 		}
-		
+
 		return result;
 	}
 }

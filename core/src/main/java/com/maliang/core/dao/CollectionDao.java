@@ -147,20 +147,22 @@ public class CollectionDao extends BasicDao {
 		return null;
 	}
 
-	public Map<String,Object> innerObjectById(Map<String,Object> query,String collName){
-		Map<String,Object> dbQuery = buildDBQueryMap(query,null);
-		
-		List<Map<String,Object>> results = this.findByMap(dbQuery, collName);
-		if(results != null && results.size() > 0){
-			Map<String,Object> returnObject = findInnerById(results.get(0),dbQuery);
-			if(returnObject != null){
-				return returnObject;
-			}
-		}
-		return null;
-	}
+//	public Map<String,Object> innerObjectById(Map<String,Object> query,String collName){
+//		Map<String,Object> dbQuery = buildDBQueryMap(query,null);
+//		
+//		List<Map<String,Object>> results = this.findByMap(dbQuery, collName);
+//		if(results != null && results.size() > 0){
+//			Map<String,Object> returnObject = findInnerById(results.get(0),dbQuery);
+//			if(returnObject != null){
+//				return returnObject;
+//			}
+//		}
+//		return null;
+//	}
 
 	public Map<String,Object> save(Map value,String collName) {
+		value = this.toDBModel(value, collName);
+		
 		BasicDBObject doc = this.build(value);
 		if(doc == null){
 			return null;
@@ -225,24 +227,24 @@ public class CollectionDao extends BasicDao {
 		return this.readCursor(cursor, collName);
 	}
 
-	public List<Map<String,Object>> findByMap(Map<String,Object> query,String collName){
-		return this.find(build(query), collName);
-	}
-	
-	public List<Map<String,Object>> find(BasicDBObject query,String collName){
-		DBCursor cursor = this.getDBCollection(collName).find(query);
-		
-		return readCursor(cursor,collName);
-	}
-	
-	private List<Map<String,Object>> readCursor(DBCursor cursor,String collName){
-		List<Map<String,Object>> results = new ArrayList<Map<String,Object>>();
-		for(DBObject dob : cursor.toArray()){
-			results.add(toMap(dob,collName));
-		}
-		
-		return results;
-	}
+//	public List<Map<String,Object>> findByMap(Map<String,Object> query,String collName){
+//		return this.find(build(query), collName);
+//	}
+//	
+//	public List<Map<String,Object>> find(BasicDBObject query,String collName){
+//		DBCursor cursor = this.getDBCollection(collName).find(query);
+//		
+//		return readCursor(cursor,collName);
+//	}
+//	
+//	private List<Map<String,Object>> readCursor(DBCursor cursor,String collName){
+//		List<Map<String,Object>> results = new ArrayList<Map<String,Object>>();
+//		for(DBObject dob : cursor.toArray()){
+//			results.add(toMap(dob,collName));
+//		}
+//		
+//		return results;
+//	}
 	
 	public Map<String,Object> aggregateOne(List<Map<String,Object>> query,String collName){
 		List<Map<String,Object>> results = aggregateByMap(query,collName);
@@ -295,75 +297,75 @@ public class CollectionDao extends BasicDao {
 		this.getDBCollection(collName).remove(new BasicDBObject());
 	}
 	
-	private void mergeLinkedObject(Map<String,Object> dataMap,String collName){
-		//dataMap.put("id",dataMap.remove("_id").toString());
-		
-		ObjectMetadata metedata = this.metaDao.getByName(collName);
-		if(metedata == null)return;
-		
-		correctField(dataMap,metedata.getFields());
-		
-		/*
-		for(ObjectField of : metedata.getFields()){
-			String fieldName = of.getName();
-			if(FieldType.LINK_COLLECTION.is(of.getType())){
-				String linkCollName = getLinkedCollectionName(of.getLinkedObject());
-				if(linkCollName == null)continue;
-				
-				Object fieldValue = dataMap.get(fieldName);
-				if(fieldValue != null && fieldValue instanceof String && !((String)fieldValue).trim().isEmpty()){
-					String linkOid = ((String)fieldValue).trim();
-					fieldValue = this.getByID(linkOid, linkCollName);
-				}
-				dataMap.put(fieldName, fieldValue);
-			}else if(FieldType.INNER_COLLECTION.is(of.getType())){
-				
-			}
-		}*/
-	}
+//	private void mergeLinkedObject(Map<String,Object> dataMap,String collName){
+//		//dataMap.put("id",dataMap.remove("_id").toString());
+//		
+//		ObjectMetadata metedata = this.metaDao.getByName(collName);
+//		if(metedata == null)return;
+//		
+//		correctField(dataMap,metedata.getFields());
+//		
+//		/*
+//		for(ObjectField of : metedata.getFields()){
+//			String fieldName = of.getName();
+//			if(FieldType.LINK_COLLECTION.is(of.getType())){
+//				String linkCollName = getLinkedCollectionName(of.getLinkedObject());
+//				if(linkCollName == null)continue;
+//				
+//				Object fieldValue = dataMap.get(fieldName);
+//				if(fieldValue != null && fieldValue instanceof String && !((String)fieldValue).trim().isEmpty()){
+//					String linkOid = ((String)fieldValue).trim();
+//					fieldValue = this.getByID(linkOid, linkCollName);
+//				}
+//				dataMap.put(fieldName, fieldValue);
+//			}else if(FieldType.INNER_COLLECTION.is(of.getType())){
+//				
+//			}
+//		}*/
+//	}
 	
-	private void correctField(Map<String,Object> dataMap,List<ObjectField> fields){
-		if(dataMap.get("_id") != null){
-			Object id = dataMap.remove("_id");
-			if(id instanceof ObjectId){
-				id = id.toString();
-			}
-			dataMap.put("id",id);
-		}
-
-		for(ObjectField field : fields){
-			String fieldName = field.getName();
-			
-			if(FieldType.LINK_COLLECTION.is(field.getType())){
-//				String linkCollName = this.getLinkedCollectionName(field.getLinkedObject());
-//				if(linkCollName == null)return;
-
-				String linkCollName = field.getLinkedObject();
-				Object fieldValue = dataMap.get(fieldName);
-				if(fieldValue != null && fieldValue instanceof String && !((String)fieldValue).trim().isEmpty()){
-					String linkOid = ((String)fieldValue).trim();
-					fieldValue = this.getByID(linkOid, linkCollName);
-				}
-				dataMap.put(fieldName, fieldValue);
-			}else if(FieldType.INNER_COLLECTION.is(field.getType())){
-				Object fValue = dataMap.get(fieldName);
-				if(fValue instanceof Map){
-					Map<String,Object> innMap = (Map<String,Object>)fValue;
-					correctField(innMap,field.getFields());
-				}
-			}else if(FieldType.ARRAY.is(field.getType())){
-				if(FieldType.INNER_COLLECTION.is(field.getElementType())){
-					Object fValue = dataMap.get(fieldName);
-					if(fValue instanceof List){
-						List<Map<String,Object>> innList = (List<Map<String,Object>>)fValue;
-						for(Map<String,Object> map:innList){
-							correctField(map,field.getFields());
-						}
-					}
-				}
-			}
-		}
-	}
+//	private void correctField(Map<String,Object> dataMap,List<ObjectField> fields){
+//		if(dataMap.get("_id") != null){
+//			Object id = dataMap.remove("_id");
+//			if(id instanceof ObjectId){
+//				id = id.toString();
+//			}
+//			dataMap.put("id",id);
+//		}
+//
+//		for(ObjectField field : fields){
+//			String fieldName = field.getName();
+//			
+//			if(FieldType.LINK_COLLECTION.is(field.getType())){
+////				String linkCollName = this.getLinkedCollectionName(field.getLinkedObject());
+////				if(linkCollName == null)return;
+//
+//				String linkCollName = field.getLinkedObject();
+//				Object fieldValue = dataMap.get(fieldName);
+//				if(fieldValue != null && fieldValue instanceof String && !((String)fieldValue).trim().isEmpty()){
+//					String linkOid = ((String)fieldValue).trim();
+//					fieldValue = this.getByID(linkOid, linkCollName);
+//				}
+//				dataMap.put(fieldName, fieldValue);
+//			}else if(FieldType.INNER_COLLECTION.is(field.getType())){
+//				Object fValue = dataMap.get(fieldName);
+//				if(fValue instanceof Map){
+//					Map<String,Object> innMap = (Map<String,Object>)fValue;
+//					correctField(innMap,field.getFields());
+//				}
+//			}else if(FieldType.ARRAY.is(field.getType())){
+//				if(FieldType.INNER_COLLECTION.is(field.getElementType())){
+//					Object fValue = dataMap.get(fieldName);
+//					if(fValue instanceof List){
+//						List<Map<String,Object>> innList = (List<Map<String,Object>>)fValue;
+//						for(Map<String,Object> map:innList){
+//							correctField(map,field.getFields());
+//						}
+//					}
+//				}
+//			}
+//		}
+//	}
 	
 	private String getLinkedCollectionName(String linkedObjectId){
 		ObjectMetadata linkMeta = this.metaDao.getByID(linkedObjectId);

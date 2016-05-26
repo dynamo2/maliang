@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.maliang.core.model.Business;
-import com.maliang.core.model.ObjectMetadata;
 import com.maliang.core.model.WorkFlow;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
@@ -106,7 +105,16 @@ public class BusinessDao extends AbstractDao {
 //		System.out.println(bs2);
 //		System.out.println(bs2.getWorkFlows().get(0).getResponse());
 		
-		System.out.println(dao.getByID("dd"));
+		Business bus = dao.getByID("56d64e7ffe559fe3d66284da");
+		for(WorkFlow flow : bus.getWorkFlows()){
+			System.out.println("====================");
+			//System.out.println(flow.getCode());
+			if(flow == null)continue;
+			System.out.println(flow.getCode());
+		}
+		//System.out.println(dao.getByID("56d64e7ffe559fe3d66284da"));
+		
+		
 //		Business bbs = dao.list();
 //		System.out.println(bbs.getId());
 	}

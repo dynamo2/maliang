@@ -79,6 +79,8 @@ public class AbstractDao  {
 					Class innerCls = INNER_TYPE.get(cls.getSimpleName()+"."+pd.getName());
 					
 					for(Object dbj:(BasicDBList)value){
+						if(dbj == null)continue;
+						
 						vlist.add(decode((BasicDBObject)dbj,innerCls));
 					}
 					

@@ -97,8 +97,16 @@ public class BasicController {
 				}else if("org.bson.types.ObjectId".equals(canonicalType)){
 					fieldValue = this.getObjectId(fieldValue.toString());
 				}
-
-				pd.getWriteMethod().invoke(result, fieldValue);
+				
+				//debug
+				try {
+					pd.getWriteMethod().invoke(result, fieldValue);
+				} catch (java.lang.IllegalArgumentException e) {
+					System.out.println(" error pd : " + pd.getName());
+					System.out.println("fieldValue : " + fieldValue.getClass());
+					
+					throw e;
+				}
 			}
 
 			return result;

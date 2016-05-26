@@ -123,6 +123,21 @@ public class BusinessController extends BasicController {
 		return reqMap;
 	}
 	
+	protected Map<String,Object> readRequestMapNotJSONFilter(HttpServletRequest request){
+		//JSONObject json = JSONObject.fromObject(request.getParameterMap());
+		Enumeration<String> reqNames = request.getParameterNames();
+		Map<String,Object> reqMap = new HashMap<String,Object>();
+		while(reqNames.hasMoreElements()){
+			String reqName = reqNames.nextElement();
+			Object reqValue = request.getParameter(reqName);
+			if(reqValue == null)continue;
+
+			setValue(reqMap,reqName,reqValue);
+		}
+		
+		return reqMap;
+	}
+	
 	private static void setValue(Map<String,Object> rootMap,String reqName,Object reqValue){
 		if(reqName == null)return;
 		
@@ -288,7 +303,7 @@ public class BusinessController extends BasicController {
 	
 	@RequestMapping(value = "save.htm")
 	public String save(Model model,HttpServletRequest request) {
-		Map<String,Object> reqMap = this.readRequestMap(request);
+		Map<String,Object> reqMap = this.readRequestMapNotJSONFilter(request);
 		Map<String,Object> busMap = (Map<String,Object>)reqMap.get("business");
 		
 		Business busi = buildToObject(busMap,Business.class);

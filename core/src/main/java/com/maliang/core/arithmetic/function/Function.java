@@ -242,6 +242,10 @@ public class Function {
 			return JoinFunction.execute(this, params);
 		}
 		
+		if("cohesion".equals(key)){
+			return CohesionFunction.execute(this, params);
+		}
+		
 //		if("filter".equals(key)){
 //			return FilterFunction.execute(this, params);
 //		}
