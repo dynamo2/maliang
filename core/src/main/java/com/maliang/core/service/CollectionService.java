@@ -126,10 +126,14 @@ public class CollectionService {
 		
 		Map<String,Object> dataMap = (Map<String,Object>)obj;
 		if(StringUtil.isEmpty((String)dataMap.get("id"))){ // Save
-			dataMap = this.correctData(dataMap,this.collection,true);
+			//dataMap = this.correctData(dataMap,this.collection,true);
+			dataMap = this.collectionDao.correctData(dataMap, this.collection,true,false);
+			
 			dataMap = this.collectionDao.save(dataMap, this.collection);
 		}else { // Update
-			dataMap = this.correctData(dataMap,this.collection,false);
+			//dataMap = this.correctData(dataMap,this.collection,false);
+			dataMap = this.collectionDao.correctData(dataMap, this.collection,false,false);
+			
 			dataMap = this.collectionDao.updateBySet(dataMap, this.collection);
 		}
 		
@@ -161,7 +165,7 @@ public class CollectionService {
 			return dataMap;
 		}
 		
-		return this.collectionDao.correctData(dataMap, this.collection,isDeep);
+		return this.collectionDao.correctData(dataMap, this.collection,false,isDeep);
 	}
 	
 	private Map<String,Object> correctData(Map<String,Object> dataMap,String collName,boolean dealWithId){

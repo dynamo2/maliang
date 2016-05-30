@@ -211,21 +211,26 @@ public class BasicDao extends AbstractDao{
 	
 	protected static void buildInnerUpdates(Map<String,Object> valMap,ObjectField innerField,String fieldKey,
 			List<Map<String,BasicDBObject>> updates,BasicDBObject updateQuery){
-		if(hasId(valMap)){
-			String id = (String)valMap.remove("id");
+		Map<String,Object> updateMap = new HashMap<String,Object>();
+		updateMap.putAll(valMap);
+		
+		if(hasId(updateMap)){
+			String id = (String)updateMap.remove("id");
 			BasicDBObject currQuery = updateQuery;
 			if(id != null){
 				currQuery = new BasicDBObject(fieldKey +"._id",new ObjectId(id));
 			}
 
-			Map<String,Object> updMap = buildUpdates(innerField.getFields(),valMap,fieldKey+".$",updates,currQuery);
+			Map<String,Object> updMap = buildUpdates(innerField.getFields(),updateMap,fieldKey+".$",updates,currQuery);
 			updates.add(buildSetUpdateMap(currQuery,updMap));
 		}else {
-			valMap.put("_id",new ObjectId());
+			ObjectId newId = new ObjectId();
+			valMap.put("id",newId.toString());
+			updateMap.put("_id",newId);
 			
 			Map<String,BasicDBObject> bdbMap = new HashMap<String,BasicDBObject>();
 			bdbMap.put("query", updateQuery);
-			bdbMap.put("update", new BasicDBObject("$push",new BasicDBObject(fieldKey,valMap)));
+			bdbMap.put("update", new BasicDBObject("$push",new BasicDBObject(fieldKey,updateMap)));
 			updates.add(bdbMap);
 			
 //			dao.getDBCollection("Account").update(new BasicDBObject("personal_profile.address._id",new ObjectId("56dfe161ba594151e4e9ebd6")), 
@@ -347,11 +352,11 @@ public class BasicDao extends AbstractDao{
 		return null;
 	}
 
-	public Map<String,Object> correctData(Map<String,Object> dataMap,String collName,boolean isDeep){
+	public Map<String,Object> correctData(Map<String,Object> dataMap,String collName,boolean dealWithId,boolean isDeep){
 		if(dataMap == null)return null;
 		
 		ObjectMetadata metadata = this.metaDao.getByName(collName);
-		return correctData(dataMap,metadata.getFields(),isDeep);
+		return correctData(dataMap,metadata.getFields(),dealWithId,isDeep);
 	}
 	
 	/**
@@ -359,9 +364,10 @@ public class BasicDao extends AbstractDao{
 	 * 1. 'id' (String类型) 转成'_id'(ObjectId类型)
 	 * 2. LINK_COLLECTION字段类型：值若为Map，转成id(String类型)
 	 * 3. 去掉meta数据
+	 * 4. 去掉list里的null数据
 	 * ***/
 	public Map toDBModel(Map dataMap,String collName){
-		ObjectMetadata metadata = this.metaDao.getByUniqueMark(collName);
+		ObjectMetadata metadata = this.metaDao.getByName(collName);
 		
 		return toDBModel(dataMap,metadata.getFields());
 	}
@@ -370,7 +376,8 @@ public class BasicDao extends AbstractDao{
 		Map<String,Object> newMap = new HashMap<String,Object>();
 		
 		if(!StringUtil.isEmpty((String)dataMap.get("id"))){
-			newMap.put("_id",new ObjectId(dataMap.get("id").toString().trim()));
+			//newMap.put("_id",new ObjectId(dataMap.get("id").toString().trim()));
+			newMap.put("id",dataMap.get("id"));
 		}
 		
 		for(ObjectField of : fields){
@@ -413,9 +420,9 @@ public class BasicDao extends AbstractDao{
 		
 		if(FieldType.INNER_COLLECTION.is(field.getType())){
 			if(fieldValue instanceof Map){
-				if(((Map) fieldValue).get("id") == null){
-					((Map) fieldValue).put("id",new ObjectId().toString());
-				}
+//				if(((Map) fieldValue).get("id") == null){
+//					((Map) fieldValue).put("id",new ObjectId().toString());
+//				}
 				
 				fieldValue = toDBModel((Map)fieldValue,field.getFields());
 			}
@@ -428,10 +435,14 @@ public class BasicDao extends AbstractDao{
 		}
 		
 		if(FieldType.ARRAY.is(field.getType())){
+			int type = field.getType();
+			
 			if(Utils.isArray(fieldValue)){
 				List newList = new ArrayList();
 				field.setType(field.getElementType());
 				for(Object arrObj:Utils.toArray(fieldValue)){
+					if(arrObj == null)continue;
+					
 					newList.add(toDBModel(arrObj,field));
 				}
 				
@@ -441,6 +452,8 @@ public class BasicDao extends AbstractDao{
 			if(!Utils.isArray(fieldValue)){
 				fieldValue = null;
 			}
+			
+			field.setType(type);
 		}
 		
 		return fieldValue;
@@ -476,44 +489,44 @@ public class BasicDao extends AbstractDao{
 		return null;
 	}
 	
-	public Map<String,Object> correctData(Map<String,Object> dataMap,List<ObjectField> fields,boolean isDeep){
+	public Map<String,Object> correctData(Map<String,Object> dataMap,List<ObjectField> fields,boolean dealWithId,boolean isDeep){
 		if(dataMap == null)return null;
 		
 		Map<String,Object> newMap = new HashMap<String,Object>();
 		
-//		if(!StringUtil.isEmpty((String)dataMap.get("id"))){
-//			if(dealWithId){
-//				newMap.put("_id",new ObjectId(dataMap.get("id").toString().trim()));
-//			}else {
-//				newMap.put("id",dataMap.get("id"));
-//			}
-//		}
+		if(!StringUtil.isEmpty((String)dataMap.get("id"))){
+			if(dealWithId){
+				newMap.put("_id",new ObjectId(dataMap.get("id").toString().trim()));
+			}else {
+				newMap.put("id",dataMap.get("id"));
+			}
+		}
 
 		for(ObjectField of : fields){
 			String fieldName = of.getName();
 			Object fieldValue = dataMap.get(fieldName);
 			if(fieldValue == null)continue;
 			
-			newMap.put(fieldName, correctFieldValue(of,fieldValue,isDeep));
+			newMap.put(fieldName, correctFieldValue(of,fieldValue,dealWithId,isDeep));
 		}
 		return newMap;
 	}
 	
-	public Object correctFieldValue(ObjectField of,Object fieldValue,boolean isDeep){
+	public Object correctFieldValue(ObjectField of,Object fieldValue,boolean dealWithId,boolean isDeep){
 		if(FieldType.ARRAY.is(of.getType())){
 			of.setType(of.getElementType());
 			
 			if(fieldValue instanceof List){
 				List<Object> result = new ArrayList<Object>();
 				for(Object o : (List<Object>)fieldValue){
-					result.add(correctFieldValue(of,o,isDeep));
+					result.add(correctFieldValue(of,o,dealWithId,isDeep));
 				}
 				
 				of.setType(FieldType.ARRAY.getCode());
 				return result;
 			}else if(fieldValue instanceof Map){
 				List<Object> result = new ArrayList<Object>();
-				result.add(correctFieldValue(of,fieldValue,isDeep));
+				result.add(correctFieldValue(of,fieldValue,dealWithId,isDeep));
 				
 				of.setType(FieldType.ARRAY.getCode());
 				return result;
@@ -525,19 +538,19 @@ public class BasicDao extends AbstractDao{
 		
 		if(FieldType.INNER_COLLECTION.is(of.getType())){
 			if(fieldValue instanceof Map){
-//				if(dealWithId){
-//					if(((Map) fieldValue).get("id") == null){
-//						((Map) fieldValue).put("id",new ObjectId().toString());
-//					}
-//				}
+				if(dealWithId){
+					if(((Map) fieldValue).get("id") == null){
+						((Map) fieldValue).put("id",new ObjectId().toString());
+					}
+				}
 				
-				return correctData((Map<String,Object>)fieldValue,of.getFields(),isDeep);
+				return correctData((Map<String,Object>)fieldValue,of.getFields(),dealWithId,isDeep);
 			}
 		}
 		
 		if(FieldType.LINK_COLLECTION.is(of.getType())){
 			if(fieldValue instanceof Map){
-				return correctData((Map<String,Object>)fieldValue,of.getLinkedObject(),isDeep);
+				return correctData((Map<String,Object>)fieldValue,of.getLinkedObject(),dealWithId,isDeep);
 			}
 			
 			if(isDeep){

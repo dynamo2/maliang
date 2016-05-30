@@ -45,25 +45,18 @@ function HtmlBuilder(){
 			return builder.newImg(htmlData);
 		}
 	};
-	
-	this.newSubmit = function(opts){
-		var bnt = $("<input type='submit' />");
-		bnt.attr("name",opts.name);
-		bnt.val(opts.value);
-		
-		return bnt;
-	};
-	
+
 	this.newSelect = function(data){
 		var selObj = $("<select />");
 		selObj.attr("name",builder.addPrefix(data.prefix)+data.name);
 		selObj.append(builder.buildOptions(data.options,data.value));
 		
+		/*
 		if($.isPlainObject(data.events)){
 			for(x in data.events){
 				selObj.on(x,eval(data.events[x]));
 			}
-		}
+		}*/
 		
 		return selObj;
 	};
@@ -136,12 +129,29 @@ function HtmlBuilder(){
 	};
 	
 	this.newInput = function(data){
-		return $("<input></input>").attr("value",data.value)
-					.attr("name",builder.addPrefix(data.prefix)+data.name);
+		var input = $("<input></input>");
+		if(data){
+			input.prop("value",data.value)
+				.prop("type",data.type)
+				.prop("name",builder.readName(data));
+			
+			if($.isPlainObject(data.events)){
+				for(x in data.events){
+					var fun = data.events[x];
+					input.on(x,eval(fun));
+				}
+			}
+		}
+		
+		return input;
+	};
+	
+	this.readName = function(data){
+		return builder.addPrefix(data.prefix)+data.name;
 	};
 	
 	this.addPrefix = function(prefix){
-		if(prefix != "undefined" && prefix != null && prefix != ""){
+		if(prefix != undefined && prefix != null && prefix != ""){
 			return prefix+".";
 		}
 		return '';
@@ -151,22 +161,21 @@ function HtmlBuilder(){
 		return $("<textarea />").text(data.value)
 					.attr("name",builder.addPrefix(data.prefix)+data.name);
 	};
-	
-	this.newText = function(data){
+
+	this.newFileText = function(data){
 		var txtObj = builder.newInput(data);
-		txtObj.attr("type","text");
+		txtObj.attr("type","file");
 		return txtObj;
+	};
+	
+	/*
+	this.newText = function(data){
+		return builder.newInput(data).attr("type","text");
 	};
 	
 	this.newHiddenText = function(data){
 		var txtObj = builder.newInput(data);
 		txtObj.attr("type","hidden");
-		return txtObj;
-	};
-	
-	this.newFileText = function(data){
-		var txtObj = builder.newInput(data);
-		txtObj.attr("type","file");
 		return txtObj;
 	};
 	
@@ -179,8 +188,17 @@ function HtmlBuilder(){
 		//txtObj.datepicker();
 	};
 	
+	this.newSubmit = function(data){
+		return builder.newInput(data).prop("type","submit");
+	};
+	
+	this.newButton = function(data){
+		return builder.newInput(data).prop("type","button");
+	};
+	*/
+	
 	this.newLabel = function(data){
-		return $("<label />").attr("name",builder.addPrefix(data.prefix)+data.name).text(data.text);
+		return $("<label />").attr("name",builder.readName(data)).text(data.text);
 	};
 	
 	this.newA = function(data){
@@ -249,10 +267,44 @@ function FormBuilder(){
 		}
 		
 		
+		if(inputData.type == "select"){
+			return TM_htmlBuilder.newSelect(inputData);
+		}else if(inputData.type == "picture"){
+			return TM_htmlBuilder.newFileText(inputData);
+		}else if(inputData.type == "file"){
+			return TM_htmlBuilder.newFileText(inputData);
+		}else if(inputData.type == "radio"){
+			return TM_htmlBuilder.newRadio(inputData);
+		}else if(inputData.type == "checkbox"){
+			return TM_htmlBuilder.newCheckbox(inputData);
+		}else if(inputData.type == "textarea"){
+			return TM_htmlBuilder.newTextarea(inputData);
+		}else if(inputData.type == "label"){
+			return builder.newLabel(inputData);
+		}else if(inputData.type == "between"){
+			var spanObj = $("<span></span>");
+			var minObj = builder.newInputElement(inputData.min);
+			var maxObj = builder.newInputElement(inputData.max);
+			var speObj = $("<label>-</label>");
+			
+			spanObj.append(minObj).append(speObj).append(maxObj);
+			
+			return spanObj;
+		}else if(inputData.type == "list"){
+			return TM_ulListBuilder.newInputs(inputData);
+		}else if(inputData.type == "html"){
+			return builder.newHtmlEditor(inputData);
+		}else {
+			return TM_htmlBuilder.newInput(inputData);
+		}
+		
+		/*
 		if(inputData.type == "text"){
 			return TM_htmlBuilder.newText(inputData);
 		}else if(inputData.type == "submit"){
 			return TM_htmlBuilder.newSubmit(inputData);
+		}else if(inputData.type == "button"){
+			return TM_htmlBuilder.newButton(inputData);
 		}else if(inputData.type == "select"){
 			return TM_htmlBuilder.newSelect(inputData);
 		}else if(inputData.type == "hidden"){
@@ -286,7 +338,7 @@ function FormBuilder(){
 			return TM_ulListBuilder.newInputs(inputData);
 		}else if(inputData.type == "html"){
 			return builder.newHtmlEditor(inputData);
-		}
+		}*/
 	};
 	
 	this.newHtmlEditor = function(options){

@@ -86,6 +86,8 @@ public class CollectionDao extends BasicDao {
 		str = "db.Account.get('56dfa951ba59a3035d169d79')";
 		str = "db.Cart.get('570da7958f77400ffbc705e2')";
 		str = "db.Cart.search()";
+		
+		str = "db.Product.removeAll()";
 		Object val = ArithmeticExpression.execute(str,null);
 		System.out.println("val : " + val);
 		
@@ -124,6 +126,8 @@ public class CollectionDao extends BasicDao {
 	}
 
 	public Map<String,Object> updateBySet(Map value,String collName) {
+		value = this.toDBModel(value, collName);
+		
 		String id = (String)value.remove("id");
 		BasicDBObject query = this.getObjectId(id);
 
@@ -139,6 +143,8 @@ public class CollectionDao extends BasicDao {
 				result = db.findAndModify( um.get("query"), null, null, false, um.get("update"), true, false );
 			}
 		}
+		
+		value.put("id",id);
 		
 		if(result != null){
 			return this.toMap(result, collName);

@@ -501,6 +501,11 @@
 						input.label = _.readLabel();
 						input.type = _.readType();
 						input.value = _.readValue();
+						
+						var others = _.readOthers();
+						if(others){
+							input.events = _.readEvents(others);
+						}
 					}
 				}else if($.isPlainObject(obj)){
 					input = {
@@ -583,7 +588,15 @@
 			
 			this.readValue = function (){
 				return opts[3];
-			}
+			};
+			
+			this.readOthers = function (){
+				if(opts.length >= 4){
+					return opts[4];
+				}
+				
+				return null;
+			};
 			
 			this.newLine = function (){
 				var last = opts[opts.length-1];
