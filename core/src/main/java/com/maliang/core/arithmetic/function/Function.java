@@ -246,6 +246,10 @@ public class Function {
 			return CohesionFunction.execute(this, params);
 		}
 		
+		if("merge".equals(key)){
+			return MergeFunction.execute(this, params);
+		}
+		
 //		if("filter".equals(key)){
 //			return FilterFunction.execute(this, params);
 //		}
