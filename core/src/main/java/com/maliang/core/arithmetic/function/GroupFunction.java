@@ -43,6 +43,8 @@ public class GroupFunction {
 		Object[] datas = Utils.toArray(val);
 		//Object[] datas = rootDatas(function,params);
 		
+		if(datas == null)datas = new Object[0];
+		
 		GroupCompiler compiler = new GroupCompiler(datas,function.getExpression());
 		compiler.execute(params);
 		

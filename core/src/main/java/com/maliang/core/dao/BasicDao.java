@@ -380,6 +380,10 @@ public class BasicDao extends AbstractDao{
 			newMap.put("id",dataMap.get("id"));
 		}
 		
+		if(dataMap.get("_id") != null){
+			newMap.put("_id",dataMap.get("_id"));
+		}
+		
 		for(ObjectField of : fields){
 			String fieldName = of.getName();
 			Object fieldValue = dataMap.get(fieldName);
@@ -648,20 +652,21 @@ public class BasicDao extends AbstractDao{
 			}else if(FieldType.ARRAY.is(field.getType())){
 				if(fieldValue instanceof List){
 					List list = (List)fieldValue;
+					
 					for(int i = 0; i < list.size(); i++){
 						Object obj = list.get(i);
 						
 						if(FieldType.INNER_COLLECTION.is(field.getElementType())){
 							if(obj instanceof DBObject){
 								obj = ((DBObject)obj).toMap();
-								list.set(i,obj);
-								
 								//correctField((Map<String,Object>)fieldValue,field.getFields(),meta(meta,field));
 							}
 							
 							if(obj instanceof Map){
 								correctField((Map)obj,field.getFields(),meta(meta,field));
 							}
+
+							list.set(i,obj);
 						}else if(FieldType.LINK_COLLECTION.is(field.getElementType())){
 							list.set(i, getLinkedObject(obj,field.getLinkedObject()));
 						}else if(FieldType.VARIABLE_LINK.is(field.getType())){

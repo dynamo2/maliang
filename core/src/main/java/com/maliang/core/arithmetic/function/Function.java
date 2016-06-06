@@ -250,6 +250,10 @@ public class Function {
 			return MergeFunction.execute(this, params);
 		}
 		
+		if("expand".equals(key)){
+			return ExpandFunction.execute(this, params);
+		}
+		
 //		if("filter".equals(key)){
 //			return FilterFunction.execute(this, params);
 //		}

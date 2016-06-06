@@ -51,7 +51,7 @@ public class ExpressionNode extends Node {
 		if(valueRight instanceof MapNode){
 			valueRight = ((MapNode)valueRight).getValue(paramsMap);
 		}
-		
+
 		if(this.operator.isLogical()){
 			return LogicalCalculator.calculate(valueLeft, valueRight, operator);
 		}
@@ -118,6 +118,11 @@ public class ExpressionNode extends Node {
 
 		if(valueLeft instanceof Integer && valueRight instanceof Integer){
 			return IntegerCalculator.calculate((Integer)valueLeft,(Integer)valueRight,this.operator);
+		}
+		
+		//待定
+		if(valueLeft == null || valueRight == null){
+			return null;
 		}
 
 		double dl = ((Number)valueLeft).doubleValue();
