@@ -139,10 +139,18 @@ public class Function {
 			return ExecuteFunction.execute(this, params);
 		}
 		
+		if("date".equalsIgnoreCase(key)){
+			return DateFunction.date(this, params);
+		}
+		
+		if("hourFormat".equalsIgnoreCase(key) || "hf".equalsIgnoreCase(key)){
+			return DateFunction.hourFormat(this, params);
+		}
+		
 		if("dateFormat".equalsIgnoreCase(key) || "df".equalsIgnoreCase(key)){
 			return DateFunction.dateFormat(this, params);
 		}
-		
+
 		if("timestampFormat".equalsIgnoreCase(key) || "tsf".equalsIgnoreCase(key)){
 			return DateFunction.timestampFormat(this, params);
 		}

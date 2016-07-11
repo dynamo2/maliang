@@ -31,6 +31,7 @@
 		<script src="../js/tianma/form.js"></script>
 		<script src="../js/tianma/html.js"></script>
 		<script src="../js/tianma/util.js"></script>
+		<script src="../js/tianma/bind.js"></script>
 		
 		<script src="../html/business/tianma.js"></script>
 		
@@ -94,6 +95,27 @@
 			$(function(){
 				init();
 			});
+		}
+		
+		function deleteDiv(event){
+			deleteItem(event,'div');
+		}
+		
+		function deleteTd(event){
+			deleteItem(event,'td');
+		}
+		
+		function deleteTr(event){
+			deleteItem(event,'tr');
+		}
+		
+		function deleteTable(event){
+			deleteItem(event,'table');
+		}
+		
+		function deleteItem(event,tag){
+			var item = $(event.currentTarget).closest(tag);
+		    item.remove();
 		}
 		
 		function init(){
@@ -184,6 +206,8 @@
 				return buildSpan(json);
 			}else if(type === 'input'){
 				return buildInput(json);
+			}else if(type === 'bind'){
+				return buildBind(json);
 			}
 		}
 
@@ -422,6 +446,27 @@
 			});
 			
 			return table;
+		}
+		
+		function addRow(table,datas){
+			var tbody = table.children("tbody");
+			if(tbody == null || tbody == undefined){
+				tbody = table;
+			}
+			
+			var tr = $("<tr />").appendTo(tbody);
+			refreshRow(tr,datas);
+		}
+		
+		function refreshRow(tr,datas){
+			tr.empty();
+			$.each(datas,function(){
+				addChildren($("<td />"),this).appendTo(tr);
+			});
+		}
+		
+		function removeRow(tr){
+			tr.remove();
 		}
 
 		function TableBlock(json){

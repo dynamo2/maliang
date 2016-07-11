@@ -222,7 +222,10 @@ public class BasicDao extends AbstractDao{
 			}
 
 			Map<String,Object> updMap = buildUpdates(innerField.getFields(),updateMap,fieldKey+".$",updates,currQuery);
-			updates.add(buildSetUpdateMap(currQuery,updMap));
+			Map<String,BasicDBObject> dbUpdateMap = buildSetUpdateMap(currQuery,updMap);
+			dbUpdateMap.put("value", new BasicDBObject(valMap));
+			
+			updates.add(dbUpdateMap);
 		}else {
 			ObjectId newId = new ObjectId();
 			valMap.put("id",newId.toString());
@@ -231,6 +234,8 @@ public class BasicDao extends AbstractDao{
 			Map<String,BasicDBObject> bdbMap = new HashMap<String,BasicDBObject>();
 			bdbMap.put("query", updateQuery);
 			bdbMap.put("update", new BasicDBObject("$push",new BasicDBObject(fieldKey,updateMap)));
+			bdbMap.put("value", new BasicDBObject(valMap));
+			
 			updates.add(bdbMap);
 			
 //			dao.getDBCollection("Account").update(new BasicDBObject("personal_profile.address._id",new ObjectId("56dfe161ba594151e4e9ebd6")), 
@@ -244,6 +249,7 @@ public class BasicDao extends AbstractDao{
 		Map<String,BasicDBObject> bdbMap = new HashMap<String,BasicDBObject>();
 		bdbMap.put("query", query);
 		bdbMap.put("update", new BasicDBObject("$set",setMap));
+		
 		return bdbMap;
 	}
 	
@@ -330,11 +336,11 @@ public class BasicDao extends AbstractDao{
 		if(StringUtil.isEmpty(coll))return null;
 		
 		String[] colls = coll.split("\\.");
-		String collName = colls[0];
-		if(colls.length > 1){
+		//String collName = colls[0];
+		if(colls.length > 0){
 			Map query = null;
 			Map child = null;
-			for(int i = colls.length-1; i > 0; i--){
+			for(int i = colls.length-1; i >= 0; i--){
 				query = new HashMap();
 				
 				if(child == null){

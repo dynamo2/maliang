@@ -3,6 +3,7 @@ package com.maliang.core.dao;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.Date;
 
 import com.maliang.core.model.FieldType;
 
@@ -13,6 +14,10 @@ public class DaoHelper {
 	
 	public static Object correctFieldValue(int ftype,Object value){
 		if(FieldType.DOUBLE.is(ftype)){
+			if(value instanceof Double){
+				return (Double)value;
+			}
+			
 			try {
 				return Double.valueOf(value.toString().trim());
 			}catch(Exception e){
@@ -21,6 +26,10 @@ public class DaoHelper {
 		}
 		
 		if(FieldType.INT.is(ftype)){
+			if(value instanceof Integer){
+				return (Integer)value;
+			}
+			
 			try {
 				return Integer.valueOf(value.toString().trim());
 			}catch(Exception e){
@@ -29,6 +38,10 @@ public class DaoHelper {
 		}
 		
 		if(FieldType.DATE.is(ftype)){
+			if(value instanceof Date){
+				return (Date)value;
+			}
+
 			try {
 				return timestampFormat.parse(value.toString().trim());
 			}catch(ParseException e){

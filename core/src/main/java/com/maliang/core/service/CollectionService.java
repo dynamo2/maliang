@@ -264,8 +264,8 @@ public class CollectionService {
 		String innerName = null;
 		if(isInner){
 			int idx = this.collection.indexOf(".");
-			//innerName = this.collection.substring(idx+1);
-			innerName = this.collection;
+			innerName = this.collection.substring(idx+1);
+			//innerName = this.collection;
 			this.collection = this.collection.substring(0,idx);
 		}
 		
@@ -308,7 +308,18 @@ public class CollectionService {
 			if(value instanceof Map){
 				return this.remove((Map<String,Object>)value);
 			}
-			return this.remove(value.toString());
+			
+			String v = value==null?null:value.toString();
+			if(isInner){
+				Map query = this.collectionDao.buildInnerGetMap(innerName, v);
+				
+				Map delMap = new HashMap();
+				delMap.put(innerName+".$", null);
+				
+				return this.dbSet(query,delMap);
+			}
+			
+			return this.remove(v);
 		}
 		
 		if("set".equals(method)){

@@ -37,11 +37,14 @@ public class CollectionDao extends BasicDao {
 		//str = "db.Cart.items.get('57517b1d8f77ee4257fe9f40')";
 		//str = "db.Cart.set([{items:{id:'57517b1d8f77ee4257fe9f40'}},{items.$:null}])";
 		
+		
 		//BasicDBObject query = new BasicDBObject("Cart.items._id",new ObjectId("57517b1d8f77ee4257fe9f40"));
 		//new BasicDBObject("$set", set));
 		
 		
 		//str = "db.Cart.removeAll()";
+		
+		str = "db.Project.dailyProgressNotes.delete('576753b98f77751c91c432ce')";
 		Object v = AE.execute(str);
 		System.out.println(v);
 	}
@@ -95,20 +98,24 @@ public class CollectionDao extends BasicDao {
 
 		DBCollection db = this.getDBCollection(collName);
 		DBObject result = null;
+		List<Map<Object,Object>> resultValueMap = new ArrayList<Map<Object,Object>>();
 		for (Map<String, BasicDBObject> um : updates) {
 			if (um != null) {
 				result = db.findAndModify(um.get("query"), null, null, false,
 						um.get("update"), true, false);
+				
+				//resultValueMap.add(um.get("value").toMap());
 			}
 		}
 
 		value.put("id", id);
+		
+//		System.out.println("======= value : " + value);
+//		if (result != null) {
+//			return this.toMap(result, collName);
+//		}
 
-		if (result != null) {
-			return this.toMap(result, collName);
-		}
-
-		return null;
+		return value;
 	}
 
 	// public Map<String,Object> innerObjectById(Map<String,Object> query,String

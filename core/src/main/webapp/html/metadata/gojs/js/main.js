@@ -54,8 +54,8 @@ function objectMetadataModel(){
 	};
 	
 	this.getAndLoadData = function(key,url,reqData){
-		var data = _.getData(key);
-		if(data)return data;
+		//var data = _.getData(key);
+		//if(data)return data;
 		
 		$.ajax(url,{
 			data:reqData,

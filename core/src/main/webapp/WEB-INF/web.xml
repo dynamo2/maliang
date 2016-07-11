@@ -17,6 +17,10 @@
 	
 	<display-name>Archetype Created Web Application</display-name>
 
+	<listener>   
+	   <listener-class>org.springframework.web.context.request.RequestContextListener</listener-class>   
+	</listener>
+
 	<filter>  
         <filter-name>utf8EncodingFilter</filter-name>  
         <filter-class>org.springframework.web.filter.CharacterEncodingFilter</filter-class>  
