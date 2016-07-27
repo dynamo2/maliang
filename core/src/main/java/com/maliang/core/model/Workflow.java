@@ -1,6 +1,6 @@
 package com.maliang.core.model;
 
-public class WorkFlow extends MongodbModel {
+public class Workflow extends MongodbModel {
 	private Integer step;
 	private String requestType;
 	private String code;
