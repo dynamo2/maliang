@@ -2,6 +2,7 @@ package com.maliang.core.model;
 
 public class Workflow extends MongodbModel {
 	private Integer step;
+	private String name;
 	private String requestType;
 	private String code;
 	private String response;
@@ -13,6 +14,12 @@ public class Workflow extends MongodbModel {
 	}
 	public void setStep(Integer step) {
 		this.step = step;
+	}
+	public String getName() {
+		return name;
+	}
+	public void setName(String name) {
+		this.name = name;
 	}
 	public String getRequestType() {
 		return requestType;

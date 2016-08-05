@@ -1,10 +1,16 @@
 package com.maliang.core.dao;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
+import org.bson.types.ObjectId;
+
+import com.maliang.core.model.Block;
 import com.maliang.core.model.Business;
-import com.maliang.core.model.WorkFlow;
+import com.maliang.core.model.Workflow;
+import com.mongodb.AggregationOutput;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
 import com.mongodb.DBCursor;
@@ -13,8 +19,11 @@ import com.mongodb.DBObject;
 public class BusinessDao extends AbstractDao {
 	protected static String COLLECTION_NAME = "Business";
 	protected DBCollection dbColl = null;
+	protected CollectionDao collectionDao = new CollectionDao();
+	
 	static {
-		INNER_TYPE.put("Business.workFlows",WorkFlow.class);
+		INNER_TYPE.put("Business.workflows",Workflow.class);
+		INNER_TYPE.put("Business.blocks",Block.class);
 	}
 	
 	public BusinessDao(){
@@ -41,6 +50,46 @@ public class BusinessDao extends AbstractDao {
 		}
 		
 		return null;
+	}
+	
+	public Workflow getWorkFlowById(String oid){
+		List<DBObject> pipe = new ArrayList<DBObject>();
+		
+		pipe.add(new BasicDBObject("$match",new BasicDBObject("workflows._id",new ObjectId(oid))));
+		pipe.add(new BasicDBObject("$unwind","$workflows"));
+		pipe.add(new BasicDBObject("$project",new BasicDBObject().append("workflows",1).append("_id",0)));
+		
+		AggregationOutput aout = dbColl.aggregate(pipe);
+		Iterator<DBObject> ie = aout.results().iterator();
+		while(ie.hasNext()){
+			return decode((BasicDBObject)ie.next().get("workflows"), Workflow.class);
+		}
+		
+		return null;
+	}
+	
+	public Block getBlock(String canonicalName){
+		String[] names = canonicalName.split("\\.");
+		
+		List<DBObject> pipe = new ArrayList<DBObject>();
+		
+		pipe.add(new BasicDBObject("$match",new BasicDBObject("uniqueCode",names[0])));
+		pipe.add(new BasicDBObject("$unwind","$blocks"));
+		pipe.add(new BasicDBObject("$match",new BasicDBObject("blocks.name",names[1])));
+		pipe.add(new BasicDBObject("$project",new BasicDBObject().append("blocks",1).append("_id",0)));
+		
+		AggregationOutput aout = dbColl.aggregate(pipe);
+		Iterator<DBObject> ie = aout.results().iterator();
+		while(ie.hasNext()){
+			return decode((BasicDBObject)ie.next().get("blocks"), Block.class);
+		}
+		
+		return null;
+	}
+	
+	public Map<String,Object> updateBySet(Map<String,Object> values){
+		values = this.collectionDao.correctData(values,COLLECTION_NAME,false,false);
+		return this.collectionDao.updateBySet(values, COLLECTION_NAME);
 	}
 	
 	public Business getByName(String name){
@@ -70,6 +119,44 @@ public class BusinessDao extends AbstractDao {
 	public static void main(String[] args) {
 		BusinessDao dao = new BusinessDao();
 		
+//		List<DBObject> pipe = new ArrayList<DBObject>();
+//		//pipe.add(new BasicDBObject("$match",new BasicDBObject("work_flow._id",new ObjectId("57970a3e7b591da2d1fa854e"))));
+//		pipe.add(new BasicDBObject("$match",new BasicDBObject("work_flows._id",new ObjectId("57970a3e7b591da2d1fa854e"))));
+//		pipe.add(new BasicDBObject("$unwind","$work_flows"));
+//		pipe.add(new BasicDBObject("$project",new BasicDBObject().append("work_flows",1).append("_id",0)));
+//		
+//		AggregationOutput aout = dao.dbColl.aggregate(pipe);
+//		Iterator<DBObject> ie = aout.results().iterator();
+//		while(ie.hasNext()){
+//			System.out.println("================");
+//			//System.out.println("ie : " + ie.next().get("work_flows"));
+//			
+//			WorkFlow wf = dao.decode((BasicDBObject)ie.next().get("work_flows"), WorkFlow.class);
+//			
+//			System.out.println(wf.getId());
+//			System.out.println(wf);
+//			
+//			//System.out.println(ie.next().get("work_flows"));
+//		}
+		
+		//System.out.println(dao.dbColl.find(dao.getObjectId("56f9fac750776d16e7891bb5")).toArray());
+		//dao.dbColl.update(new BasicDBObject(), new BasicDBObject("$rename",new BasicDBObject("work_flows","workFlows")));
+		//System.out.println(dao.dbColl.find(dao.getObjectId("56f9fac750776d16e7891bb5")).toArray());
+		
+		//System.out.println(dao.find(null));
+		//System.out.println(dao.dbColl.find(dao.getObjectId("56d64e7ffe559fe3d66284da")).toArray());
+		
+		//dao.dbColl.update(dao.getObjectId("56f230758f77e1cb5890dd59"), new BasicDBObject("$rename",new BasicDBObject("work_flows","workFlows")));
+		//dao.dbColl.update(new BasicDBObject(), new BasicDBObject("$rename",new BasicDBObject("workFlows","workflows")),false,true);
+		
+//		dao.dbColl.update(new BasicDBObject("workflows._id",new ObjectId("57970a3e7b591da2d1fa854e")), new BasicDBObject("$set",new BasicDBObject("workflows.$.step",1)));
+//		System.out.println(dao.getByID("56f9fac750776d16e7891bb5"));
+//		System.out.println(dao.dbColl.find(dao.getObjectId("56f9fac750776d16e7891bb5")).toArray());
+		
+		System.out.println(dao.getBlock("SYS.NAV"));
+		
+		
+		/*
 		List<WorkFlow> wfs = new ArrayList<WorkFlow>();
 		
 		WorkFlow wf = new WorkFlow();
@@ -99,6 +186,8 @@ public class BusinessDao extends AbstractDao {
 		System.out.println(bs.getWorkFlows());
 		//dao.save(bs);
 		
+		
+		
 		//55657643bd77ce55499002c8
 		//556576fdbd773acdc6a0c3d1
 //		Business bs2 = dao.getByID(bs.getId().toString());
@@ -115,8 +204,12 @@ public class BusinessDao extends AbstractDao {
 		//System.out.println(dao.getByID("56d64e7ffe559fe3d66284da"));
 		
 		
+		
+		
 //		Business bbs = dao.list();
 //		System.out.println(bbs.getId());
+ * 
+ */
 	}
 
 }

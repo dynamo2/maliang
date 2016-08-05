@@ -654,11 +654,7 @@
 			_.read();
 			return input;
 		}
-		
-		function ts(obj){
-			return JSON.stringify(obj);
-		}
-		
+
 		function apt(str){
 			var txt = $("#print").text();
 			pt(txt?txt+str:str);

@@ -374,7 +374,6 @@ public class BasicDao extends AbstractDao{
 	 * ***/
 	public Map toDBModel(Map dataMap,String collName){
 		ObjectMetadata metadata = this.metaDao.getByName(collName);
-		
 		return toDBModel(dataMap,metadata.getFields());
 	}
 	

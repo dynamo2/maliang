@@ -60,7 +60,7 @@ function BusinessModel(){
 		var iframeId = bid+"Frame";
 
 		var tab = $("<div id='"+tabId+"' />");
-		var iframe = $('<iframe id="'+iframeId + '" style="width:100%;height:600px;" />');
+		var iframe = $('<iframe id="'+iframeId + '" style="width:100%;height:800px;" />');
 		iframe.attr("src","/business/edit.htm?id="+bid);
 		var mdName = bus.name;
 		

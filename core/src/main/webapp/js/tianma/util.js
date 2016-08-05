@@ -77,6 +77,6 @@ function readValue(obj, key) {
 	return v;
 }
 
-function ify(obj) {
+function ts(obj) {
 	return JSON.stringify(obj);
 }

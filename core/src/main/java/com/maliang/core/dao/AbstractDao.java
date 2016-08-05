@@ -66,7 +66,9 @@ public class AbstractDao  {
 			PropertyDescriptor[] pds = beanInfo.getPropertyDescriptors();
 			
 			for(PropertyDescriptor pd : pds){
-				String dbName = SpellUtil.toUnderlineName(pd.getName());
+				//new code
+				String dbName = pd.getName();//SpellUtil.toUnderlineName(pd.getName());
+				
 				if(dbName.equalsIgnoreCase("id"))dbName = "_id";
 				
 				if(!dbObj.containsField(dbName))continue;
@@ -95,7 +97,9 @@ public class AbstractDao  {
 			}
 			
 			return result;
-		} catch (Exception e) {}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 		
 		return null;
 	}
@@ -109,14 +113,19 @@ public class AbstractDao  {
 			
 	        if(pds != null && pds.length>0){
 	            for(PropertyDescriptor pd : pds){
-	            	String dbName = SpellUtil.toUnderlineName(pd.getName());
+	            	//new code
+	            	String dbName = pd.getName();//SpellUtil.toUnderlineName(pd.getName());
+	            	
 	            	if(dbName.equalsIgnoreCase("class")) continue;
 	            	
 	            	try {
 	            		Object value = pd.getReadMethod().invoke(obj);
 	            		
 	            		if(dbName.equalsIgnoreCase("id")){
-	            			if(value == null)continue;
+	            			//if(value == null)continue;
+	            			if(value == null){
+	            				value = new ObjectId();
+	            			}
 	            			
 	            			dbName = "_id";
 	            		}else if(value instanceof MongodbModel){

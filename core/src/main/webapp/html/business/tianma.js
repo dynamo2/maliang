@@ -720,3 +720,20 @@ var TM_formBuilder =  new FormBuilder();
 var TM_htmlBuilder =  new HtmlBuilder();
 var TM_ulListBuilder = new UIListBuilder();
 var TM_tableListBuilder = new TableListBuilder();
+
+
+function readFormDatas(form){
+	var inputs = form.find(":input");
+	
+	var reqDatas = {};
+	$.each(inputs,function(){
+		if($(this).attr("type") == "radio"){
+			if(!this.checked){
+				return;
+			}
+		}
+		reqDatas[$(this).attr("name")] = $(this).val();
+	});
+
+	return reqDatas;
+}

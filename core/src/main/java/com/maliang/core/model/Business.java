@@ -4,9 +4,13 @@ import java.util.List;
 
 public class Business extends MongodbModel {
 	private String name;
+	private String uniqueCode;
 	
-	@Mapped(type=WorkFlow.class)
-	private List<WorkFlow> workFlows;
+	@Mapped(type=Workflow.class)
+	private List<Workflow> workflows;
+	
+	@Mapped(type=Block.class)
+	private List<Block> blocks;
 	
 	public String getName() {
 		return name;
@@ -14,24 +18,36 @@ public class Business extends MongodbModel {
 	public void setName(String name) {
 		this.name = name;
 	}
-	public List<WorkFlow> getWorkFlows() {
-		return workFlows;
+	public List<Workflow> getWorkflows() {
+		return workflows;
 	}
-	public void setWorkFlows(List<WorkFlow> workFlows) {
-		this.workFlows = workFlows;
+	public void setWorkflows(List<Workflow> workFlows) {
+		this.workflows = workFlows;
+	}
+	public String getUniqueCode() {
+		return uniqueCode;
+	}
+	public void setUniqueCode(String uniqueCode) {
+		this.uniqueCode = uniqueCode;
+	}
+	public List<Block> getBlocks() {
+		return blocks;
+	}
+	public void setBlocks(List<Block> blocks) {
+		this.blocks = blocks;
 	}
 	
-	public WorkFlow workFlow(int step){
-		if(this.workFlows == null || this.workFlows.isEmpty()){
+	public Workflow workFlow(int step){
+		if(this.workflows == null || this.workflows.isEmpty()){
 			return null;
 		}
 		
-		for(WorkFlow wf : this.workFlows){
+		for(Workflow wf : this.workflows){
 			if(wf.getStep() == step){
 				return wf;
 			}
 		}
 		
-		return this.workFlows.get(0);
+		return this.workflows.get(0);
 	}
 } 
