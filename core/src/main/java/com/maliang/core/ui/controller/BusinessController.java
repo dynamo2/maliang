@@ -131,116 +131,12 @@ public class BusinessController extends BasicController {
 		return reqMap;
 	}
 
-	protected Map<String, Object> readRequestMapNotJSONFilter(
-			HttpServletRequest request) {
-		// JSONObject json = JSONObject.fromObject(request.getParameterMap());
-		Enumeration<String> reqNames = request.getParameterNames();
-		Map<String, Object> reqMap = new HashMap<String, Object>();
-		while (reqNames.hasMoreElements()) {
-			String reqName = reqNames.nextElement();
-			Object reqValue = request.getParameter(reqName);
-			if (reqValue == null)
-				continue;
-
-			setValue(reqMap, reqName, reqValue);
-		}
-
-		return reqMap;
-	}
-
-	private static void setValue(Map<String, Object> rootMap, String reqName,
-			Object reqValue) {
-		if (reqName == null)
-			return;
-
-		Object lastKey = null;
-		Object lastParent = rootMap;
-		Object parent = rootMap;
-		String[] parents = reqName.split("\\.");
-		for (int i = 0; i < parents.length; i++) {
-			String name = parents[i];
-			boolean last = i == parents.length - 1;
-
-			Integer index = null;
-			try {
-				index = Integer.parseInt(name);
-			} catch (Exception e) {
-				index = null;
-			}
-
-			if (index != null && index >= 0) {
-				List list = null;
-				if (parent instanceof List) {
-					list = (List) parent;
-				} else {
-					list = new ArrayList();
-
-					if (lastParent instanceof Map) {
-						((Map) lastParent).put(lastKey, list);
-					} else if (lastParent instanceof List) {
-						if (lastKey instanceof Integer) {
-							((List) lastParent).set((Integer) lastKey, list);
-						}
-					}
-				}
-
-				if (index >= list.size()) {
-					int ii = index - list.size();
-					while (ii-- >= 0) {
-						list.add(null);
-					}
-				}
-
-				if (last) {
-					list.set(index, reqValue);
-					break;
-				}
-
-				Object temp = list.get(index);
-				if (temp == null) {
-					temp = new HashMap();
-					list.set(index, temp);
-				}
-
-				parent = temp;
-				lastParent = list;
-				lastKey = index;
-			} else {
-				if (!(parent instanceof Map)) {
-					parent = new HashMap();
-					if (lastParent instanceof Map) {
-						((Map) lastParent).put(lastKey, parent);
-					} else if (lastParent instanceof List
-							&& lastKey instanceof Integer) {
-						((List) lastParent).set((Integer) lastKey, parent);
-					}
-				}
-
-				if (last) {
-					((Map) parent).put(name, reqValue);
-					break;
-				}
-
-				Object temp = ((Map) parent).get(name);
-				if (temp == null) {
-					temp = new HashMap<String, Object>();
-					((Map) parent).put(name, temp);
-				}
-
-				lastKey = name;
-				lastParent = parent;
-				parent = temp;
-			}
-		}
-	}
-
 	@RequestMapping(value = "workFlow.htm")
 	@ResponseBody
 	public String workFlow(String id, HttpServletRequest request) {
 		Workflow workFlow = businessDao.getWorkFlowById(id);
 		
-		JSONObject jobj = JSONObject.fromObject(workFlow, defaultJsonConfig);
-		String json = jobj.toString();
+		String json = this.json(workFlow);
 		System.out.println("work flow json : " + json);
 
 		return json;

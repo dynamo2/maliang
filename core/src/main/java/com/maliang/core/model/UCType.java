@@ -10,8 +10,12 @@ import com.maliang.core.arithmetic.AE;
 public class UCType extends MongodbModel {
 	private String name;
 	private Integer key;
+	
+	@Mapped(type=String.class)
 	private List<String> units = (List<String>)AE.execute("['a','b','c','d','e']");
 	private String description;
+	
+	@Mapped(type=Integer.class)
 	private List<Integer> factors = (List<Integer>)AE.execute("[9,8,7,6]"); //换算公式
 
 	public String getName() {

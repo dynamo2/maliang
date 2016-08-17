@@ -25,7 +25,7 @@ public class BasicDao extends AbstractDao{
 	protected ObjectMetadataDao metaDao = new ObjectMetadataDao();
 	//protected CollectionDao collDao = new CollectionDao();
 	public static final String[] DB_KEYWORDS = {"if","then","else"};
-	
+
 	public static boolean isDBKeyword(String name){
 		if(StringUtil.isEmpty(name))return false;
 		name = name.trim();

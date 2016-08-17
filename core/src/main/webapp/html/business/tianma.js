@@ -721,7 +721,7 @@ var TM_htmlBuilder =  new HtmlBuilder();
 var TM_ulListBuilder = new UIListBuilder();
 var TM_tableListBuilder = new TableListBuilder();
 
-
+/*
 function readFormDatas(form){
 	var inputs = form.find(":input");
 	
@@ -737,3 +737,4 @@ function readFormDatas(form){
 
 	return reqDatas;
 }
+*/

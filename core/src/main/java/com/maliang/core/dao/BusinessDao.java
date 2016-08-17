@@ -16,9 +16,8 @@ import com.mongodb.DBCollection;
 import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
 
-public class BusinessDao extends AbstractDao {
+public class BusinessDao extends ModelDao<Business> {
 	protected static String COLLECTION_NAME = "Business";
-	protected DBCollection dbColl = null;
 	protected CollectionDao collectionDao = new CollectionDao();
 	
 	static {
@@ -27,13 +26,10 @@ public class BusinessDao extends AbstractDao {
 	}
 	
 	public BusinessDao(){
-		dbColl = this.getDBCollection();
+		super(COLLECTION_NAME,Business.class);
 	}
-	
-	private DBCollection getDBCollection(){
-		return this.getDBCollection(COLLECTION_NAME);
-	}
-	
+
+	/*
 	public void save(Business om) {
 		BasicDBObject doc = encode(om);
 		this.dbColl.save(doc);
@@ -51,6 +47,23 @@ public class BusinessDao extends AbstractDao {
 		
 		return null;
 	}
+	
+	public List<Business> list(){
+		DBCursor cursor = this.dbColl.find();
+		
+		return readCursor(cursor,Business.class);
+	}
+	
+	public void remove(String oid){
+		this.dbColl.remove(this.getObjectId(oid));
+	}
+	
+	public List<DBObject> find(BasicDBObject query){
+		DBCursor cursor = this.dbColl.find(query);
+		return cursor.toArray();
+	}
+	*/
+	
 	
 	public Workflow getWorkFlowById(String oid){
 		List<DBObject> pipe = new ArrayList<DBObject>();
@@ -100,21 +113,8 @@ public class BusinessDao extends AbstractDao {
 		
 		return null;
 	}
+
 	
-	public List<Business> list(){
-		DBCursor cursor = this.dbColl.find();
-		
-		return readCursor(cursor,Business.class);
-	}
-	
-	public void remove(String oid){
-		this.dbColl.remove(this.getObjectId(oid));
-	}
-	
-	public List<DBObject> find(BasicDBObject query){
-		DBCursor cursor = this.dbColl.find(query);
-		return cursor.toArray();
-	}
 	
 	public static void main(String[] args) {
 		BusinessDao dao = new BusinessDao();

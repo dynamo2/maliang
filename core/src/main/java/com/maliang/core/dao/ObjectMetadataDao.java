@@ -5,18 +5,12 @@ import java.util.UUID;
 
 import org.bson.types.ObjectId;
 
-import com.maliang.core.model.MongodbModel;
 import com.maliang.core.model.ObjectField;
 import com.maliang.core.model.ObjectMetadata;
 import com.mongodb.BasicDBObject;
-import com.mongodb.DBCollection;
-import com.mongodb.DBCursor;
-import com.mongodb.DBObject;
 
-public class ObjectMetadataDao  extends AbstractDao {
-
+public class ObjectMetadataDao  extends ModelDao<ObjectMetadata> {
 	protected static String COLLECTION_NAME = "object_metadata";
-	protected DBCollection dbColl = null;
 	
 	static {
 		INNER_TYPE.put("ObjectMetadata.fields",ObjectField.class);
@@ -24,58 +18,17 @@ public class ObjectMetadataDao  extends AbstractDao {
 	}
 	
 	public ObjectMetadataDao(){
-		dbColl = this.getDBCollection();
-	}
-	
-	private DBCollection getDBCollection(){
-		return this.getDBCollection(COLLECTION_NAME);
+		super(COLLECTION_NAME,ObjectMetadata.class);
 	}
 
-	public void save(ObjectMetadata om) {
-		BasicDBObject doc = encode(om);
-		this.dbColl.save(doc);
-		
-		if(om.getId() == null){
-			om.setId(doc.getObjectId("_id"));
-		}
-	}
-	
-	public ObjectMetadata getByID(String oid){
-		DBCursor cursor = this.dbColl.find(this.getObjectId(oid));
-		while(cursor.hasNext()){
-			return this.decode((BasicDBObject)cursor.next(), ObjectMetadata.class) ;
-		}
-		
-		return null;
-	}
-	
-	public void remove(String oid){
-		this.dbColl.remove(this.getObjectId(oid));
-	}
-	
 	public ObjectMetadata getByUniqueMark(String mark){
-		DBCursor cursor = this.dbColl.find(new BasicDBObject("unique_mark",mark));
-		while(cursor.hasNext()){
-			return this.decode((BasicDBObject)cursor.next(), ObjectMetadata.class);
-		}
-		
-		return null;
+		return this.getByField("unique_mark", mark);
 	}
 	
 	public ObjectMetadata getByName(String name){
-		DBCursor cursor = this.dbColl.find(new BasicDBObject("name",name));
-		while(cursor.hasNext()){
-			return this.decode((BasicDBObject)cursor.next(), ObjectMetadata.class);
-		}
-		
-		return null;
+		return this.getByField("name", name);
 	}
-	
-	public List<DBObject> find(BasicDBObject query){
-		DBCursor cursor = this.dbColl.find(query);
-		return cursor.toArray();
-	}
-	
+
 	public void saveFields(String oid,ObjectField field) {
 		if(this.isDuplicateMark(oid, field)){
 			throw new RuntimeException("Is duplicate field.name");
@@ -91,46 +44,14 @@ public class ObjectMetadataDao  extends AbstractDao {
 			this.dbColl.update(new BasicDBObject("fields._id",field.getId()), new BasicDBObject("$set",new BasicDBObject("fields.$",doc)));
 		}
 	}
-	
-	public List<ObjectMetadata> list(){
-		DBCursor cursor = this.dbColl.find();
-		
-		return readCursor(cursor,ObjectMetadata.class);
-	}
-	
-	
-	
+
 	/**
 	 * 判断fields.unique_mark是否有重复的值
 	 * **/
 	protected boolean isDuplicateMark(String oid,ObjectField field){
 		return isDuplicate(oid,"fields","unique_mark",field.getUniqueMark(),field);
 	}
-	
-	protected boolean isDuplicate(String oid,String parentKey,String fieldKey,String fieldValue,MongodbModel model){
-		BasicDBObject doc = new BasicDBObject("_id",new ObjectId(oid));
-		doc.put(parentKey+"."+fieldKey, fieldValue);
-		
-		BasicDBObject incKey = new BasicDBObject(parentKey+".$",1);
-		List<DBObject> results = this.dbColl.find(doc,incKey).toArray();
-		
-		if(results.size() == 0)return false;
-		
-		BasicDBObject result = (BasicDBObject)results.get(0);
-		if(!result.containsField(parentKey))return false;
-		
-		List<BasicDBObject> fields = (List<BasicDBObject>)result.get(parentKey);
-		if(fields == null || fields.size() == 0){
-			return false;
-		}
-		
-		ObjectField oldField = this.decode(fields.get(0), ObjectField.class);
-		if(oldField.getId().equals(model.getId())) {
-			return false;
-		}
-		return oldField.getName().equalsIgnoreCase(fieldValue);
-	}
-	
+
 	private void testSave(){
 		List<ObjectMetadata> metadataList = this.list();
 		ObjectMetadata om = this.getByID("56cfb7b7e45900ecf9b71d4a");
@@ -177,4 +98,82 @@ public class ObjectMetadataDao  extends AbstractDao {
 		
 		System.out.println(UUID.randomUUID().toString().length());
 	}
+	
+	/**
+	public void save(ObjectMetadata om) {
+		BasicDBObject doc = encode(om);
+		this.dbColl.save(doc);
+		
+		if(om.getId() == null){
+			om.setId(doc.getObjectId("_id"));
+		}
+	}
+	
+	public ObjectMetadata getByID(String oid){
+		DBCursor cursor = this.dbColl.find(this.getObjectId(oid));
+		while(cursor.hasNext()){
+			return this.decode((BasicDBObject)cursor.next(), ObjectMetadata.class) ;
+		}
+		
+		return null;
+	}
+	
+	public void remove(String oid){
+		this.dbColl.remove(this.getObjectId(oid));
+	}
+	
+	
+	public List<ObjectMetadata> list(){
+		DBCursor cursor = this.dbColl.find();
+		
+		return readCursor(cursor,ObjectMetadata.class);
+	}
+	
+	public ObjectMetadata getByUniqueMark(String mark){
+		DBCursor cursor = this.dbColl.find(new BasicDBObject("unique_mark",mark));
+		while(cursor.hasNext()){
+			return this.decode((BasicDBObject)cursor.next(), ObjectMetadata.class);
+		}
+		
+		return null;
+	}
+	
+	public ObjectMetadata getByName(String name){
+		DBCursor cursor = this.dbColl.find(new BasicDBObject("name",name));
+		while(cursor.hasNext()){
+			return this.decode((BasicDBObject)cursor.next(), ObjectMetadata.class);
+		}
+		
+		return null;
+	}
+	
+	public List<DBObject> find(BasicDBObject query){
+		DBCursor cursor = this.dbColl.find(query);
+		return cursor.toArray();
+	}
+	
+	protected boolean isDuplicate(String oid,String parentKey,String fieldKey,String fieldValue,MongodbModel model){
+		BasicDBObject doc = new BasicDBObject("_id",new ObjectId(oid));
+		doc.put(parentKey+"."+fieldKey, fieldValue);
+		
+		BasicDBObject incKey = new BasicDBObject(parentKey+".$",1);
+		List<DBObject> results = this.dbColl.find(doc,incKey).toArray();
+		
+		if(results.size() == 0)return false;
+		
+		BasicDBObject result = (BasicDBObject)results.get(0);
+		if(!result.containsField(parentKey))return false;
+		
+		List<BasicDBObject> fields = (List<BasicDBObject>)result.get(parentKey);
+		if(fields == null || fields.size() == 0){
+			return false;
+		}
+		
+		ObjectField oldField = this.decode(fields.get(0), ObjectField.class);
+		if(oldField.getId().equals(model.getId())) {
+			return false;
+		}
+		return oldField.getName().equalsIgnoreCase(fieldValue);
+	}
+	*/
 }

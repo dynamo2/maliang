@@ -12,17 +12,27 @@ import java.util.TreeMap;
 
 import javax.servlet.http.HttpServletRequest;
 
+import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
+import net.sf.json.JsonConfig;
 
 import org.bson.types.ObjectId;
 
 import com.maliang.core.dao.ObjectMetadataDao;
+import com.maliang.core.dao.UCTypeDao;
 import com.maliang.core.model.Mapped;
-import com.maliang.core.model.ObjectField;
 import com.maliang.core.util.StringUtil;
+import com.maliang.core.util.Utils;
 
 public class BasicController {
+	static JsonConfig defaultJsonConfig = new JsonConfig();
+	
 	protected ObjectMetadataDao metadataDao = new ObjectMetadataDao();
+	protected UCTypeDao uctypeDao = new UCTypeDao();
+	
+	static {
+		defaultJsonConfig.registerJsonValueProcessor(ObjectId.class, new TOStringProcessor());
+	}
 	
 	public Integer getInt(String v){
 		try {
@@ -60,8 +70,111 @@ public class BasicController {
 		}
 	}
 	
+	protected Map<String, Object> readRequestMapNotJSONFilter(
+			HttpServletRequest request) {
+		// JSONObject json = JSONObject.fromObject(request.getParameterMap());
+		Enumeration<String> reqNames = request.getParameterNames();
+		Map<String, Object> reqMap = new HashMap<String, Object>();
+		while (reqNames.hasMoreElements()) {
+			String reqName = reqNames.nextElement();
+			Object reqValue = request.getParameter(reqName);
+			if (reqValue == null)
+				continue;
+
+			setValue(reqMap, reqName, reqValue);
+		}
+
+		return reqMap;
+	}
+
+	protected static void setValue(Map<String, Object> rootMap, String reqName,
+			Object reqValue) {
+		if (reqName == null)
+			return;
+
+		Object lastKey = null;
+		Object lastParent = rootMap;
+		Object parent = rootMap;
+		String[] parents = reqName.split("\\.");
+		for (int i = 0; i < parents.length; i++) {
+			String name = parents[i];
+			boolean last = i == parents.length - 1;
+
+			Integer index = null;
+			try {
+				index = Integer.parseInt(name);
+			} catch (Exception e) {
+				index = null;
+			}
+
+			if (index != null && index >= 0) {
+				List list = null;
+				if (parent instanceof List) {
+					list = (List) parent;
+				} else {
+					list = new ArrayList();
+
+					if (lastParent instanceof Map) {
+						((Map) lastParent).put(lastKey, list);
+					} else if (lastParent instanceof List) {
+						if (lastKey instanceof Integer) {
+							((List) lastParent).set((Integer) lastKey, list);
+						}
+					}
+				}
+
+				if (index >= list.size()) {
+					int ii = index - list.size();
+					while (ii-- >= 0) {
+						list.add(null);
+					}
+				}
+
+				if (last) {
+					list.set(index, reqValue);
+					break;
+				}
+
+				Object temp = list.get(index);
+				if (temp == null) {
+					temp = new HashMap();
+					list.set(index, temp);
+				}
+
+				parent = temp;
+				lastParent = list;
+				lastKey = index;
+			} else {
+				if (!(parent instanceof Map)) {
+					parent = new HashMap();
+					if (lastParent instanceof Map) {
+						((Map) lastParent).put(lastKey, parent);
+					} else if (lastParent instanceof List
+							&& lastKey instanceof Integer) {
+						((List) lastParent).set((Integer) lastKey, parent);
+					}
+				}
+
+				if (last) {
+					((Map) parent).put(name, reqValue);
+					break;
+				}
+
+				Object temp = ((Map) parent).get(name);
+				if (temp == null) {
+					temp = new HashMap<String, Object>();
+					((Map) parent).put(name, temp);
+				}
+
+				lastKey = name;
+				lastParent = parent;
+				parent = temp;
+			}
+		}
+	}
+	
 	protected String json(Object obj){
-		return JSONObject.fromObject(obj).toString();
+		return JSONObject.fromObject(obj,defaultJsonConfig).toString();
 	}
 	
 	protected <T> T buildToObject(Map<String,Object> objMap,Class<T> cls) {
@@ -94,8 +207,78 @@ public class BasicController {
 					fieldValue = this.getInt(fieldValue.toString());
 				}else if("double".equals(canonicalType) || "java.lang.Double".equals(canonicalType)){
 					fieldValue = this.getDouble(fieldValue.toString());
+				}else if("java.lang.String".equals(canonicalType)){
+					fieldValue = fieldValue.toString();
 				}else if("org.bson.types.ObjectId".equals(canonicalType)){
 					fieldValue = this.getObjectId(fieldValue.toString());
+				}
+				
+				//debug
+				try {
+					pd.getWriteMethod().invoke(result, fieldValue);
+				} catch (java.lang.IllegalArgumentException e) {
+					System.out.println(" error pd : " + pd.getName());
+					System.out.println("fieldValue : " + fieldValue.getClass());
+					
+					throw e;
+				}
+			}
+
+			return result;
+		} catch (Exception e) {
+			e.printStackTrace();
+		} 
+		
+		return null;
+	}
+	
+	protected Object switchType(Object objVal,Class cls){
+		String clsName = cls.getCanonicalName();
+		if("int".equals(clsName) || "java.lang.Integer".equals(clsName)){
+			return this.getInt(objVal.toString());
+		}else if("double".equals(clsName) || "java.lang.Double".equals(clsName)){
+			return this.getDouble(objVal.toString());
+		}else if("java.lang.String".equals(clsName)){
+			return objVal.toString();
+		}else if("org.bson.types.ObjectId".equals(clsName)){
+			return this.getObjectId(objVal.toString());
+		}
+		return objVal;
+	}
+	
+	protected Object switchToObject(Object objVal,Class cls) {
+		if(objVal == null)return null;
+
+		Map<String,Object> objMap = null;
+		if(objVal instanceof Map){
+			objMap = (Map<String,Object>)objVal;
+		}else {
+			return this.switchType(objVal, cls);
+		}
+		
+		try {
+			BeanInfo beanInfo = Introspector.getBeanInfo(cls);
+			PropertyDescriptor[] pds = beanInfo.getPropertyDescriptors();
+			Object result = cls.newInstance();
+
+			for(PropertyDescriptor pd:pds){
+				String fieldName = pd.getName();
+				Object fieldValue = objMap.get(fieldName);
+				if("class".equals(fieldName))continue;
+				if(fieldValue == null)continue;
+				
+				if(Utils.isArray(fieldValue)) {
+					Mapped anno = cls.getDeclaredField(fieldName).getAnnotation(Mapped.class);
+					Class linkClass = anno.type();
+					
+					List vlist = new ArrayList();
+					Object[] colValue = Utils.toArray(fieldValue);
+					for(Object obj : colValue){
+						vlist.add(switchToObject(obj,linkClass));
+					}
+					fieldValue = vlist;
+				}else {
+					fieldValue = this.switchType(fieldValue, pd.getPropertyType());
 				}
 				
 				//debug

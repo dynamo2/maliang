@@ -14,19 +14,17 @@ import java.util.Map;
 import org.bson.types.ObjectId;
 
 import com.maliang.core.model.MongodbModel;
-import com.maliang.core.model.ObjectField;
 import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DB;
 import com.mongodb.DBCollection;
 import com.mongodb.DBCursor;
-import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
 
 public class AbstractDao  {
 	protected static MongoClient mongoClient;
 	protected static DB db;
-	
+
 	@SuppressWarnings("rawtypes")
 	protected static Map<String,Class> INNER_TYPE = new HashMap<String,Class>();
 	static {
@@ -36,7 +34,7 @@ public class AbstractDao  {
 		} catch (UnknownHostException ue) {
 		}
 	}
-	
+
 	protected DBCollection getDBCollection(String name){
 		return db.getCollection(name);
 	}
@@ -83,7 +81,11 @@ public class AbstractDao  {
 					for(Object dbj:(BasicDBList)value){
 						if(dbj == null)continue;
 						
-						vlist.add(decode((BasicDBObject)dbj,innerCls));
+						if(dbj instanceof BasicDBObject){
+							vlist.add(decode((BasicDBObject)dbj,innerCls));
+						}else {
+							vlist.add(dbj);
+						}
 					}
 					
 					value = vlist;

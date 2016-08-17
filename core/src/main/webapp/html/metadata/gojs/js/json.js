@@ -62,4 +62,25 @@
 	           {html:'<a href="/business/business2.htm?bid='+bid+'&fid=4&id='+this.id+'">修改</a>
 	                     <a href="/business/business2.htm?bid='+bid+'&fid=6&id='+this.id+'">查看</a>'}]}
 	]}
+	    
+
+{
+	json:['dialog',['form','account.personal_profile.address',[
+             ['$fid','','hidden',5],
+             ['$bid','','hidden',bid],
+             ['$account.id','id','hidden',account.id,'[n]'],
+             ['id','id','label',account.personal_profile.address.id,'[n]'],
+             ['$account.account','账号','label',account.account,'[n]'],
+             ['province','省',['select',['江苏','浙江']],'[n]'],
+             ['city','城市',['select',['南京','苏州','杭州']],'[n]'],
+             ['zone','区',['select',['鼓楼','秦淮','白下','玄武']],'[n]'],
+             ['address','详细地址','textarea','[n]'],
+             ['$submit','','submit','保存','[n]']]],
+         {buttons:{Save:'saveAddress();'}}
+	]
+}	  
+
+["tableBlock",[["账号","wmx"],["密码","123456"],["真实姓名","王美霞"],["Email","wmx@tm.com"],["手机","13456787654"],["生日",null],
+["地址",["div",[["div",["span","江苏省南京市鼓楼区null"],["button","修改","ajax({bid:\"56d64e7ffe559fe3d66284da\",fid:4,aid:\"null\"});"]],
+              ["div",[["span","浙江省湖州市安吉县null"],["button","修改","ajax({bid:\"56d64e7ffe559fe3d66284da\",fid:4,aid:\"null\"});"]]]],["button","添加","alert('添加');"]]]]]
 
