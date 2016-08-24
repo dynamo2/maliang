@@ -22,130 +22,298 @@
 		
     </head>
     <body>
-    	<style>
-    	#businessForm textarea {
-    		width:160px;
-    		height:25px;
-    	}
-    	
-    	#businessForm input[type=number] {
-    		width:50px;
-    		height:25px;
-    	}
-    	</style>
 		<script>
+		var business = ${resultJson};
+		var basicEditerDialog = null;
+		var workflowEditerDialog = null;
+		var blockEditerDialog = null;
 		
 		$(function(){
-			//fieldsDivObj = $("#fieldsDiv");
+			init();
+		});
+		
+		function refresh(json){
+			business = json;
+			init();
+		}
+		
+		function init(){
+			initBasic();
+			initWorkflows();
+			initBlocks();
+		}
+		
+		function save(formId){
+			var req = readFormDatas($("#"+formId));
+			req['business.id'] = business.id;
 			
-			var inputs = ${resultJson};
+			$.ajax('/business/saveWorkFlow.htm',{
+				data:req,
+				dataType:'json',
+				type:'POST',
+				async:false
+			}).done(function(result,status){
+				refresh(result);
+			});
+		}
+		
+		function initBasic(){
+			$("#idLabel").text(business.id);
+			$("#nameLabel").text(business.name);
+			$("#uniqueCodeLabel").text(business.uniqueCode);
 			
-			//{"name":{"prefix":"business","name":"name","label":"名称","type":"text","value":"editProduct"},"workFlows":{"item-labels":{"step":"step","requestType":"requestType","code":"code","response":"response"},"prefix":"business","name":"workFlows","label":"流程","type":"list","item-prefix":"business.workFlows","value":[{"code":{"prefix":"business.workFlows","name":"code","label":"code","type":"text","value":"addToParams({p2:db.Product.save(request.product),brands:db.Brand.search(),products:db.Product.search()})"},"requestType":{"prefix":"business.workFlows","name":"requestType","label":"requestType","type":"text","value":"{fid:'int',bid:'int'}"},"response":{"prefix":"business.workFlows","name":"response","label":"response","type":"text","value":"{html_template:'<div id='edit_form'><\/div>',contents:[{type:'form',html_parent:'edit_form',action:'',name:'product.edit.form',children:{inputs:[{name:'fid',type:'hidden',value:2},{name:'product.id',type:'hidden'},{name:'product.name',label:'名称',type:'text'},{name:'product.brand',label:'品牌',type:'select',options:each(brands){{key:this.id,label:this.name}}},{name:'product.price',label:'价格',type:'number'}],ul-list:{header:[{name:'name',label:'名称'},{name:'brand',label:'品牌'},{name:'price',label:'价格'},{name:'picture',label:'图片'},{name:'operator',label:'操作'}],data:each(products){{name:{type:'a',href:'/detail.htm?id='+this.id,text:this.name},brand:{type:'a',href:'/detail.htm?id='+this.brand.id,text:this.brand.name},price:{type:'label',text:this.price},picture:{type:'img',src:this.picture},operator:[{type:'a',href:'/edit.htm?id='+this.id,text:'编辑'},{type:'a',href:'/delete.htm?id='+this.id,text:'删除'}]}}}}}]}"},"step":{"prefix":"business.workFlows","name":"step","label":"step","type":"text","value":1},"id":{"prefix":"business.workFlows","name":"id","label":null,"type":"hidden","value":null}}]},"id":{"prefix":"business","name":"id","label":null,"type":"hidden","value":"55657a12bd77fdf857e1b743"}};
-			var inputDiv = TM_formBuilder.newInputsDiv(inputs);
-			$("#businessForm").append(inputDiv);
+			$("#name").val(business.name);
+			$("#uniqueCode").val(business.uniqueCode);
 
-			dialogObj = $("#enlargedEditerDialog").dialog({
+			basicEditerDialog = $("#basicEditerDialog").dialog({
 				autoOpen: false,
 				modal:true,
 				width:800,
-				height:500,
+				height:600,
 				buttons: {
-					"确定": function() {
-					  $(this).dialog("close");
-					  editInputObj.val($("#enlargedTextarea").val());
+					"Save": function() {
+						save("basicEditForm");
+						$(this).dialog("close");
 					},
-					"取消": function() {
+					"Cancel": function() {
 					  $(this).dialog("close");
 					}
 				  }
 				});
+		}
+		
+		function showBasicEditer(){
+			basicEditerDialog.dialog("open");
+		}
+		
+		function initBlocks(){
+			if(business && business.blocks){
+				$("#blockDiv").empty();
+				
+				$.each(business.blocks,function(){
+					var bnt = $("<input type='button' />");
+					bnt.val(this.name);
+					
+					bnt.on("click",{"block":this},function(event){
+						showBlockEditer(event.data.block);
+					});
+					
+					$("#blockDiv").append(bnt);
+				});
+			}
 			
-			
-			dialogObj = $("#workFlowEditerDialog").dialog({
+			blockEditerDialog = $("#blockEditerDialog").dialog({
 				autoOpen: false,
 				modal:true,
 				width:1000,
 				height:800,
 				buttons: {
-					"确定": function() {
-						var req = readFormDatas($("#workFlowEditeForm"));
-						alert(ts(req));
-						
+					"Save": function() {
+						save("blockEditForm");
 						$(this).dialog("close");
 					},
-					"取消": function() {
+					"Cancel": function() {
 					  $(this).dialog("close");
 					}
 				  }
 				});
-			$("#workFlowTab").tabs();
 			
-			resetDBClick();
-			$("#businessForm").find(":input[type='button']").on("click",resetDBClick);
-		});
-		
-		function resetDBClick(){
-			$("#businessForm").find(":input").dblclick(enlargedEdit);
-			$("#businessForm").find(":input[type='button']").off("dblclick",enlargedEdit);
+			$("#blockTab").tabs();
 		}
 		
-		function enlargedEdit(event){
-			$("#enlargedTextarea").val(this.value);
-			editInputObj = $(this);
+		function showBlockEditer(block){
+			if(!block)block = {};
 			
-			loadWorkFlow('');
-			dialogObj.dialog("open");
+			$("#blockId").val(block.id);
+			$("#blockName").val(block.name);
+			$("#blockCode").val(block.code);
+			
+			blockEditerDialog.dialog("open");
 		}
 		
+		function initWorkflows(){
+			if(business && business.workflows){
+				$("#workflowDiv").empty();
+				
+				$.each(business.workflows,function(){
+					var bnt = $("<input type='button' />");
+					bnt.val(this.step+'-'+this.name);
+					
+					bnt.on("click",{"workflow":this},function(event){
+						showWorkflowEditer(event.data.workflow);
+					});
+					
+					$("#workflowDiv").append(bnt);
+				});
+			}
+			
+			workflowEditerDialog = $("#workflowEditerDialog").dialog({
+				autoOpen: false,
+				modal:true,
+				width:1000,
+				height:800,
+				buttons: {
+					"Save": function() {
+						save("workflowEditForm");
+						$(this).dialog("close");
+					},
+					"Cancel": function() {
+					  $(this).dialog("close");
+					}
+				  }
+				});
+			
+			$("#workflowTab").tabs();
+		}
+
 		function loadWorkFlow(id){
 			$.ajax('/business/workFlow.htm',{
-				data:{id:'579726667b59c29468409c6d'},
+				data:{id:id},
 				dataType:'json',
 				type:'POST',
 				async:false
 			}).done(function(result,status){
-				$("#id").val(result.id);
-				$("#step").val(result.step);
-				$("#code").val(result.code);
-				$("#response").val(result.response);
-				$("#requestType").val(result.requestType);
-				$("#javaScript").val(result.javaScript);
-				$("#ajax").val(result.ajax);
+				showWorkflowEditer(result);
 			});
+		}
+		
+		function showWorkflowEditer(flow){
+			refreshWorkflowEditer(flow);
+			workflowEditerDialog.dialog("open");
+		}
+		
+		function refreshWorkflowEditer(flow){
+			if(!flow)flow = {};
+			
+			$("#id").val(flow.id);
+			$("#step").val(flow.step);
+			$("#workflowName").val(flow.name);
+			$("#code").val(flow.code);
+			$("#response").val(flow.response);
+			$("#requestType").val(flow.requestType);
+			$("#javaScript").val(flow.javaScript);
+			$("#ajax").val(flow.ajax);
 		}
 		</script>
 		<div style="margin:20px;"><a href="list.htm">列表</a>&nbsp;&nbsp;&nbsp;&nbsp;<a href="edit.htm">新增</a></div>
-    	<div id="editDiv">
-    		<form id="businessForm" action="/business/save.htm" method="post"></form>
+    	
+		<div class="title">
+			<label>Basic</label>
+			<input type="button" value="编辑" onclick="showBasicEditer();" />
+		</div>
+		<div id="basicDiv">
+			<div>ID:<label id="idLabel"></label></div>
+			<div>名称:<label id="nameLabel"></label></div>
+			<div>唯一代码:<label id="uniqueCodeLabel">ProductMG</label></div>
 		</div>
 		
-		<div id="enlargedEditerDialog" title="Enlarged editer dialog">
-			<textarea id="enlargedTextarea"></textarea>
-		<div>
+		<div class="title">
+			<label>Block</label>
+			<input type="button" value="新增" onclick="showBlockEditer({});" />
+		</div>
+		<div id="blockDiv"></div>
 		
-		
-		
-		
+		<div class="title">
+			<label>Workflow</label>
+			<input type="button" value="新增" onclick="showWorkflowEditer({});" />
+		</div>
+		<div id="workflowDiv"></div>
+
 		
 		<!-- NEW CODE -->
 		<style>
-		#workFlowEditerDialog textarea {
+		.title {
+			padding:15px 10px;
+			border-bottom:2px #77C9FF solid;
+			width:800px;
+		}
+		
+		.title label {
+			font-size:26px;
+			font-weight:bold;
+			color:#007ACC;
+			padding-right:20px;
+		}
+		
+		
+		#basicDiv {
+			padding:15px;
+			font-size:14px;
+		}
+		
+		#basicDiv div{
+			padding:5px;
+		}
+		
+		#basicDiv label{
+			padding-left:10px;
+		}
+		
+		#workflowEditerDialog textarea,
+		#blockEditerDialog textarea {
 			width:930px;
 			height:593px;
 		}
 		
-		#workFlowEditerDialog #step {
+		#workflowEditerDialog input[type='text'],
+		#blockEditerDialog input[type='text'] {
 			width:200px;
 		}
 		
-		#workFlowTab {
+		#workflowTab,
+		#blockTab {
 			border:0px;
 			padding:0px;
 		}
+		
+		#workflowDiv,
+		#blockDiv {
+			padding:15px;
+		}
+		
+		#workflowDiv input[type='button'],
+		#blockDiv input[type='button'] {
+			margin:5px;
+		}
 		</style>
-		<div id="workFlowEditerDialog" title="WorkFlow Editer">
-			<form id="workFlowEditeForm">
-				<div id="workFlowTab">
+		
+		<div id="basicEditerDialog" title="Basic info Editer">
+			<form id="basicEditForm">
+				<div>
+					<label>名称:</label>
+					<input type="text" name="business.name" id="name" value="" />
+				</div>
+				<div>
+					<label>唯一代码:</label>
+					<input type="text" name="business.uniqueCode" id="uniqueCode" value="" />
+				</div>
+			</form>
+		<div>
+		
+		<div id="blockEditerDialog" title="Block Editer">
+			<form id="blockEditForm">
+				<div id="blockTab">
+					<ul>
+						<li id="nameDivLink"><a href="#nameDiv">Name</a></li>
+						<li id="blockCodeDivLink"><a href="#blockCodeDiv">Code</a></li>
+					</ul>
+					<div id="nameDiv">
+						<input type="hidden" name="business.blocks.id" id="blockId" />
+						<div>
+							<label>名称:</label>
+							<input type="text" name="business.blocks.name" id="blockName" value="" />
+						</div>
+					</div>
+					<div id="blockCodeDiv">
+						<textarea id="blockCode" name="business.blocks.code"></textarea>
+					</div>
+				</div>
+			</form>
+		<div>
+		
+		<div id="workflowEditerDialog" title="Workflow Editer">
+			<form id="workflowEditForm">
+				<div id="workflowTab">
 					<ul>
 						<li id="stepDivLink"><a href="#stepDiv">Step</a></li>
 						<li id="requestTypeDivLink"><a href="#requestTypeDiv">RequestType</a></li>
@@ -155,25 +323,32 @@
 						<li id="ajaxDivLink"><a href="#ajaxDiv">Ajax</a></li>
 					</ul>
 					<div id="stepDiv">
-						<input type="hidden" name="id" id="id" />
-						<input type="text" name="step" id="step" />
+						<input type="hidden" name="business.workflows.id" id="id" />
+						<div>
+							<label>step:</label>
+							<input type="text" name="business.workflows.step" id="step" value="" />
+						</div>
+						<div>
+							<label>名称:</label>
+							<input type="text" name="business.workflows.name" id="workflowName" value="" />
+						</div>
 					</div>
 					<div id="requestTypeDiv">
-						<textarea id="requestType" name="requestType"></textarea>
+						<textarea id="requestType" name="business.workflows.requestType"></textarea>
 					</div>
 					<div id="codeDiv">
-						<textarea id="code" name="code"></textarea>
+						<textarea id="code" name="business.workflows.code"></textarea>
 					</div>
 					
 					<div id="responseDiv">
-						<textarea id="response" name="response"></textarea>
+						<textarea id="response" name="business.workflows.response"></textarea>
 					</div>
 					
 					<div id="javaScriptDiv">
-						<textarea id="javaScript" name="javaScript"></textarea>
+						<textarea id="javaScript" name="business.workflows.javaScript"></textarea>
 					</div>
 					<div id="ajaxDiv">
-						<textarea id="ajax" name="ajax"></textarea>
+						<textarea id="ajax" name="business.workflows.ajax"></textarea>
 					</div>
 				</div>
 			</form>
