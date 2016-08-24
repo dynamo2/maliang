@@ -1,10 +1,5 @@
 package com.maliang.core.ui.controller;
 
-import java.beans.BeanInfo;
-import java.beans.Introspector;
-import java.beans.PropertyDescriptor;
-import java.util.ArrayList;
-import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -14,10 +9,7 @@ import javax.servlet.http.HttpServletRequest;
 
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
-import net.sf.json.JsonConfig;
-import net.sf.json.processors.JsonValueProcessor;
 
-import org.bson.types.ObjectId;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -31,7 +23,6 @@ import com.maliang.core.exception.TurnToPage;
 import com.maliang.core.model.Business;
 import com.maliang.core.model.Workflow;
 import com.maliang.core.service.BusinessService;
-import com.maliang.core.service.MapHelper;
 
 @Controller
 @RequestMapping(value = "business")
@@ -42,20 +33,20 @@ public class BusinessController extends BasicController {
 	static final String BUSINESS_LIST;
 
 	static {
-		Map<String, String> blMap = new LinkedHashMap<String, String>();
-		blMap.put("name", "名称");
-		blMap.put("workflows", "流程");
-		blMap.put("blocks", "代码块");
-		CLASS_LABELS.put(Business.class.getCanonicalName(), blMap);
-
-		Map<String, String> wfMap = new LinkedHashMap<String, String>();
-		wfMap.put("step", "step");
-		wfMap.put("requestType", "requestType");
-		wfMap.put("code", "code");
-		wfMap.put("response", "response");
-		wfMap.put("javaScript", "javaScript");
-		wfMap.put("ajax", "ajax");
-		CLASS_LABELS.put(Workflow.class.getCanonicalName(), wfMap);
+//		Map<String, String> blMap = new LinkedHashMap<String, String>();
+//		blMap.put("name", "名称");
+//		blMap.put("workflows", "流程");
+//		blMap.put("blocks", "代码块");
+//		CLASS_LABELS.put(Business.class.getCanonicalName(), blMap);
+//
+//		Map<String, String> wfMap = new LinkedHashMap<String, String>();
+//		wfMap.put("step", "step");
+//		wfMap.put("requestType", "requestType");
+//		wfMap.put("code", "code");
+//		wfMap.put("response", "response");
+//		wfMap.put("javaScript", "javaScript");
+//		wfMap.put("ajax", "ajax");
+//		CLASS_LABELS.put(Workflow.class.getCanonicalName(), wfMap);
 
 		BUSINESS_LIST = "{list:each(list){{" + "name:this.name,"
 				+ "id:this.id+''" + "}}}";
@@ -77,17 +68,17 @@ public class BusinessController extends BasicController {
 		return "/business/main";
 	}
 
-	@RequestMapping(value = "business2.htm")
+	@RequestMapping(value = "business.htm")
 	public String business2(Model model, HttpServletRequest request) {
 		try {
 			Workflow workFlow = readWorkFlow(request);
 			String resultJson = executeWorkFlow(workFlow, request);
 
 			model.addAttribute("resultJson", resultJson);
-			return "/business/business2";
+			return "/business/business";
 		} catch (TurnToPage page) {
 			model.addAttribute("resultJson", json(page.getResult()));
-			return "/business/business2";
+			return "/business/business";
 		} catch (TianmaException e) {
 			model.addAttribute("errorMsg", e.getMessage());
 			return "/business/error";
@@ -98,12 +89,6 @@ public class BusinessController extends BasicController {
 	@ResponseBody
 	public String request(Model model, HttpServletRequest request) {
 		Map<String, Object> params = readRequestMap(request);
-		System.out.println("================ params : " + params);
-		System.out
-				.println("================ province : "
-						+ MapHelper.readValue(params,
-								"request.order.address.province"));
-
 		return params.toString();
 	}
 
@@ -147,7 +132,7 @@ public class BusinessController extends BasicController {
 		this.businessDao.updateBySet(business);
 
 		Business nb = businessDao.getByID(business.get("id").toString());
-		return JSONObject.fromObject(nb, defaultJsonConfig).toString();
+		return this.json(nb);
 	}
 
 	/*************** new code end ***********************/
@@ -159,31 +144,11 @@ public class BusinessController extends BasicController {
 			business = new Business();
 		}
 		
-		String json = JSONObject.fromObject(business, defaultJsonConfig).toString();
-		//System.out.println("================ business json : " + json);
-
-		Map<String, Object> bMap = buildInputsMap(business, CLASS_LABELS,"business");
-		String resultJson = JSONObject.fromObject(bMap).toString();
-		
-		model.addAttribute("resultJson", json);
-
-		return "/business/edit2";
+		model.addAttribute("resultJson", json(business));
+		return "/business/edit";
 	}
-
-	@RequestMapping(value = "list.htm")
-	public String list(Model model, HttpServletRequest request) {
-		List<Business> blist = businessDao.list();
-		Map<String, String> labels = new HashMap<String, String>();
-		labels.put("name", "名称");
-
-		Map map = buildULListMap(blist, labels);
-		String resultJson = JSONObject.fromObject(map).toString();
-
-		model.addAttribute("resultJson", resultJson);
-		return "/business/list";
-	}
-
-	@RequestMapping(value = "save.htm")
+	
+	/*@RequestMapping(value = "save.htm")
 	public String save(Model model, HttpServletRequest request) {
 		Map<String, Object> reqMap = this.readRequestMapNotJSONFilter(request);
 		Map<String, Object> busMap = (Map<String, Object>) reqMap
@@ -195,22 +160,7 @@ public class BusinessController extends BasicController {
 
 		// return this.list(model, request);
 		return this.edit(busi.getId().toString(), model, request);
-	}
-
-	@RequestMapping(value = "business.htm")
-	public String business(Model model, HttpServletRequest request) {
-		try {
-			Workflow workFlow = readWorkFlow(request);
-			String resultJson = executeWorkFlow(workFlow, request);
-
-			model.addAttribute("resultJson", resultJson);
-			return "/business/business";
-		} catch (TianmaException e) {
-			// e.printStackTrace();
-			model.addAttribute("errorMsg", e.getMessage());
-			return "/business/error";
-		}
-	}
+	}*/
 
 	@RequestMapping(value = "ajax.htm")
 	@ResponseBody
@@ -227,73 +177,6 @@ public class BusinessController extends BasicController {
 	public String javaScript(HttpServletRequest request) {
 		Workflow workFlow = readWorkFlow(request);
 		return workFlow.getJavaScript();
-	}
-
-	@SuppressWarnings("rawtypes")
-	private Map buildULListMap(List<Business> list, Map<String, String> labels) {
-
-		try {
-			BeanInfo beanInfo = Introspector.getBeanInfo(Business.class);
-			PropertyDescriptor[] pds = beanInfo.getPropertyDescriptors();
-			List dataList = new ArrayList();
-			for (Business obj : list) {
-				Map bdm = new HashMap();
-
-				for (PropertyDescriptor pd : pds) {
-					String fname = pd.getName();
-					String label = labels.get(fname);
-					if (label == null)
-						continue;
-
-					Map nm = new HashMap();
-					nm.put("type", "label");
-					nm.put("text", pd.getReadMethod().invoke(obj));
-
-					bdm.put(fname, nm);
-				}
-
-				List ol = new ArrayList();
-				Map om = new HashMap();
-				om.put("type", "a");
-				om.put("href", "/business/edit.htm?id=" + obj.getId());
-				om.put("text", "编辑");
-				ol.add(om);
-
-				om = new HashMap();
-				om.put("type", "a");
-				om.put("href", "/business/business.htm?bid=" + obj.getId());
-				om.put("text", "执行");
-				om.put("target", "_blank");
-				ol.add(om);
-				bdm.put("operator", ol);
-
-				dataList.add(bdm);
-			}
-
-			List headerList = new ArrayList();
-			for (Map.Entry<String, String> len : labels.entrySet()) {
-				Map<String, String> lm = new HashMap<String, String>();
-				lm.put("name", len.getKey());
-				lm.put("label", len.getValue());
-
-				headerList.add(lm);
-			}
-			Map om = new HashMap();
-			om.put("name", "operator");
-			om.put("label", "操作");
-			headerList.add(om);
-
-			Map ulMap = new HashMap();
-			ulMap.put("header", headerList);
-			ulMap.put("data", dataList);
-
-			Map resultMap = new HashMap();
-			resultMap.put("ul-list", ulMap);
-
-			return resultMap;
-		} catch (Exception e) {
-			return null;
-		}
 	}
 
 	private Workflow readWorkFlow(HttpServletRequest request) {
@@ -334,12 +217,7 @@ public class BusinessController extends BasicController {
 
 	private Map<String, Object> executeCode(Workflow flow,
 			HttpServletRequest request) {
-		// Map<String,Object> params =
-		// readRequestParameters(flow.getRequestType(),request);
 		Map<String, Object> params = readRequestParameters(request);
-
-		System.out.println("=========== params ==============");
-		System.out.println("executeCode params : " + params);
 		ArithmeticExpression.execute(flow.getCode(), params);
 
 		return params;
@@ -414,20 +292,99 @@ public class BusinessController extends BasicController {
 		System.out.println(rootMap);
 
 	}
-}
+	
+	/*@RequestMapping(value = "business.htm")
+	public String business(Model model, HttpServletRequest request) {
+		try {
+			Workflow workFlow = readWorkFlow(request);
+			String resultJson = executeWorkFlow(workFlow, request);
 
-class TOStringProcessor implements JsonValueProcessor{
-
-	public Object processArrayValue(Object arg0, JsonConfig arg1) {
-		if(arg0 == null)return null;
-		
-		return arg0.toString();
-	}
-
-	public Object processObjectValue(String arg0, Object arg1,
-			JsonConfig arg2) {
-		if(arg1 == null)return null;
-		
-		return arg1.toString();
-	}
+			model.addAttribute("resultJson", resultJson);
+			return "/business/business";
+		} catch (TianmaException e) {
+			// e.printStackTrace();
+			model.addAttribute("errorMsg", e.getMessage());
+			return "/business/error";
+		}
+	}*/
+	
+//	@RequestMapping(value = "list.htm")
+//	public String list(Model model, HttpServletRequest request) {
+//		List<Business> blist = businessDao.list();
+//		Map<String, String> labels = new HashMap<String, String>();
+//		labels.put("name", "名称");
+//
+//		Map map = buildULListMap(blist, labels);
+//		String resultJson = JSONObject.fromObject(map).toString();
+//
+//		model.addAttribute("resultJson", resultJson);
+//		return "/business/list";
+//	}
+//
+//	@SuppressWarnings("rawtypes")
+//	private Map buildULListMap(List<Business> list, Map<String, String> labels) {
+//
+//		try {
+//			BeanInfo beanInfo = Introspector.getBeanInfo(Business.class);
+//			PropertyDescriptor[] pds = beanInfo.getPropertyDescriptors();
+//			List dataList = new ArrayList();
+//			for (Business obj : list) {
+//				Map bdm = new HashMap();
+//
+//				for (PropertyDescriptor pd : pds) {
+//					String fname = pd.getName();
+//					String label = labels.get(fname);
+//					if (label == null)
+//						continue;
+//
+//					Map nm = new HashMap();
+//					nm.put("type", "label");
+//					nm.put("text", pd.getReadMethod().invoke(obj));
+//
+//					bdm.put(fname, nm);
+//				}
+//
+//				List ol = new ArrayList();
+//				Map om = new HashMap();
+//				om.put("type", "a");
+//				om.put("href", "/business/edit.htm?id=" + obj.getId());
+//				om.put("text", "编辑");
+//				ol.add(om);
+//
+//				om = new HashMap();
+//				om.put("type", "a");
+//				om.put("href", "/business/business.htm?bid=" + obj.getId());
+//				om.put("text", "执行");
+//				om.put("target", "_blank");
+//				ol.add(om);
+//				bdm.put("operator", ol);
+//
+//				dataList.add(bdm);
+//			}
+//
+//			List headerList = new ArrayList();
+//			for (Map.Entry<String, String> len : labels.entrySet()) {
+//				Map<String, String> lm = new HashMap<String, String>();
+//				lm.put("name", len.getKey());
+//				lm.put("label", len.getValue());
+//
+//				headerList.add(lm);
+//			}
+//			Map om = new HashMap();
+//			om.put("name", "operator");
+//			om.put("label", "操作");
+//			headerList.add(om);
+//
+//			Map ulMap = new HashMap();
+//			ulMap.put("header", headerList);
+//			ulMap.put("data", dataList);
+//
+//			Map resultMap = new HashMap();
+//			resultMap.put("ul-list", ulMap);
+//
+//			return resultMap;
+//		} catch (Exception e) {
+//			return null;
+//		}
+//	}
 }

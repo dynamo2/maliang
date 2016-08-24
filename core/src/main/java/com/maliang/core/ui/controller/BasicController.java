@@ -15,6 +15,7 @@ import javax.servlet.http.HttpServletRequest;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 import net.sf.json.JsonConfig;
+import net.sf.json.processors.JsonValueProcessor;
 
 import org.bson.types.ObjectId;
 
@@ -479,5 +480,21 @@ public class BasicController {
 			}
 		}
 		return null;
+	}
+}
+
+class TOStringProcessor implements JsonValueProcessor{
+
+	public Object processArrayValue(Object arg0, JsonConfig arg1) {
+		if(arg0 == null)return null;
+		
+		return arg0.toString();
+	}
+
+	public Object processObjectValue(String arg0, Object arg1,
+			JsonConfig arg2) {
+		if(arg1 == null)return null;
+		
+		return arg1.toString();
 	}
 }

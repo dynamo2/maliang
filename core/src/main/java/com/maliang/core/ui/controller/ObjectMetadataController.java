@@ -21,13 +21,14 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
-import org.springframework.web.context.request.RequestContextHolder;
 
 import com.maliang.core.arithmetic.ArithmeticExpression;
 import com.maliang.core.dao.ObjectMetadataDao;
 import com.maliang.core.model.FieldType;
 import com.maliang.core.model.ObjectField;
 import com.maliang.core.model.ObjectMetadata;
+import com.maliang.core.model.UCType;
+import com.maliang.core.util.Utils;
 
 @Controller
 @RequestMapping(value = "metadata")
@@ -175,7 +176,7 @@ public class ObjectMetadataController extends BasicController {
 		String desc = "{name:'elementType',type:'select',options:each(fieldTypes){{key:this.code,label:this.name}}}";
 		
 		Map<String,Object> params = new HashMap<String,Object>();
-		params.put("fieldTypes",FieldType.values());
+		params.put("fieldTypes",fieldTypes());
 		
 		Map<String,Object> map = (Map<String,Object>)ArithmeticExpression.execute(desc, params);
 		return json(map);
@@ -193,10 +194,28 @@ public class ObjectMetadataController extends BasicController {
 	private String jsonEditCode2(ObjectMetadata metadata){
 		Map<String,Object> params = new HashMap<String,Object>();
 		params.put("md",metadata);
-		params.put("types",FieldType.values());
+		params.put("types",fieldTypes());
 		
 		Object editMap =  ArithmeticExpression.execute(EDIT_CODE2, params);
 		return this.json(editMap);
+	}
+	
+	private List<Object> fieldTypes(){
+		List<Object> fts = new ArrayList<Object>();
+		for(FieldType ft : FieldType.values()){
+			fts.add(ft);
+		}
+		
+		List<UCType> ucts = this.uctypeDao.list();
+		Map<String,Object> types = null;
+		for(UCType t : ucts){
+			types = new HashMap<String,Object>();
+			types.put("code",t.getKey());
+			types.put("name",t.getName());
+			fts.add(types);
+		}
+		
+		return fts;
 	}
 	
 	private ObjectMetadata readMetadataFromRequest(HttpServletRequest request){
