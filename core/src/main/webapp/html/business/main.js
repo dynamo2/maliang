@@ -146,12 +146,13 @@ function newTreeDiagram() {
 				var node = obj.diagram.selection.first();
 				var bid = node.data && node.data.business && node.data.business.id;
 				
-				$("#previewIframe").attr("src","/business/business2.htm?bid="+bid);
+				$("#previewIframe").attr("src","/business/business.htm?bid="+bid);
 			}
     	},new go.Binding("visible", "", _.isMetadata).ofObject()
     ), G_Make("ContextMenuButton", _.menuText("新增页面"), {
 		click : function(e, obj) {
-			alert("新增页面");
+			//alert("新增页面");
+			$("#businessEditerDialog").dialog("open");
 		}
 	}), G_Make("ContextMenuButton", _.menuText("删除页面"), {
 		click : function(e, obj) {

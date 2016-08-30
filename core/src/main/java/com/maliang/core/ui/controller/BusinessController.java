@@ -1,7 +1,6 @@
 package com.maliang.core.ui.controller;
 
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -15,6 +14,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 
+import com.maliang.core.arithmetic.AE;
 import com.maliang.core.arithmetic.ArithmeticExpression;
 import com.maliang.core.arithmetic.function.SessionFunction;
 import com.maliang.core.dao.BusinessDao;
@@ -33,26 +33,9 @@ public class BusinessController extends BasicController {
 	static final String BUSINESS_LIST;
 
 	static {
-//		Map<String, String> blMap = new LinkedHashMap<String, String>();
-//		blMap.put("name", "名称");
-//		blMap.put("workflows", "流程");
-//		blMap.put("blocks", "代码块");
-//		CLASS_LABELS.put(Business.class.getCanonicalName(), blMap);
-//
-//		Map<String, String> wfMap = new LinkedHashMap<String, String>();
-//		wfMap.put("step", "step");
-//		wfMap.put("requestType", "requestType");
-//		wfMap.put("code", "code");
-//		wfMap.put("response", "response");
-//		wfMap.put("javaScript", "javaScript");
-//		wfMap.put("ajax", "ajax");
-//		CLASS_LABELS.put(Workflow.class.getCanonicalName(), wfMap);
-
 		BUSINESS_LIST = "{list:each(list){{" + "name:this.name,"
 				+ "id:this.id+''" + "}}}";
 	}
-
-	/*************** new code start ***********************/
 
 	@RequestMapping(value = "main.htm")
 	public String main(Model model) {
@@ -123,7 +106,7 @@ public class BusinessController extends BasicController {
 		return json;
 	}
 
-	@RequestMapping(value = "saveWorkFlow.htm")
+	@RequestMapping(value = "save.htm")
 	@ResponseBody
 	public String saveWorkFlow(HttpServletRequest request) {
 		Map<String, Object> reqMap = this.readRequestMapNotJSONFilter(request);
@@ -134,8 +117,21 @@ public class BusinessController extends BasicController {
 		Business nb = businessDao.getByID(business.get("id").toString());
 		return this.json(nb);
 	}
+	
+	@RequestMapping(value = "add.htm")
+	@ResponseBody
+	public String add(HttpServletRequest request) {
+		Map<String, Object> reqMap = this.readRequestMapNotJSONFilter(request);
+		
+		Map<String,Object> business = (Map<String,Object>)reqMap.get("business");
+		this.businessDao.save(business);
 
-	/*************** new code end ***********************/
+		Map<String, Object> params = new HashMap<String, Object>();
+		params.put("list", businessDao.list());
+
+		Object editMap = AE.execute(BUSINESS_LIST, params);
+		return this.json(editMap);
+	}
 
 	@RequestMapping(value = "edit.htm")
 	public String edit(String id, Model model, HttpServletRequest request) {
@@ -148,20 +144,6 @@ public class BusinessController extends BasicController {
 		return "/business/edit";
 	}
 	
-	/*@RequestMapping(value = "save.htm")
-	public String save(Model model, HttpServletRequest request) {
-		Map<String, Object> reqMap = this.readRequestMapNotJSONFilter(request);
-		Map<String, Object> busMap = (Map<String, Object>) reqMap
-				.get("business");
-
-		Business busi = buildToObject(busMap, Business.class);
-
-		businessDao.save(busi);
-
-		// return this.list(model, request);
-		return this.edit(busi.getId().toString(), model, request);
-	}*/
-
 	@RequestMapping(value = "ajax.htm")
 	@ResponseBody
 	public String ajaxBusiness(HttpServletRequest request) {
@@ -235,156 +217,4 @@ public class BusinessController extends BasicController {
 		// System.out.println("readRequestParameters : " + params);
 		return params;
 	}
-	
-	public static void main(String[] args) throws Exception {
-
-		/*
-		 * List<Business> bs = businessDao.list();
-		 * 
-		 * Business business = bs.get(0); business = new Business();
-		 * Map<String,Object> bMap =
-		 * buildInputsMap(business,CLASS_LABELS,"business"); String json =
-		 * JSONObject.fromObject(bMap).toString(); System.out.println(json);
-		 */
-
-		// readForm(null);
-
-		String str = "{components:[{htmlProps:{tag:'form',id:'product.search.form'},"
-				+ "components:[{type:'formInputs',inputs:["
-				+ "{name:'product.name',label:'名称',type:'text'},"
-				+ "{name:'product.brand',label:'品牌',type:'select',options:each(brands){{value:this.id,text:this.name}}},"
-				+ "{name:'product.price',label:'价格',type:'number'}]}]},"
-				+ "{type:'datatables',"
-				+ "htmlProps:{id:'productsTable'},"
-				+ "ajax:'/business/ajax.htm?bid=2',"
-				+ "header:['名称','品牌','价格','图片','操作']}]}";
-
-		// str = "{accounts:db.Account.search()}";
-		// Map<String,Object> params =
-		// (Map<String,Object>)ArithmeticExpression.execute(str, null);
-		//
-		// str =
-		// "{html:'<table cellspacing='0' cellpadding='0' class='list'>'+sum(each(accounts){'<tr><td>'+this.account+'</td></td>'+this.password+'</td></tr>'})+'</table>'}";
-		// Object ov = ArithmeticExpression.execute(str, params);
-
-		// System.out.println(ov);
-
-		Map<String, Object> rootMap = new HashMap<String, Object>();
-
-		setValue(rootMap, "order.info.number", "200103040505");
-		setValue(rootMap, "order.info.name", "淘宝订单");
-		setValue(rootMap, "order.info.date", "2015-03-04");
-		setValue(rootMap, "order.items.0.0.product", "神仙水330ml");
-		setValue(rootMap, "order.items.0.0.warehouse", "六合仓库");
-		setValue(rootMap, "order.items.0.0.num", "3");
-		setValue(rootMap, "order.items.1.0", "A");
-		setValue(rootMap, "order.items.1.1", "B");
-		setValue(rootMap, "order.items.1.2", "C");
-		setValue(rootMap, "product", "神仙水330ml");
-		setValue(rootMap, "product.name", "神仙水330ml");
-		setValue(rootMap, "product.brand", "SK2");
-
-		// setValue(rootMap,"order.items.1.product","HR/赫莲娜绿宝瓶悦活新生精华30ml");
-		// setValue(rootMap,"order.items.0.product","神仙水330ml");
-		// setValue(rootMap,"order.items.0.num","3");
-		// setValue(rootMap,"order.items.1.num","8");
-
-		System.out.println(rootMap);
-
-	}
-	
-	/*@RequestMapping(value = "business.htm")
-	public String business(Model model, HttpServletRequest request) {
-		try {
-			Workflow workFlow = readWorkFlow(request);
-			String resultJson = executeWorkFlow(workFlow, request);
-
-			model.addAttribute("resultJson", resultJson);
-			return "/business/business";
-		} catch (TianmaException e) {
-			// e.printStackTrace();
-			model.addAttribute("errorMsg", e.getMessage());
-			return "/business/error";
-		}
-	}*/
-	
-//	@RequestMapping(value = "list.htm")
-//	public String list(Model model, HttpServletRequest request) {
-//		List<Business> blist = businessDao.list();
-//		Map<String, String> labels = new HashMap<String, String>();
-//		labels.put("name", "名称");
-//
-//		Map map = buildULListMap(blist, labels);
-//		String resultJson = JSONObject.fromObject(map).toString();
-//
-//		model.addAttribute("resultJson", resultJson);
-//		return "/business/list";
-//	}
-//
-//	@SuppressWarnings("rawtypes")
-//	private Map buildULListMap(List<Business> list, Map<String, String> labels) {
-//
-//		try {
-//			BeanInfo beanInfo = Introspector.getBeanInfo(Business.class);
-//			PropertyDescriptor[] pds = beanInfo.getPropertyDescriptors();
-//			List dataList = new ArrayList();
-//			for (Business obj : list) {
-//				Map bdm = new HashMap();
-//
-//				for (PropertyDescriptor pd : pds) {
-//					String fname = pd.getName();
-//					String label = labels.get(fname);
-//					if (label == null)
-//						continue;
-//
-//					Map nm = new HashMap();
-//					nm.put("type", "label");
-//					nm.put("text", pd.getReadMethod().invoke(obj));
-//
-//					bdm.put(fname, nm);
-//				}
-//
-//				List ol = new ArrayList();
-//				Map om = new HashMap();
-//				om.put("type", "a");
-//				om.put("href", "/business/edit.htm?id=" + obj.getId());
-//				om.put("text", "编辑");
-//				ol.add(om);
-//
-//				om = new HashMap();
-//				om.put("type", "a");
-//				om.put("href", "/business/business.htm?bid=" + obj.getId());
-//				om.put("text", "执行");
-//				om.put("target", "_blank");
-//				ol.add(om);
-//				bdm.put("operator", ol);
-//
-//				dataList.add(bdm);
-//			}
-//
-//			List headerList = new ArrayList();
-//			for (Map.Entry<String, String> len : labels.entrySet()) {
-//				Map<String, String> lm = new HashMap<String, String>();
-//				lm.put("name", len.getKey());
-//				lm.put("label", len.getValue());
-//
-//				headerList.add(lm);
-//			}
-//			Map om = new HashMap();
-//			om.put("name", "operator");
-//			om.put("label", "操作");
-//			headerList.add(om);
-//
-//			Map ulMap = new HashMap();
-//			ulMap.put("header", headerList);
-//			ulMap.put("data", dataList);
-//
-//			Map resultMap = new HashMap();
-//			resultMap.put("ul-list", ulMap);
-//
-//			return resultMap;
-//		} catch (Exception e) {
-//			return null;
-//		}
-//	}
 }

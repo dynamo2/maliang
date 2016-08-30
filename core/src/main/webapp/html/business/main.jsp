@@ -11,6 +11,15 @@
 		<script src="../../js/go.js"></script>
 		<script src="../../js/jquery.layout-latest.js"></script>
 		
+		<!-- tianma -->
+		<script src="../js/tianma/component.js"></script>
+		<script src="../js/tianma/datatables.js"></script>
+		<script src="../js/tianma/form.js"></script>
+		<script src="../js/tianma/html.js"></script>
+		<script src="../js/tianma/util.js"></script>
+		<script src="../js/tianma/bind.js"></script>
+		<script src="../js/tianma/build.js"></script>
+		
 		<script src="../../html/business/main.js"></script>
 		
 		<script src="../../html/business/tianma.js"></script>
@@ -36,6 +45,19 @@
 			<div id="businessesDiagram" style="width:100%; height:100%;" />
 		</div>
 		
+		<div id="businessEditerDialog" title="Basic info Editer">
+			<form id="businessEditForm">
+				<div>
+					<label>名称:</label>
+					<input type="text" name="business.name" id="name" value="" />
+				</div>
+				<div>
+					<label>唯一代码:</label>
+					<input type="text" name="business.uniqueCode" id="uniqueCode" value="" />
+				</div>
+			</form>
+		<div>
+		
 		
 		<script type="text/javascript">
 		var json = ${resultJson};
@@ -48,6 +70,8 @@
 			addTabClose($("#businessPanel"));
 			
 			$("body").layout({ applyDemoStyles: true });
+			
+			initBusinessEditer();
 		});
 		
 		/*
@@ -58,6 +82,36 @@
 				var tid = $(this).closest("li").remove().attr("aria-controls");
 				businessModel.removeTab(tid);
 			});
+		}
+		
+		function initBusinessEditer(){
+			$("#businessEditerDialog").dialog({
+				autoOpen: false,
+				modal:true,
+				width:800,
+				height:600,
+				buttons: {
+					"Save": function() {
+						var req = readFormDatas($("#businessEditForm"));
+						
+						$.ajax('/business/add.htm',{
+							data:req,
+							dataType:'json',
+							type:'POST',
+							async:false
+						}).done(function(result,status){
+							//refresh(result);
+							
+							//businessModel.buildTreeDiagram(result.list);
+						});
+						
+						$(this).dialog("close");
+					},
+					"Cancel": function() {
+					  $(this).dialog("close");
+					}
+				  }
+				});
 		}
 		
 		
@@ -199,6 +253,8 @@
 				}
 			});
 		}
+		
+		
 		
 		function updateProperties(oldObj,newObj){
 			metadataModel.clearObject(oldObj,['fields','id']);

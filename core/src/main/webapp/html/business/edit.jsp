@@ -16,6 +16,7 @@
 		<script src="../js/tianma/html.js"></script>
 		<script src="../js/tianma/util.js"></script>
 		<script src="../js/tianma/bind.js"></script>
+		<script src="../js/tianma/build.js"></script>
 		
 		<script src="../html/business/tianma.js"></script>
 		<link href="../html/business/style.css" rel="stylesheet" type="text/css"/> 
@@ -47,7 +48,7 @@
 			var req = readFormDatas($("#"+formId));
 			req['business.id'] = business.id;
 			
-			$.ajax('/business/saveWorkFlow.htm',{
+			$.ajax('/business/save.htm',{
 				data:req,
 				dataType:'json',
 				type:'POST',

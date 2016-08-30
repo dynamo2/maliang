@@ -16,4 +16,8 @@ public class UCValue {
 	public void setType(UCType type) {
 		this.type = type;
 	}
+	
+	public String toString(){
+		return this.value;
+	}
 }
