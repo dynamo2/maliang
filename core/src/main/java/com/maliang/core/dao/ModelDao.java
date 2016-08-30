@@ -6,7 +6,6 @@ import org.bson.types.ObjectId;
 
 import com.maliang.core.model.MongodbModel;
 import com.maliang.core.model.ObjectField;
-import com.maliang.core.model.UCType;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
 import com.mongodb.DBCursor;

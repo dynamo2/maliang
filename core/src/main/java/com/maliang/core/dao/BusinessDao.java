@@ -105,6 +105,10 @@ public class BusinessDao extends ModelDao<Business> {
 		return this.collectionDao.updateBySet(values, COLLECTION_NAME);
 	}
 	
+	public Map<String,Object> save(Map<String,Object> values){
+		return this.collectionDao.save(values, COLLECTION_NAME);
+	}
+	
 	public Business getByName(String name){
 		DBCursor cursor = this.dbColl.find(new BasicDBObject("name",name));
 		while(cursor.hasNext()){

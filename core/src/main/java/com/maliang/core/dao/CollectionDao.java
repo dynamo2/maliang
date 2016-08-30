@@ -85,11 +85,8 @@ public class CollectionDao extends BasicDao {
 	}
 
 	public Map<String, Object> updateBySet(Map value, String collName) {
-		System.out.println("============ before value : " + value);
 		value = this.toDBModel(value, collName);
 		
-		System.out.println("========= updateBySet value : " + value);
-
 		String id = (String) value.remove("id");
 		BasicDBObject query = this.getObjectId(id);
 

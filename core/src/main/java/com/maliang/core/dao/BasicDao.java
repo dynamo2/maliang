@@ -11,6 +11,8 @@ import com.maliang.core.arithmetic.AE;
 import com.maliang.core.model.FieldType;
 import com.maliang.core.model.ObjectField;
 import com.maliang.core.model.ObjectMetadata;
+import com.maliang.core.model.UCType;
+import com.maliang.core.model.UCValue;
 import com.maliang.core.service.MapHelper;
 import com.maliang.core.util.StringUtil;
 import com.maliang.core.util.Utils;
@@ -23,6 +25,7 @@ public class BasicDao extends AbstractDao{
 	private static String META_KEY = ".meta";
 	
 	protected ObjectMetadataDao metaDao = new ObjectMetadataDao();
+	protected UCTypeDao uctypeDao = new UCTypeDao();
 	//protected CollectionDao collDao = new CollectionDao();
 	public static final String[] DB_KEYWORDS = {"if","then","else"};
 
@@ -679,6 +682,14 @@ public class BasicDao extends AbstractDao{
 						}
 					}
 				}
+			}else if(field.getType() >= 100){
+				UCType type = this.uctypeDao.getByKey(field.getType());
+				UCValue val = new UCValue();
+				val.setValue(fieldValue.toString());
+				val.setType(type);
+				
+				fieldValue = val;
+				dataMap.put(fieldName, fieldValue);
 			}
 		}
 	}

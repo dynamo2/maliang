@@ -92,11 +92,14 @@ public class ObjectMetadataDao  extends ModelDao<ObjectMetadata> {
 	}
 	
 	public static void main(String[] args) {
-		ObjectMetadataDao dao = new ObjectMetadataDao();
-		//dao.testFind();
-		dao.testSave();
 		
-		System.out.println(UUID.randomUUID().toString().length());
+		ObjectMetadataDao dao = new ObjectMetadataDao();
+		ObjectMetadata od = dao.getByName("Business");
+		
+		System.out.println("================");
+		System.out.println(od);
+		
+		
 	}
 	
 	/**

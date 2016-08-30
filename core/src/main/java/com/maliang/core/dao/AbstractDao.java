@@ -24,13 +24,15 @@ import com.mongodb.MongoClient;
 public class AbstractDao  {
 	protected static MongoClient mongoClient;
 	protected static DB db;
+	protected static String DB_TIANMA = "tianma";
+	protected static String DB_JIRA = "jira";
 
 	@SuppressWarnings("rawtypes")
 	protected static Map<String,Class> INNER_TYPE = new HashMap<String,Class>();
 	static {
 		try {
 			mongoClient = new MongoClient();
-			db = mongoClient.getDB("tianma");
+			db = mongoClient.getDB(DB_JIRA);
 		} catch (UnknownHostException ue) {
 		}
 	}
