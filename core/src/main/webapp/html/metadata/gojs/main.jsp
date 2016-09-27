@@ -11,6 +11,16 @@
 		<script src="../../js/go.js"></script>
 		<script src="../../js/jquery.layout-latest.js"></script>
 		
+		
+		<!-- tianma business start -->
+		<script src="../js/tianma/component.js"></script>
+		<script src="../js/tianma/datatables.js"></script>
+		<script src="../js/tianma/form.js"></script>
+		<script src="../js/tianma/html.js"></script>
+		<script src="../js/tianma/util.js"></script>
+		<script src="../js/tianma/bind.js"></script>
+		<!-- tianma business end -->
+		
 		<script src="../../html/metadata/gojs/js/main.js"></script>
 		
 		<script src="../../html/business/tianma.js"></script>
@@ -34,12 +44,17 @@
 		<div class="ui-layout-east">字段字典</div>
 		
 		<div id="editDialog" title="字段操作面板">
+			<p id="editDialogNav">
+				<input type="button" value="新增自定义类型" onclick="addUCType();" />
+				<input type="button" value="新增对象模型" onclick="addObjectMetadata();" />
+			</p>
 			<div id="editPanel">
 			  <ul id="panelList" />
 			</div>
 		</div>
 		
 		<div id="addObjectMetadataDialog" title="新增对象模型" />
+		<div id="dialog" title="新增对象模型" /><div id="dialogContent" /></div>
 		<script type="text/javascript">
 		var json = ${resultJson};
 		var objectPanelTab = null;
@@ -52,8 +67,85 @@
 			initEditPanel();
 			initAddObjectMetadataDialog();
 			
+			$("#dialog").dialog({
+				resizable: false,
+				height:400,
+				width:500,
+				autoOpen: false});
+			
 			$("body").layout({ applyDemoStyles: true });
 		});
+		
+		function addObjectMetadata(){
+			var json = ['form','metadata',
+			            	[['$name','名称','','[n]'],
+			            	 ['$label','标签','','[n]']]];
+			 var form = build(json);
+
+			 $("#dialogContent").empty();
+			 $("#dialogContent").append(form);
+			 
+			 $("#dialog").dialog("option","buttons",{
+					"Save": function(){
+						var form = $(this).find("form");
+						var reqDatas = readFormDatas(form);
+						
+						saveNewMetadata(reqDatas);
+						$(this).dialog("close");
+					},
+					Cancel: function() {
+					  $(this).dialog( "close" );
+					}
+				});
+			 $("#dialog").dialog("open");
+		}
+		
+		function addUCType(){
+			var json = ['form','uctype',
+			            	[['$name','名称','','[n]'],
+			            	 ['$key','key','','[n]'],
+			            	 ['$units','单位','','',{change:factors},'[n]'],
+			            	 ['$factor','单位换算','label','[n]']]];
+			 var form = build(json);
+
+			 $("#dialogContent").empty();
+			 $("#dialogContent").append(form);
+			 
+			 $("#dialog").dialog("option","buttons",{
+					"Save": function(){
+						var form = $(this).find("form");
+						var reqDatas = readFormDatas(form);
+						
+						ajaxSaveUCType(reqDatas,function(){
+							metadataModel.removeData('fieldTypes');
+						});
+						
+						$(this).dialog("close");
+					},
+					Cancel: function() {
+					  $(this).dialog( "close" );
+					}
+			});
+			 $("#dialog").dialog("open");
+		}
+		
+		function factors(){
+			var u = $(this).val();
+			var us = u.split(",");
+			
+			var factorTd = $(this).closest("form").find("label[name='factor']").closest("td");
+			factorTd.empty();
+			for(var i = 0; i < us.length-1; i++){
+				var div = $("<div />");
+				var val = '';
+				
+				div.append("<label>1"+us[i]+"  =</label>")
+					.append("<input type='text' name='factors' style='width:50px;' value='"+val+"' />")
+					.append("<label>"+us[i+1]+"</label>");
+				
+				factorTd.append(div);
+			}
+		}
 		
 		/**
 		** 初始化对象操作面板
@@ -85,7 +177,7 @@
 			$("#addObjectMetadataDialog").dialog({
 				resizable: false,
 				height:400,
-				width:300,
+				width:500,
 				autoOpen: false,
 				buttons: {
 					"Save": function(){
@@ -93,8 +185,10 @@
 						var diagram = $("#addObjectMetadataDialog").data("diagram");
 						
 						var metadata = metadataModel.readRequestObject(obj);
-						var newNode = metadataModel.newTreeNode(metadata);
+						saveNewMetadata(metadata);
 						
+						/*
+						var newNode = metadataModel.newTreeNode(metadata);
 						$.ajax("save2.htm",{
 							data:{metadata:JSON.stringify(metadata)},
 							dataType:'json',
@@ -109,8 +203,9 @@
 								newNode.id = omId;
 							}
 						});
-						
 						diagram.model.addNodeData(newNode);
+						*/
+						
 						$(this).dialog("close");
 					},
 					Cancel: function() {
@@ -120,6 +215,27 @@
 			});
 		}
 		
+		function saveNewMetadata(metadata){
+			var newNode = metadataModel.newTreeNode(metadata);
+			
+			$.ajax("save2.htm",{
+				data:{metadata:JSON.stringify(metadata)},
+				dataType:'json',
+				type:'POST',
+				success:function(result,textStatus){
+					var omId = result.metadata.id.value;
+					metadataModel.syncPool(omId,result.metadata);
+
+					//重新解析metadata数据，并刷新diagram
+					metadataModel.refreshMetadataDiagram(omId);
+					
+					newNode.id = omId;
+				}
+			});
+			
+			metadataModel.addMetadataNode(newNode);
+		}
+		
 		/**
 		** 初始化字段操作dialog
 		**/
@@ -127,8 +243,9 @@
 			$("#editPanel").tabs();
 			$("#editDialog").dialog({
 				resizable: false,
-				height:600,
-				width:550,
+				height:900,
+				width:1000,
+				html:true,
 				autoOpen: false,
 				buttons: {
 					"Save": function(){
@@ -266,6 +383,7 @@
 .ui-dialog-title{
 	font-size:12px;
 }
+
 #editDialog,
 #addObjectMetadataDialog {
 	font-size:12px;
@@ -273,13 +391,22 @@
 #editDialog table,
 #addObjectMetadataDialog table  {
 	background-color:#ccc;
+	width:100%;
+	table-layout:fixed ;
 }
 
 #editDialog table input,
 #addObjectMetadataDialog table input {
 	//border:0px;
 	//border-bottom:1px solid #ccc;
-	width:80px;
+	width:150px;
+}
+
+#editDialog table input[type="button"],
+#addObjectMetadataDialog table input[type="button"] {
+	//border:0px;
+	//border-bottom:1px solid #ccc;
+	width:auto;
 }
 
 #editDialog td,
