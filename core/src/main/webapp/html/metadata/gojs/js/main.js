@@ -634,6 +634,7 @@ function showEditPanel(e,node){
 	editPropertiesTable(dataObject);
 	if(metadataModel.canHasFields(dataObject)){
 		editChildrenTable(dataObject.fields);
+		fieldsFromTab(dataObject.fields);
 	}
 	
 	$("#editPanel").tabs("refresh");
@@ -648,6 +649,81 @@ function clearEditPanel(){
 	$("#editProperties").remove();
 	$("#editChildrenList").remove();
 	$("#editChildren").remove();
+	$("#formTabList").remove();
+	$("#formTab").remove();
+}
+
+function readChildrenData(){
+	var table = $("#editChildrenTable");
+	var tds = table.find("td");
+
+	var list = [];
+	$.each($("#editChildrenTable > tbody > .fields"),function(){
+		var field = $(this).data("field");
+		
+		$.each(field,function(){
+			this['_clone_'] = undefined;
+		});
+		
+		list.push(field);
+	});
+	
+	print(ts(list));
+	
+	/*
+	var list = [];
+	$.each(tds,function(){
+		if(this.data())
+	});
+	*/
+}
+
+function fieldsFromTab(fields){
+	/*
+	var json = ['form','uctype',
+            	[['$name','名称','text','[n]'],
+            	 ['$key','key','text','[n]'],
+            	 ['$units','单位','text','',{change:factors},'[n]'],
+            	 ['$factor','单位换算','label','[n]']]];
+            	 */
+	
+	var json = ['form','uctype'];
+	var inputs = [];
+	$.each(fields,function(){
+		var type = this.type.value;
+		if(type == 8){
+			type = ['select',[{key:this.type.linkedObject,label:this.type.linkedObject}]];
+		}else if(type == 4){
+			type = "date";
+		}else type = 'text';
+		
+		inputs.push([this.name.value,this.label.value,type,'[n]']);
+	});
+	json.push(inputs);
+	
+	var div = $("<div style='width:100%;height:100%' />");
+	var jsonDiv = $("<div id='json'><p><button id='htmlBtn' value='html'>Html</button></p>" +
+					"<textarea id='jsonText' style='width:800px;height:500px;'>"+ts(json)+"</textarea></div>");
+	
+	var htmlDiv = $("<div id='html' style='display:none;'><p><button id='jsonBtn' value='json'>Json</button></p></div>").append(build(json));
+	
+	div.append(jsonDiv);
+	div.append(htmlDiv);
+
+	div.delegate( "#jsonBtn", "click", function() {
+		$("#html").hide();
+		$("#json").show();
+	});
+	
+	div.delegate("#htmlBtn", "click", function() {
+		$("#html").find("form").remove();
+		$("#html").append(build(JSON.parse($("#jsonText").val())));
+		
+		$("#html").show();
+		$("#json").hide();
+	});
+	
+	addEditPanelTab("formTab","Form",div);
 }
 
 /*
