@@ -1236,6 +1236,52 @@ function newMetadatasTreeDiagram(metadataModel) {
 			
 			diagram.model.removeNodeData(nodeData);
 		}
+	},new go.Binding("visible", "", _.isMetadata).ofObject()),
+	G_Make("ContextMenuButton", _.menuText("生成CURD业务"), {
+		click : function(e, obj) {
+			var diagram = obj.diagram;
+			var nodeData = diagram.selection.first().data;
+			
+			var dialog = $("<div id='generateDialog' title='生成CURD业务代码'><form>" +
+									"<span style='font-weight:bold;margin:15px;margin-top:30px;'>名称</span>" +
+									"<input type='text' name='bname' />" +
+									"<input type='hidden' name='oid' />" +
+								"</form></div>");
+
+			dialog.dialog({
+				resizable: false,
+				height:400,
+				width:500,
+				autoOpen: false,
+				buttons: {
+					"Save": function(){
+						var reqData = readFormDatas(dialog.find("form"));
+						$.ajax("/generate/all.htm",{
+							data:reqData
+						}).done(function(r,s){
+							alert(r);
+						});
+						
+						$(this).dialog("close");
+					},
+					Cancel: function() {
+					  $(this).dialog( "close" );
+					}
+				}
+			});
+			dialog.dialog("open");
+			
+			var metadata = metadataModel.get(nodeData.id);
+			var bname = '';
+			if(utils.isString(metadata.label)){
+				bname = metadata.label+"管理";
+			}else {
+				bname = metadata.label.value+"管理";
+			}
+			
+			dialog.find("input[name='oid']").val(nodeData.id);
+			dialog.find("input[name='bname']").val(bname);
+		}
 	},new go.Binding("visible", "", _.isMetadata).ofObject()));
 	
 	myDiagram.contextMenu = contextMenu;

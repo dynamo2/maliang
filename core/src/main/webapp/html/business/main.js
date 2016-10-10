@@ -160,8 +160,10 @@ function newTreeDiagram() {
 			var bid = node.data && node.data.business && node.data.business.id;
 			
 			$.ajax('/business/delete.htm?id='+bid).done(function(result,status){
-				$("#refreshMainLink").simulate("click");
+				//$("#refreshMainLink").simulate("click");
 			});
+			
+			myDiagram.model.removeNodeData(node.data);
 		}
 	},new go.Binding("visible", "", _.isMetadata).ofObject()));
 	

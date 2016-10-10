@@ -199,7 +199,7 @@
 			$("#javaScript").val(flow.javaScript);
 			$("#ajax").val(flow.ajax);
 			
-			$("#previewFlowLink").prop("href","/business/business.htm?bid="+business.id+"&fid="+flow.id);
+			$("#previewFlowLink").prop("href","/business/business.htm?bid="+business.id+"&fid="+flow.step);
 		}
 		
 		function deleteBusiness(){

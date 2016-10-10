@@ -562,7 +562,7 @@ function FormTable(){
 		
 		ltd.text(_.readLabel(opts));
 		if(_.isGroup(opts)){
-			_.append(opts);
+			_.append(etd,opts);
 		}else if(_.isList(opts)){
 			var listTable = $("<table class='tableList' cellpadding='0' cellspacing='1' />").appendTo(etd);
 			var tr = $("<tr />").appendTo(listTable);
@@ -616,7 +616,7 @@ function FormTable(){
 	};
 	
 	this.isPreLabel = function(opts){
-		if(opts.label && utils.isString(opts.label)){
+		if(opts && opts.label && utils.isString(opts.label)){
 			var start = opts.label.slice(0,1);
 			return !(start === '?');
 		}
