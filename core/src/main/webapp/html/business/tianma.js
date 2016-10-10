@@ -529,7 +529,7 @@ function FormTable(){
 	var form;
 	
 	this.init = function(options){
-		_.form = $('<form action="/business/business2.htm" method="post" />');
+		_.form = $('<form action="/business/business.htm" method="post" />');
 		_.form.attr("id",options.id);
 		
 		_.newTable();

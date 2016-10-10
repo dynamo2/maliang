@@ -11,6 +11,13 @@
 		<script src="../../js/go.js"></script>
 		<script src="../../js/jquery.layout-latest.js"></script>
 		
+		<!-- wysiwyg -->
+		<script src="../js/wysiwyg/wysiwyg.js"></script>
+		<script src="../js/wysiwyg/wysiwyg-editor.js"></script>
+		<script src="../js/wysiwyg/config.js"></script>
+		<link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.min.css">
+		<link href="../style/wysiwyg/wysiwyg-editor.css" rel="stylesheet" type="text/css"/>
+		
 		
 		<!-- tianma business start -->
 		<script src="../js/tianma/component.js"></script>
@@ -248,6 +255,9 @@
 				html:true,
 				autoOpen: false,
 				buttons: {
+					"Read":function(){
+						readChildrenData();
+					},
 					"Save": function(){
 						readFields();
 						

@@ -156,7 +156,12 @@ function newTreeDiagram() {
 		}
 	}), G_Make("ContextMenuButton", _.menuText("删除页面"), {
 		click : function(e, obj) {
-			alert("删除页面");
+			var node = obj.diagram.selection.first();
+			var bid = node.data && node.data.business && node.data.business.id;
+			
+			$.ajax('/business/delete.htm?id='+bid).done(function(result,status){
+				$("#refreshMainLink").simulate("click");
+			});
 		}
 	},new go.Binding("visible", "", _.isMetadata).ofObject()));
 	

@@ -10,6 +10,7 @@
 		<script src="../../js/jquery-ui.min.js"></script>
 		<script src="../../js/go.js"></script>
 		<script src="../../js/jquery.layout-latest.js"></script>
+		<script src="../../js/jquery.simulate.js"></script>
 		
 		<!-- tianma -->
 		<script src="../js/tianma/component.js"></script>
@@ -30,6 +31,7 @@
 			<a href="/metadata/main.htm">对象模型</a>&nbsp;&nbsp;
 			<a href="/business/main.htm">业务</a>&nbsp;&nbsp;
 			<a href="/uctype/main.htm">自定义类型</a>
+			<a style="display:none;" id="refreshMainLink" href="/business/main.htm" target="_top">刷新</a>
 		</div>
 		<div class="ui-layout-center">
 			<div id="businessPanel">

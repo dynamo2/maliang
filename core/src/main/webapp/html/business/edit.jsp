@@ -8,6 +8,7 @@
         <script src="../js/angular.js"></script>
 		<script src="../js/jquery-2.1.3.min.js"></script>
 		<script src="../js/jquery-ui.min.js"></script>
+		<script src="../js/jquery.simulate.js"></script>
 		
 		<!-- tianma -->
 		<script src="../js/tianma/component.js"></script>
@@ -65,6 +66,9 @@
 			
 			$("#name").val(business.name);
 			$("#uniqueCode").val(business.uniqueCode);
+			
+			//预览
+			$("#previewLink").attr("href","/business/business.htm?bid="+business.id);
 
 			basicEditerDialog = $("#basicEditerDialog").dialog({
 				autoOpen: false,
@@ -194,6 +198,14 @@
 			$("#requestType").val(flow.requestType);
 			$("#javaScript").val(flow.javaScript);
 			$("#ajax").val(flow.ajax);
+			
+			$("#previewFlowLink").prop("href","/business/business.htm?bid="+business.id+"&fid="+flow.id);
+		}
+		
+		function deleteBusiness(){
+			$.ajax('/business/delete.htm?id='+business.id).done(function(result,status){
+				$("#refreshMainLink").simulate("click");
+			});
 		}
 		</script>
 		<div style="margin:20px;"><a href="list.htm">列表</a>&nbsp;&nbsp;&nbsp;&nbsp;<a href="edit.htm">新增</a></div>
@@ -201,6 +213,9 @@
 		<div class="title">
 			<label>Basic</label>
 			<input type="button" value="编辑" onclick="showBasicEditer();" />
+			<input type="button" value="删除" onclick="deleteBusiness();" />
+			<a style="display:none;" id="refreshMainLink" href="/business/main.htm" target="_top">刷新</a>
+			<a id="previewLink" href="" target="_blank">预览</a>
 		</div>
 		<div id="basicDiv">
 			<div>ID:<label id="idLabel"></label></div>
@@ -325,6 +340,7 @@
 					</ul>
 					<div id="stepDiv">
 						<input type="hidden" name="business.workflows.id" id="id" />
+						<p><a id="previewFlowLink" href="www.sohu.com" target="_blank">预览</a></p>
 						<div>
 							<label>step:</label>
 							<input type="text" name="business.workflows.step" id="step" value="" />
