@@ -2,12 +2,36 @@ package com.maliang.core.arithmetic.calculator;
 
 import org.bson.types.ObjectId;
 
+import com.maliang.core.arithmetic.exception.Continue;
 import com.maliang.core.arithmetic.node.Operator;
 import com.maliang.core.model.UCType;
 import com.maliang.core.model.UCValue;
 
 
 public class UCTypeCalculator {
+	public static UCValue calculate(Object o1,Object o2,Operator operator){
+		UCValue x = null;
+		UCValue y = null;
+		if(o1 instanceof UCValue){
+			x = (UCValue)o1;
+		}
+		if(o2 instanceof UCValue){
+			y = (UCValue)o2;
+		}
+		
+		if(x == null && y == null)return null;
+		
+		if(x == null){
+			x = toUCValue(o1,y.getType());
+		}
+		
+		if(y == null){
+			y = toUCValue(o2,x.getType());
+		}
+		
+		return calculate(x,y,operator);
+	}
+
 	public static UCValue calculate(UCValue x,UCValue y,Operator operator){
 		if(isSameUCType(x.getType(),y.getType())){
 			UCType t = x.getType();
@@ -21,15 +45,19 @@ public class UCTypeCalculator {
 				v = substruction(v1,v2);
 			}
 			
-			String r = t.toMaxUnit(v);
-			UCValue val = new UCValue();
-			val.setType(t);
-			val.setValue(r);
-			
-			return val;
+			return new UCValue(t.toMaxUnit(v),t);
 		}
 
 		return null;
+	}
+	
+	private static UCValue toUCValue(Object o,UCType type){
+		Object v = UCValue.parse(o,type);
+		if(v instanceof UCValue){
+			return (UCValue)v;
+		}else {
+			throw new Continue("Continue");
+		}
 	}
 	
 	private static int plus(int x,int y){
