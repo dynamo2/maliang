@@ -19,6 +19,7 @@ import net.sf.json.processors.JsonValueProcessor;
 
 import org.bson.types.ObjectId;
 
+import com.maliang.core.dao.BusinessDao;
 import com.maliang.core.dao.ObjectMetadataDao;
 import com.maliang.core.dao.UCTypeDao;
 import com.maliang.core.model.Mapped;
@@ -29,6 +30,7 @@ public class BasicController {
 	static JsonConfig defaultJsonConfig = new JsonConfig();
 	
 	protected ObjectMetadataDao metadataDao = new ObjectMetadataDao();
+	protected BusinessDao businessDao = new BusinessDao();
 	protected UCTypeDao uctypeDao = new UCTypeDao();
 	
 	static {

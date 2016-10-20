@@ -108,7 +108,21 @@ function HtmlBuilder(){
 				.prop("checked",this.key == data.value)
 				.appendTo(radioSpan);
 		
-			$("<label />").text(this.label).appendTo(radioSpan);
+			if(utils.isString(this.label)){
+				$("<label />").text(this.label).appendTo(radioSpan);
+			}else {
+				var label = $("<span />").appendTo(radioSpan);
+				$.each(this.label,function(k,v){
+					if(k == 'html'){
+						label.html(v);
+					}else if(k == 'text'){
+						label.text(v);
+					}else {
+						label.prop(k,v);
+					}
+				});
+			}
+			
 		});
 		
 		return radioSpan;
@@ -122,7 +136,21 @@ function HtmlBuilder(){
 				.prop("checked",this.key == data.value)
 				.appendTo(span);
 		
-			$("<label />").text(this.label).appendTo(span);
+			//$("<label />").text(this.label).appendTo(span);
+			if(utils.isString(this.label)){
+				$("<label />").text(this.label).appendTo(radioSpan);
+			}else {
+				var label = $("<span />").appendTo(radioSpan);
+				$.each(this.label,function(k,v){
+					if(k == 'html'){
+						label.html(v);
+					}else if(k == 'text'){
+						label.text(v);
+					}else {
+						label.prop(k,v);
+					}
+				});
+			}
 		});
 		
 		return span;

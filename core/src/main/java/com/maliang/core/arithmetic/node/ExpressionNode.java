@@ -10,6 +10,7 @@ import com.maliang.core.arithmetic.calculator.DoubleCalculator;
 import com.maliang.core.arithmetic.calculator.IntegerCalculator;
 import com.maliang.core.arithmetic.calculator.LogicalCalculator;
 import com.maliang.core.arithmetic.calculator.UCTypeCalculator;
+import com.maliang.core.arithmetic.exception.Continue;
 import com.maliang.core.model.UCValue;
 
 public class ExpressionNode extends Node {
@@ -62,8 +63,10 @@ public class ExpressionNode extends Node {
 			return CompareCalculator.calculate(valueLeft, valueRight, operator);
 		}
 		
-		if(valueLeft instanceof UCValue && valueRight instanceof UCValue){
-			return UCTypeCalculator.calculate((UCValue)valueLeft, (UCValue)valueRight, operator);
+		if(valueLeft instanceof UCValue || valueRight instanceof UCValue){
+			try {
+				return UCTypeCalculator.calculate(valueLeft, valueRight, operator);
+			}catch(Continue e){}
 		}
 		
 		if(valueLeft instanceof Date){

@@ -45,8 +45,21 @@ public class CollectionDao extends BasicDao {
 		//str = "db.Cart.removeAll()";
 		
 		str = "db.Project.dailyProgressNotes.delete('576753b98f77751c91c432ce')";
-		Object v = AE.execute(str);
-		System.out.println(v);
+		
+		str = "db.Task.search()";
+		
+		CollectionDao dao = new CollectionDao();
+		Map map = new HashMap();
+		map.put("parentTask","576753b98f77751c91c432ce");
+		//DBCursor dc = dao.getDBCollection("Task").find(new BasicDBObject(map));
+		DBCursor dc = dao.getDBCollection("Task").find(null);
+		while(dc.hasNext()){
+			System.out.println("***************************");
+			System.out.println(dc.next());
+		}
+		
+		//Object v = AE.execute(str);
+		//System.out.println(v);
 	}
 
 	// public

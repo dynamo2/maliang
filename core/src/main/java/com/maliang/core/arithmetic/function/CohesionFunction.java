@@ -20,8 +20,7 @@ public class CohesionFunction {
 					+ "{product:'SK2肌因光蕴环采钻白精华露',warehouse:'仓库1',brand:'sk2',num:100},"
 					+ "{product:'神仙水',warehouse:'仓库2',brand:'sk2',num:200},"
 					+ "{product:'全能乳液',warehouse:'仓库2',brand:'sk2',num:200},"
-					+ "{product:'彩虹水',warehouse:'仓库2',brand:'ba',num:200}"
-			+ "]}";
+					+ "{product:'彩虹水',warehouse:'仓库2',brand:'ba',num:200}]}";
 		
 		Map params = (Map)AE.execute(s);
 		s = "orders.cohesion({id:['warehouse','brand']})";

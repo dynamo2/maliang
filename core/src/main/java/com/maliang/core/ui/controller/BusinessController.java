@@ -17,24 +17,74 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import com.maliang.core.arithmetic.AE;
 import com.maliang.core.arithmetic.ArithmeticExpression;
 import com.maliang.core.arithmetic.function.SessionFunction;
-import com.maliang.core.dao.BusinessDao;
+import com.maliang.core.dao.ObjectMetadataDao;
 import com.maliang.core.exception.TianmaException;
 import com.maliang.core.exception.TurnToPage;
 import com.maliang.core.model.Business;
+import com.maliang.core.model.FieldType;
+import com.maliang.core.model.ObjectField;
+import com.maliang.core.model.ObjectMetadata;
 import com.maliang.core.model.Workflow;
 import com.maliang.core.service.BusinessService;
 
 @Controller
 @RequestMapping(value = "business")
 public class BusinessController extends BasicController {
-	static BusinessDao businessDao = new BusinessDao();
-	static BusinessService businessService = new BusinessService();
+	
+	BusinessService businessService = new BusinessService();
 	static Map<String, Map<String, String>> CLASS_LABELS = new HashMap<String, Map<String, String>>();
 	static final String BUSINESS_LIST;
+	
+	
 
 	static {
 		BUSINESS_LIST = "{list:each(list){{" + "name:this.name,"
 				+ "id:this.id+''" + "}}}";
+	}
+	
+	public static void main(String[] args) {
+		ObjectMetadataDao omDao = new ObjectMetadataDao();
+		ObjectMetadata om = omDao.getByName("Project");
+		
+		String omName = om.getName().toLowerCase();		
+		String form = "['form','"+omName+"',[['$fid','','hidden',2],['$bid','','hidden',bid],";
+		for(ObjectField f : om.getFields()){
+			String type = "'text'";
+			if(FieldType.DATE.is(f.getType())){
+				type = "'date'";
+			}else if(FieldType.LINK_COLLECTION.is(f.getType())){
+				type = "['select',each("+f.getLinkedObject()+"){{key:this.id,label:this.name}}]";
+			}
+			
+			form += "['"+f.getName()+"','"+f.getLabel()+"',"+type+","+omName+"."+f.getName()+",'[n]'],";//f.getName()+","+f.getLabel()+",";
+		}
+		
+		form += "['$submit','','submit','保存','[n]']]]";
+		
+		String responce = "{title:'编辑"+om.getLabel()+"',json:[${NAV},"+form+"]}";
+		System.out.println(responce);
+		
+		
+		String editCode = "{addToParams({"+omName+":db."+om.getName()+".get(request.id)})}";
+		System.out.println(editCode);
+		
+		String saveCode = "addToParams({c:db."+om.getName()+".save(request."+omName+")})";
+		String saveResponce = "business({bid:bid,fid:3})";
+		System.out.println(saveCode);
+		System.out.println(saveResponce);
+		
+		String head = "[";
+		String tbody = "each("+omName+"s){[";
+		for(ObjectField f : om.getFields()){
+			head += "'"+f.getLabel()+"',";
+			tbody += "this."+f.getName()+",";
+		}
+		head += "'操作']";
+		tbody += "[['a','编辑',{id:this.id}],['a','库存',{id:this.id,fid:5}]]]}";
+		String tableList = "['tableList',"+head+","+tbody+"]";
+		String listResponce = "{title:'"+om.getLabel()+"列表',date:{bid:bid},json:[${SYS.NAV},${NAV},"+tableList+"]}";
+		System.out.println("============ List Responce ===============");
+		System.out.println(listResponce);
 	}
 
 	@RequestMapping(value = "main.htm")
@@ -49,6 +99,13 @@ public class BusinessController extends BasicController {
 
 		model.addAttribute("resultJson", resultJson);
 		return "/business/main";
+	}
+	
+	@RequestMapping(value = "delete.htm")
+	@ResponseBody
+	public String delete(String id) {
+		this.businessDao.remove(id);
+		return "删除业务： " + id;
 	}
 
 	@RequestMapping(value = "business.htm")

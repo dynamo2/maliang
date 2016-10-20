@@ -634,7 +634,7 @@ function showEditPanel(e,node){
 	editPropertiesTable(dataObject);
 	if(metadataModel.canHasFields(dataObject)){
 		editChildrenTable(dataObject.fields);
-		fieldsFromTab(dataObject.fields);
+		//fieldsFromTab(dataObject.fields);
 	}
 	
 	$("#editPanel").tabs("refresh");

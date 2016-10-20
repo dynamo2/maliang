@@ -43,6 +43,10 @@ public class Business extends MongodbModel {
 		}
 		
 		for(Workflow wf : this.workflows){
+			if(wf == null || wf.getStep() == null){
+				continue;
+			}
+			
 			if(wf.getStep() == step){
 				return wf;
 			}

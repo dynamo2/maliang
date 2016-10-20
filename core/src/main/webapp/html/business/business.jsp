@@ -121,8 +121,8 @@
 		function init(){
 			$("#dialog").dialog({
 				resizable: false,
-				height:500,
-				width:500,
+				height:900,
+				width:1000,
 				autoOpen: false,
 				buttons: {
 					Cancel: function() {
@@ -445,6 +445,13 @@
 				});
 			});
 			
+			//table properties
+			if(json.length >= 4){
+				$.each(json[3],function(k,v){
+					table.prop(k,v);
+				});
+			}
+			
 			return table;
 		}
 		
@@ -514,9 +521,10 @@
 				if($.isArray(source) && source.length >= 3){
 					var obj = source[2];
 					if($.isArray(obj)){
-						$.each(obj,function(){
-							var input = readInput(this,prefix);
-							inputs.push(input);
+						$.each(obj,function(k,val){
+							if(val){
+								inputs.push(readInput(val,prefix));
+							}
 						});
 					}
 				}
@@ -537,8 +545,8 @@
 					if($.isArray(obj[0])){
 						input = [];
 						
-						$.each(obj,function(){
-							input.push(readInput(this,prefix));
+						$.each(obj,function(k,val){
+							input.push(readInput(val,prefix));
 						});
 					}else {
 						input.newLine = _.newLine();

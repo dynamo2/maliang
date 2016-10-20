@@ -29,41 +29,6 @@ public class BusinessDao extends ModelDao<Business> {
 		super(COLLECTION_NAME,Business.class);
 	}
 
-	/*
-	public void save(Business om) {
-		BasicDBObject doc = encode(om);
-		this.dbColl.save(doc);
-		
-		if(om.getId() == null){
-			om.setId(doc.getObjectId("_id"));
-		}
-	}
-	
-	public Business getByID(String oid){
-		DBCursor cursor = this.dbColl.find(this.getObjectId(oid));
-		while(cursor.hasNext()){
-			return this.decode((BasicDBObject)cursor.next(), Business.class) ;
-		}
-		
-		return null;
-	}
-	
-	public List<Business> list(){
-		DBCursor cursor = this.dbColl.find();
-		
-		return readCursor(cursor,Business.class);
-	}
-	
-	public void remove(String oid){
-		this.dbColl.remove(this.getObjectId(oid));
-	}
-	
-	public List<DBObject> find(BasicDBObject query){
-		DBCursor cursor = this.dbColl.find(query);
-		return cursor.toArray();
-	}
-	*/
-	
 	
 	public Workflow getWorkFlowById(String oid){
 		List<DBObject> pipe = new ArrayList<DBObject>();
@@ -122,6 +87,12 @@ public class BusinessDao extends ModelDao<Business> {
 	
 	public static void main(String[] args) {
 		BusinessDao dao = new BusinessDao();
+		
+		String oid = "57625da68f77dee05ba06ba1";
+		DBCursor cursor = dao.dbColl.find(dao.getObjectId(oid));
+		while(cursor.hasNext()){
+			System.out.println(cursor.next());
+		}
 		
 //		List<DBObject> pipe = new ArrayList<DBObject>();
 //		//pipe.add(new BasicDBObject("$match",new BasicDBObject("work_flow._id",new ObjectId("57970a3e7b591da2d1fa854e"))));
@@ -215,6 +186,43 @@ public class BusinessDao extends ModelDao<Business> {
  * 
  */
 	}
+	
+
+	/*
+	public void save(Business om) {
+		BasicDBObject doc = encode(om);
+		this.dbColl.save(doc);
+		
+		if(om.getId() == null){
+			om.setId(doc.getObjectId("_id"));
+		}
+	}
+	
+	public Business getByID(String oid){
+		DBCursor cursor = this.dbColl.find(this.getObjectId(oid));
+		while(cursor.hasNext()){
+			return this.decode((BasicDBObject)cursor.next(), Business.class) ;
+		}
+		
+		return null;
+	}
+	
+	public List<Business> list(){
+		DBCursor cursor = this.dbColl.find();
+		
+		return readCursor(cursor,Business.class);
+	}
+	
+	public void remove(String oid){
+		this.dbColl.remove(this.getObjectId(oid));
+	}
+	
+	public List<DBObject> find(BasicDBObject query){
+		DBCursor cursor = this.dbColl.find(query);
+		return cursor.toArray();
+	}
+	*/
+	
 
 }
  

@@ -144,6 +144,7 @@ public class ObjectMetadataController extends BasicController {
 		
 		System.out.println("save id : " + reqMetadata.getId());
 		
+		System.out.println("reqMetadata  : " + reqMetadata);
 		metadataDao.save(reqMetadata);
 		
 		return jsonEditCode2(reqMetadata);
