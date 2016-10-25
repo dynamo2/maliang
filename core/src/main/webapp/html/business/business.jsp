@@ -595,7 +595,7 @@
 					topts.name = type[0];
 					
 					var list = type.length >= 2?type[1]:null;
-					if(topts.name == 'select' || topts.name == 'radio'){
+					if(topts.name == 'select' || topts.name == 'radio' || topts.name == 'checkbox'){
 						topts.options = list;
 						
 						if(type.length >= 3 && $.isPlainObject(type[2])){

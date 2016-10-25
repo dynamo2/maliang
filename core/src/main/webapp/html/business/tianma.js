@@ -132,15 +132,16 @@ function HtmlBuilder(){
 		var span = $("<span />");
 		
 		$.each(data.options,function(){
-			builder.newInput(data).prop("type","checkbox")
+			builder.newInput(data).val(this.key)
+				.prop("type","checkbox")
 				.prop("checked",this.key == data.value)
 				.appendTo(span);
 		
 			//$("<label />").text(this.label).appendTo(span);
 			if(utils.isString(this.label)){
-				$("<label />").text(this.label).appendTo(radioSpan);
+				$("<label />").text(this.label).appendTo(span);
 			}else {
-				var label = $("<span />").appendTo(radioSpan);
+				var label = $("<span />").appendTo(span);
 				$.each(this.label,function(k,v){
 					if(k == 'html'){
 						label.html(v);
@@ -698,7 +699,7 @@ function FormTable(){
 	};
 	
 	this.canSelect = function(opts){
-		return _.isType(opts,'select') || _.isType(opts,'radio');
+		return _.isType(opts,'select') || _.isType(opts,'radio') || _.isType(opts,'checkbox');
 	};
 	
 	this.isType = function(opts,tname){

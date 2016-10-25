@@ -59,7 +59,10 @@ public class BasicDao extends AbstractDao{
 	}
 	
 	public List<Map<String,Object>> findByMap(Map<String,Object> query,String collName){
-		return this.find(build(query), collName);
+		BasicDBObject bq = build(query);
+		
+		System.out.println("**************  b query : " + bq);
+		return this.find(bq, collName);
 	}
 	
 	public List<Map<String,Object>> find(BasicDBObject query,String collName){
@@ -404,6 +407,9 @@ public class BasicDao extends AbstractDao{
 	}
 	
 	public Object toDBModel(Object fieldValue,ObjectField field){
+		if(fieldValue instanceof UCValue){
+			fieldValue = ((UCValue)fieldValue).getValue();
+		}
 		
 		if(FieldType.LINK_COLLECTION.is(field.getType())){
 			if(fieldValue instanceof Map){
@@ -683,13 +689,15 @@ public class BasicDao extends AbstractDao{
 					}
 				}
 			}else if(field.getType() >= 100){
-				UCType type = this.uctypeDao.getByKey(field.getType());
-				UCValue val = new UCValue();
-				val.setValue(fieldValue.toString());
-				val.setType(type);
-				
-				fieldValue = val;
-				dataMap.put(fieldName, fieldValue);
+				if(fieldValue != null){
+					UCType type = this.uctypeDao.getByKey(field.getType());
+					UCValue val = new UCValue();
+					val.setValue(fieldValue.toString());
+					val.setType(type);
+					
+					fieldValue = val;
+					dataMap.put(fieldName, fieldValue);
+				}
 			}
 		}
 	}

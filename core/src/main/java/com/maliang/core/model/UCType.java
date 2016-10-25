@@ -50,6 +50,12 @@ public class UCType extends MongodbModel {
 	}
 	
 	public String toMaxUnit(int nub){
+		boolean negative = false;
+		if(nub < 0){
+			nub = -nub;
+			negative = true;
+		}
+		
 		StringBuffer sub = new StringBuffer();
 		for(int i = this.factors.size()-1; i >= 0 && nub > 0; i--){
 			int fa = this.factors.get(i);
@@ -64,6 +70,10 @@ public class UCType extends MongodbModel {
 		
 		if(nub > 0){
 			insert(sub,nub,units.get(0));
+		}
+		
+		if(negative){
+			sub.insert(0,"-");
 		}
 		
 		return sub.toString();
@@ -82,37 +92,34 @@ public class UCType extends MongodbModel {
 			return null;
 		}
 		
+		val = val.trim();
+		boolean negative = false;
+		if(val.charAt(0) == '-'){
+			negative = true;
+			val = val.substring(1).trim();
+		}
+		
 		int nub = 0;
 		if(val.contains(" ")){
 			String[] vals = val.split(" ");
 			for(String v : vals){
+				if(v.isEmpty())continue;
+				
 				nub += toSingleMU(v);
 			}
 		}else {
 			nub = toSingleMU(val);
 		}
+		
+		if(negative){
+			nub = -nub;
+		}
 		return nub;
 	}
 	
 	private Integer toSingleMU(String val){
-		if(!this.isValid(val)){
-			return null;
-		}
-		
 		val = val.trim();
-		String[] vals = new String[2];
-		
-		StringBuffer sbf = new StringBuffer();
-		boolean isNumber = true;
-		for(char c:val.toCharArray()){
-			if((c<48 || c > 57) && isNumber){
-				vals[0] = sbf.toString();
-				isNumber = false;
-				sbf.delete(0,sbf.length());
-			}
-			sbf.append(c);
-		}
-		vals[1] = sbf.toString();
+		String[] vals = separateUnit(val);
 		
 		int nub = Integer.parseInt(vals[0]);
 		int index = units.indexOf(vals[1]);
@@ -124,23 +131,86 @@ public class UCType extends MongodbModel {
 	}
 	
 	public boolean isValid(String s){
-		if(s == null || s.isEmpty())return false;
+		if(s == null || s.trim().isEmpty())return false;
 		
+		/**
+		 * 字符串是否以数字开头（忽略空格）
+		 */
 		s = s.trim();
 		int first = (int)s.charAt(0);
+		if(first == '-'){
+			s = s.substring(1).trim();
+			first = (int)s.charAt(0);
+		}
+		if(first < 49 && first > 57)return false;
 		
-		return first >= 49 && first <= 57;
+		String[] vals = null;
+		if(s.contains(" ")){
+			vals = s.split(" ");
+		}else {
+			vals = new String[]{s};
+		}
+		
+		/**
+		 * 遍历并检查每个单元：
+		 * 1. 是否以数字开头
+		 * 2. 单位是否定义
+		 * 3. 单位顺序是否正确
+		 * **/
+		int lastIndex = -1;
+		for(String v : vals){
+			v = v.trim();
+			if(v.isEmpty()) continue;
+			
+			String[] val = separateUnit(v);
+			try {
+				Integer.parseInt(val[0]);
+			}catch(Exception e){
+				return false;
+			}
+			
+			//Check unit
+			int index = units.indexOf(val[1]);
+			if(index <= lastIndex)return false;
+			
+			lastIndex = index;
+		}
+		
+		return true;
+	}
+	
+	private String[] separateUnit(String s){
+		String[] val = new String[2];
+		StringBuffer sbf = new StringBuffer();
+		boolean isNumber = true;
+		for(char c:s.toCharArray()){
+			if((c<48 || c > 57) && isNumber){
+				val[0] = sbf.toString();
+				isNumber = false;
+				sbf.delete(0,sbf.length());
+			}
+			sbf.append(c);
+		}
+		val[1] = sbf.toString();
+		return val;
 	}
 	
 	public static void main(String[] args) {
 		String s = "11a";
 		
-		s = "2936a 1b 3c 1d 2e";
+		s = "   -  2936a    1b    3c 1d 2e";
 		UCType uc = new UCType();
-		int nub = uc.toMinUnit(s);
 		
-		System.out.println("nub : " + nub);
+		int v = 76576876; 
+		System.out.println(uc.toMaxUnit(v));
+		System.out.println(uc.toMaxUnit(uc.toMinUnit(s)));
 		
-		System.out.println(uc.toMaxUnit(8878934));
+		//first = (int)s.charAt(0);
+		
+		//int nub = uc.toMinUnit(s);
+		
+		//System.out.println("nub : " + nub);
+		
+		//System.out.println(uc.toMaxUnit(8878934));
 	}
 }

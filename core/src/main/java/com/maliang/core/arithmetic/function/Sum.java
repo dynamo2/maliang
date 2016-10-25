@@ -1,11 +1,13 @@
 package com.maliang.core.arithmetic.function;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.maliang.core.arithmetic.calculator.UCTypeCalculator;
+import com.maliang.core.model.UCType;
+import com.maliang.core.model.UCValue;
 import com.maliang.core.util.Utils;
 
 public class Sum {
@@ -14,6 +16,7 @@ public class Sum {
 	private static final int TYPE_DOUBLE = 3;
 	private static final int TYPE_FLOAT = 4;
 	private static final int TYPE_MAP = 5;
+	private static final int TYPE_UCType = 6;
 	private static final int TYPE_UNKNOW = -1;
 	
 	public static Object execute(Function function ,Map<String,Object> params){
@@ -62,8 +65,12 @@ public class Sum {
 	}
 	
 	private static Object doSum(Object...datas){
-		int type = checkDataType(datas);
+		UCValue[] vals = toUCValue(datas);
+		if(vals != null){
+			return UCTypeCalculator.doSum(vals);
+		}
 		
+		int type = checkDataType(datas);
 		if(TYPE_STRING == type){
 			return sumString(datas);
 		}else if(TYPE_DOUBLE == type){
@@ -83,8 +90,8 @@ public class Sum {
 		boolean isInt = false;
 		boolean isMap = false;
 		
-		if(data instanceof Object[]){
-			for(Object o : (Object[])data){
+		if(Utils.isArray(data)){
+			for(Object o : Utils.toArray(data)){
 				if(o == null){
 					continue;
 				}
@@ -116,6 +123,37 @@ public class Sum {
 		}
 		
 		return TYPE_UNKNOW;
+	}
+	
+	private static UCValue[] toUCValue(Object[] datas){
+		UCType uct = null;
+		for(Object o : datas){
+			if(o instanceof UCValue){
+				UCValue u = (UCValue)o;
+				if(uct == null){
+					uct = u.getType();
+				}else if(!UCTypeCalculator.isSameUCType(uct, u.getType())){
+					return null;
+				}
+			}
+		}
+		
+		
+		if(uct == null)return null;
+		
+		UCValue[] vals = new UCValue[datas.length];
+		int idx = 0;
+		for(Object o : datas){
+			if(!(o instanceof UCValue)){
+				o = UCValue.parse(o, uct);
+				if(!(o instanceof UCValue)){
+					return null;
+				}
+			}
+			vals[idx++] = (UCValue)o;
+		}
+		
+		return vals;
 	}
 
 	private static Object[] sumObject(Object[] datas,Function fun,Map<String,Object> params){

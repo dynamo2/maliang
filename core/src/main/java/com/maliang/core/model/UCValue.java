@@ -12,6 +12,11 @@ public class UCValue {
 		this.value = v;
 		this.type = t;
 	}
+	
+	public UCValue(int intVal,UCType t){
+		this.value = t.toMaxUnit(intVal);
+		this.type = t;
+	}
 
 	public String getValue() {
 		return value;
@@ -30,6 +35,8 @@ public class UCValue {
 		if(this.minUnitVal == null){
 			this.minUnitVal = this.type.toMinUnit(value);
 		}
+		
+		if(this.minUnitVal == null)return 0;
 		
 		return this.minUnitVal;
 	}

@@ -34,21 +34,27 @@ public class UCTypeCalculator {
 
 	public static UCValue calculate(UCValue x,UCValue y,Operator operator){
 		if(isSameUCType(x.getType(),y.getType())){
-			UCType t = x.getType();
-			int v1 = t.toMinUnit(x.getValue());
-			int v2 = t.toMinUnit(y.getValue());
-			
-			Integer v = null;
 			if(operator.isPlus()){
-				v = plus(v1,v2);
+				return doSum(new UCValue[]{x,y});
 			}else if(operator.isSubstruction()){
-				v = substruction(v1,v2);
+				return substruction(x,y);
 			}
 			
-			return new UCValue(t.toMaxUnit(v),t);
+			return null;
 		}
 
 		return null;
+	}
+	
+	public static UCValue doSum(UCValue[] vals){
+		int sum = 0;
+		UCType t = null;
+		for(UCValue v : vals){
+			if(t == null)t = v.getType();
+			sum += v.toInt();
+		}
+		
+		return new UCValue(sum,t);
 	}
 	
 	private static UCValue toUCValue(Object o,UCType type){
@@ -64,11 +70,11 @@ public class UCTypeCalculator {
 		return x+y;
 	}
 	
-	private static int substruction(int x,int y){
-		return x-y;
+	private static UCValue substruction(UCValue x,UCValue y){
+		return new UCValue(x.toInt()-y.toInt(),x.getType());
 	}
 	
-	private static boolean isSameUCType(UCType t1,UCType t2){
+	public static boolean isSameUCType(UCType t1,UCType t2){
 		if(t1 == null || t2 == null || t1.getId() == null || t2.getId() == null){
 			return false;
 		}

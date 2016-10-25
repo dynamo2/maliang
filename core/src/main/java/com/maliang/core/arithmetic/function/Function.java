@@ -114,6 +114,14 @@ public class Function {
 			return ListFunction.execute(this, params);
 		}
 		
+		if("isList".equalsIgnoreCase(key)){
+			return ListFunction.isList(this, params);
+		}
+		
+		if("toList".equalsIgnoreCase(key)){
+			return ListFunction.toList(this, params);
+		}
+		
 		if("print".equalsIgnoreCase(key)){
 			System.out.println(this.executeExpression(params));
 			return null;
@@ -166,6 +174,14 @@ public class Function {
 		
 		if("int".equalsIgnoreCase(key) || "Integer".equalsIgnoreCase(key)){
 			return TypeFunction.intExecute(this, params);
+		}
+		
+		if("long".equalsIgnoreCase(key) || "Long".equalsIgnoreCase(key)){
+			return TypeFunction.longExecute(this, params);
+		}
+		
+		if("short".equalsIgnoreCase(key) || "Short".equalsIgnoreCase(key)){
+			return TypeFunction.shortExecute(this, params);
 		}
 		
 		if("double".equalsIgnoreCase(key)){

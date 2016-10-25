@@ -1,12 +1,19 @@
 package com.maliang.core.util;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 public class Utils {
+	private final static List<Object> NULL_LIST = new ArrayList<Object>();
+	
+	static {
+		NULL_LIST.add(null);
+	}
+	
 	public static boolean isArray(Object ob){
 		return ob != null && ((ob instanceof Collection) || (ob instanceof Object[]));
 	}
@@ -70,6 +77,26 @@ public class Utils {
 		}
 		
 		return null;
+	}
+	
+	public static List<Object> toList(Object ob){
+		Object[] obs = toArray(ob);
+		if(isEmpty(obs))return null;
+		
+		return Arrays.asList(obs);
+	}
+	
+	public static List<Object> clearNull(List<Object> list){
+		if(isEmpty(list))return list;
+		
+		List<Object> nList = new ArrayList<Object>();
+		for(Object o : list){
+			if(o != null){
+				nList.add(o);
+			}
+		}
+		
+		return nList;
 	}
 	
 	public static boolean isEmpty(Object o){

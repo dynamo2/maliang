@@ -1,12 +1,14 @@
 package com.maliang.core.arithmetic.function;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
 import com.maliang.core.arithmetic.ArithmeticExpression;
 import com.maliang.core.arithmetic.node.Parentheses;
+import com.maliang.core.util.Utils;
 
 public class ListFunction {
 	public static Object execute(Function function ,Map<String,Object> params){
@@ -37,6 +39,31 @@ public class ListFunction {
 		}
 		
 		return ((Object[])keyData)[index];
+	}
+	
+	public static boolean isList(Function function ,Map<String,Object> params){
+		Object value = ArithmeticExpression.execute(function.getKey(), params);
+		if(value == null){
+			value = function.executeExpression(params);
+		}
+		
+		return Utils.isArray(value);
+	}
+	
+	public static List<Object> toList(Function function ,Map<String,Object> params){
+		Object value = ArithmeticExpression.execute(function.getKey(), params);
+		if(value == null){
+			value = function.executeExpression(params);
+		}
+		
+		if(value == null)return null;
+		if(value instanceof List)return (List)value;
+		if(value instanceof Object[])return Arrays.asList((Object[])value);
+		
+		List<Object> l = new ArrayList<Object>();
+		l.add(value);
+		
+		return l;
 	}
 }
 

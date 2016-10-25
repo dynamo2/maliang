@@ -109,7 +109,7 @@ public class BusinessController extends BasicController {
 	}
 
 	@RequestMapping(value = "business.htm")
-	public String business2(Model model, HttpServletRequest request) {
+	public String business(Model model, HttpServletRequest request) {
 		try {
 			Workflow workFlow = readWorkFlow(request);
 			String resultJson = executeWorkFlow(workFlow, request);
@@ -142,7 +142,14 @@ public class BusinessController extends BasicController {
 		}
 
 		for (String reqName : reqNames) {
-			Object reqValue = ((JSONArray) json.get(reqName)).get(0);
+			JSONArray ja = (JSONArray) json.get(reqName);
+			
+			Object reqValue = null;
+			if(ja.size() == 1){
+				reqValue = ((JSONArray) json.get(reqName)).get(0);
+			}else if(ja.size() > 1){
+				reqValue = ja;
+			}
 			if (reqValue == null)
 				continue;
 
