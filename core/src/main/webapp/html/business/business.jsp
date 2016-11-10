@@ -188,12 +188,7 @@
 				appendToDialog(json);
 				return null;
 			}else if(type === 'form'){
-				var options = readForm(json);
-				pt(ts(options));
-				var ft = new FormTable();
-				ft.init(options);
-				
-				return ft.form;
+				return Form(json);
 			}else if(type === 'a'){
 				return buildA(json);
 			}else if(type === 'img'){
@@ -206,8 +201,12 @@
 				return buildSpan(json);
 			}else if(type === 'input'){
 				return buildInput(json);
+			}else if(type === 'checkbox'){
+				return buildCheckbox(json);
 			}else if(type === 'bind'){
 				return buildBind(json);
+			}else if(type === 'ajax'){
+				return buildAjax(json);
 			}
 		}
 
@@ -248,14 +247,26 @@
 			$("#dialog").dialog("open");
 		}
 		
-		function ajax(data,doneFun){
+		function ajax(reqData,doneFun){
+			if(reqData && !reqData.bid){
+				if(data && data.bid){
+					reqData.bid = data.bid;
+				}
+			}
+			
+			if(reqData && !reqData.fid){
+				if(data && data.fid){
+					reqData.fid = data.fid;
+				}
+			}
+			
 			$.ajax('/business/ajax.htm',{
-				data:data,
+				data:reqData,
 				dataType:'json',
 				type:'POST',
 				async:false
 			}).done(doneFun?doneFun:function(result,status){
-				var js = '/business/js.htm?bid='+data.bid+'&fid='+data.fid;
+				var js = '/business/js.htm?bid='+reqData.bid+'&fid='+reqData.fid;
 				
 				$.getScript(js,function(){
 					if(result && result.json){
@@ -272,17 +283,31 @@
 			ajax(reqDatas,doneFun);
 		}
 		
-		function readFormDatas(form){
+		function readFormDatas(form) {
 			var inputs = form.find(":input");
-			
+
 			var reqDatas = {};
-			$.each(inputs,function(){
-				if($(this).attr("type") == "radio"){
-					if(!this.checked){
+			$.each(inputs, function() {
+				if ($(this).attr("type") == "radio" 
+						|| $(this).attr("type") == "checkbox") {
+					if (!this.checked) {
 						return;
 					}
 				}
-				reqDatas[$(this).attr("name")] = $(this).val();
+				
+				var key = $(this).attr("name");
+				var oldVal = reqDatas[key];
+				if(reqDatas[key]){
+					var val = reqDatas[key];
+					
+					if(!$.isArray(val)){
+						val = [val];
+						reqDatas[key] = val;
+					}
+					val.push($(this).val());
+				}else {
+					reqDatas[key] = $(this).val();
+				}
 			});
 
 			return reqDatas;
@@ -291,12 +316,65 @@
 		function addChildren(parent,json){
 			if($.isArray(json)){
 				parent.append(build(json));
-			}else if($.isPlainObject(json)){
-				parent.html(json.html);
-			}else {
+			}else if(utils.isString(json)){
 				parent.text(json);
+			}else if($.isPlainObject(json)){
+				if(json.bind){
+					toBind(parent,json.bind);
+				}
+				
+				if(json.ajax){
+					var key = 'json';
+					if(json.bind){
+						key = json.bind;
+					}
+					
+					ajax(json.ajax,function(result,status){
+						parent.append(build(result[key]));
+					});
+				}
+				
+				var opts = utils.copy(json,{},['bind','load']);
+				setHtmlProps(parent,opts);
 			}
+			
 			return parent;
+		}
+		
+		function setHtmlProps(element,opts){
+			if(opts.html){
+				element.append($(opts.html));
+			}
+			if(opts.text){
+				element.text(opts.text);
+			}
+			
+			/**
+			 ** read events
+			**/
+			var eveNames = ['click','mouseover','mouseout','change','focus'];
+			$.each(eveNames,function(){
+				var event = opts[this];
+				if(event){
+					utils.addEvent(element,this,event);
+				}
+			});
+			if(opts.events){
+				$.each(opts.events,function(k,v){
+					utils.addEvent(element,k,v);
+				});
+			}
+			
+			//剔除已经处理过的属性
+			var excludes = ['html','text','events'];
+			excludes = excludes.concat(eveNames);
+			opts = utils.copy(opts,{},excludes);
+			
+			if(!utils.isString(opts) && $.isPlainObject(opts)){
+				$.each(opts,function(k,v){
+					element.prop(k,v);
+				});
+			}
 		}
 		
 		function buildA(json){
@@ -335,6 +413,17 @@
 			
 			return input.attr("type",type).attr("name",name).val(val);
 		}
+		
+		function buildCheckbox(json){
+			if($.isArray(json) && json.length > 1){
+				var props = json[1];
+				
+				if($.isPlainObject(props)){
+					props.type = "checkbox";
+					return TM_formBuilder.newInputElement(props);
+				}
+			}
+		}
 
 		function buildButton(json){
 			var bnt = $("<input type='button' />");
@@ -371,6 +460,20 @@
 					addChildren(span,json[i]);
 				}
 			}
+			
+			return span;
+		}
+		
+		function buildAjax(json){
+			var span = $("<span />");
+			
+			ajax(json[1],function(result,statuc){
+				var key = 'json';
+				if(json.length >= 3){
+					key = json[2];
+				}
+				return span.append(build(result[key]));
+			});
 			
 			return span;
 		}
@@ -488,180 +591,9 @@
 			return table;
 		}
 		
-		function readForm(json){
-			var _ = this;
-			var source = json;
-			
-			var tag = 'form';
-			var htmlOption = {tag:'form'};
-			
-			var prefix = null;
-			var inputs = null;
-			
-			this.read = function(){
-				_.readHtmlOption();
-				_.readInputs();
-			};
-			
-			this.readHtmlOption = function(){
-				if($.isArray(source) && source.length >= 2){
-					var obj = source[1];
+		
 
-					if($.isPlainObject(obj)){
-						utils.copy(obj,htmlOption,null);
-					}else if(utils.isString(obj)){
-						htmlOption.id = obj+'.'+tag;
-						prefix = obj;
-					}
-				}
-			};
-			
-			this.readInputs = function(){
-				inputs = [];
-				if($.isArray(source) && source.length >= 3){
-					var obj = source[2];
-					if($.isArray(obj)){
-						$.each(obj,function(k,val){
-							if(val){
-								inputs.push(readInput(val,prefix));
-							}
-						});
-					}
-				}
-			};
-			
-			_.read();
-			htmlOption.inputs = inputs;
-			return htmlOption;
-		}
-
-		function readInput(opts,prefix){
-			var _ = this;
-			var input = {};
-			
-			this.read = function (){
-				var obj = opts;
-				if($.isArray(obj)){
-					if($.isArray(obj[0])){
-						input = [];
-						
-						$.each(obj,function(k,val){
-							input.push(readInput(val,prefix));
-						});
-					}else {
-						input.newLine = _.newLine();
-						input.name = _.readName();
-						input.label = _.readLabel();
-						input.type = _.readType();
-						input.value = _.readValue();
-						
-						var others = _.readOthers();
-						if(others){
-							input.events = _.readEvents(others);
-						}
-					}
-				}else if($.isPlainObject(obj)){
-					input = {
-							name:obj.name?obj.name:obj.n,
-							label:obj.label?obj.label:obj.l,
-							type:obj.type?obj.type:obj.t,
-							value:obj.value?obj.value:obj.v,
-							newLine:obj.newLine?obj.newLine:obj.nl
-					};
-				}
-			};
-			
-			this.readEvents = function(defOpts){
-				if(!defOpts)return EMPTY;
-				
-				var events = {};
-				var eventNames = ['change','click','dbclick','blur','focus'];
-				$.each(eventNames,function(){
-					if(defOpts[this]){
-						events[this] = defOpts[this];
-						defOpts[this] = EMPTY;
-					}
-				});
-				
-				return events;
-			};
-			
-			this.readType = function (){
-				var type = opts[2];
-				if(!type){
-					type = 'text';
-				}else if($.isArray(type)){
-					var topts = {};
-					topts.name = type[0];
-					
-					var list = type.length >= 2?type[1]:null;
-					if(topts.name == 'select' || topts.name == 'radio' || topts.name == 'checkbox'){
-						topts.options = list;
-						
-						if(type.length >= 3 && $.isPlainObject(type[2])){
-							var defOpts = type[2];
-							topts.events = _.readEvents(defOpts);
-							utils.copy(defOpts,topts,['options']);
-						}
-					}else if(topts.name == 'group'){
-						if($.isArray(list)){
-							topts.inputs = [];
-							$.each(list,function(){
-								topts.inputs.push(readInput(this,input.name));
-							});
-						}
-					}else if(topts.name == 'list'){
-						topts.header = type[1];
-						topts.inputs = [];
-						$.each(type[2],function(idx,val){
-							topts.inputs[idx] = [];
-							$.each(val,function(){
-								topts.inputs[idx].push(readInput(this,input.name));
-							});
-						});
-					}
-					
-					type = topts;
-				}
-				return type;
-			};
-			
-			this.readName = function (){
-				var name = opts[0];
-				if(name && name.slice(0,1) == '$'){
-					return name.slice(1);
-				}
-				
-				return prefix?prefix+'.'+name:name;
-			};
-			
-			this.readLabel = function (){
-				return opts[1];
-			};
-			
-			this.readValue = function (){
-				return opts[3];
-			};
-			
-			this.readOthers = function (){
-				if(opts.length >= 4){
-					return opts[4];
-				}
-				
-				return null;
-			};
-			
-			this.newLine = function (){
-				var last = opts[opts.length-1];
-				if(last == LINE_BREAK){
-					return opts.pop();
-				}
-				return opts[-1];
-			};
-			
-			_.read();
-			return input;
-		}
+		
 
 		function apt(str){
 			var txt = $("#print").text();
@@ -818,6 +750,29 @@
 			font-size:20px;
 			font-weight:bold;
 			color:red;
+		}
+		
+		.horizontal li {
+			float:left;
+		}
+		
+		.vertical li {
+			float:none;
+		}
+		
+		.ul-checkbox,
+		.ul-radio {
+			margin:0px;
+			padding:0px;
+		}
+		
+		.ul-checkbox li,
+		.ul-radio li {
+			border:0px;
+			margin:0px;
+			padding:0px;
+			list-style:none;
+			padding-top:5px;
 		}
 		</style>
 		

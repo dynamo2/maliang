@@ -47,3 +47,10 @@ function buildBind(json){
 	
 	return span;
 }
+
+function toBind(element,bindKey){
+	element.prop("id",bindKey);
+	appendToBind(bindKey);
+	
+	return element;
+}

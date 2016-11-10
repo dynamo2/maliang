@@ -19,6 +19,16 @@ function Utils(){
 		}
 		return toObj;
 	};
+	
+	this.addEvent = function(element,eveName,funs){
+		if(element && eveName && funs){
+			if(_.isString(funs)){
+				funs = eval(funs);
+			}
+			
+			element.on(eveName,funs);
+		}
+	};
 
 	this.hasName = function (names, n) {
 		if (!names)
