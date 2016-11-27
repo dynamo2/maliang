@@ -27,9 +27,14 @@ public class BusinessService {
 		
 		int fid = (Integer)MapHelper.readValue(params,"fid",-1);
 		Workflow flow = business.workFlow(fid);
+		readBlock(flow,business.getUniqueCode());
 		
 		ArithmeticExpression.execute(flow.getCode(), params);
 		
+		String type = (String)MapHelper.readValue(params,"type");
+		if("ajax".equalsIgnoreCase(type)){
+			return ArithmeticExpression.execute(flow.getAjax(), params);
+		}
 		return ArithmeticExpression.execute(flow.getResponse(), params);
 	}
 	

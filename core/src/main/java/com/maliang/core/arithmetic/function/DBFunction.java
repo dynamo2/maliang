@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 import com.maliang.core.arithmetic.AE;
 import com.maliang.core.service.CollectionService;
@@ -33,12 +34,24 @@ public class DBFunction {
 				return eq(function,params);
 			}
 			
+			if("like".equals(method)){
+				return like(function,params);
+			}
+			
 			if("and".equals(method)){
 				return and(function,params);
 			}
 			
 			if("or".equals(method)){
 				return or(function,params);
+			}
+			
+			if("match".equals(method)){
+				return match(function,params);
+			}
+			
+			if("aggregate".equals(method)){
+				return aggregate(function,params);
 			}
 			
 			return null;
@@ -82,6 +95,19 @@ public class DBFunction {
 		return queryMap(key,queryMap("$eq",value));
 	}
 	
+	private static Map like(Function function,Map<String,Object> params){
+		Map map = readMapValue(function,params);
+		if(map.isEmpty())return null;
+		
+		String key = map.keySet().iterator().next().toString();
+		Object value = map.get(key);
+		if(Utils.isEmpty(value))return null;
+		
+		Pattern pattern = Pattern.compile("^.*" + value+ ".*$", Pattern.CASE_INSENSITIVE); 
+		
+		return queryMap(key,pattern);
+	}
+	
 	private static Map and(Function fun,Map<String,Object> p){
 		List<Object> ands = readListValue(fun,p);
 		if(Utils.isEmpty(ands))return null;
@@ -94,6 +120,20 @@ public class DBFunction {
 		if(Utils.isEmpty(ors))return null;
 		
 		return queryMap("$or",ors);
+	}
+	
+	private static Map match(Function fun,Map<String,Object> params){
+		Object value = fun.executeExpression(params);
+		if(Utils.isEmpty(value))return null;
+		
+		return queryMap("$match",value);
+	}
+	
+	private static List<Object> aggregate(Function fun,Map<String,Object> params){
+		List<Object> aggs = readListValue(fun,params);
+		if(Utils.isEmpty(aggs))return null;
+		
+		return aggs;
 	}
 	
 	private static Map<String,Object> queryMap(String k,Object v){

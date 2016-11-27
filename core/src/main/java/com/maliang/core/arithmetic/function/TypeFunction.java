@@ -15,6 +15,7 @@ public class TypeFunction {
 	private static final int TYPE_LONG = 5;
 	private static final int TYPE_SHORT = 6;
 	private static final int TYPE_STRING = 7;
+	private static final int TYPE_CODE = 8;
 	
 	public static Object intExecute(Function function,Map<String,Object> params){
 		return doNumber(getOperandValue(function,params),TYPE_INT);
@@ -40,11 +41,15 @@ public class TypeFunction {
 		return doString(getOperandValue(function,params));
 	}
 	
+	public static Object codeExecute(Function function,Map<String,Object> params){
+		return doCode(getOperandValue(function,params));
+	}
+	
 	public static void main(String[] args) {
-		String s = "{types:['1','2','3',['5','6','7',[8,9,'10']],11,12]}";
+		String s = "{map:{types:['1',{t:11,t2:22},'2','3',['5','6','7',[8,9,'10','ee']],11,12]}}";
 		Map<String,Object> p = (Map<String,Object>)AE.execute(s);
 		
-		s = "types.long()";
+		s = "map.toCode()";
 		Object v = AE.execute(s,p);
 		System.out.println(v);
 		System.out.println(Utils.toArray(v)[0].getClass());
@@ -125,6 +130,61 @@ public class TypeFunction {
 		}catch(Exception e){
 			return null;
 		}
+	}
+	
+	private static Object doCode(Object value){
+		if(Utils.isArray(value)){
+			return doCode(Utils.toArray(value));
+		}
+		
+		if(value instanceof Map){
+			return doCode((Map<String,Object>)value);
+		}
+		
+		if(value instanceof String){
+			return "'"+value+"'";
+		}
+		
+		try {
+			return value.toString();
+		}catch(Exception e){
+			return null;
+		}
+	}
+	
+	private static String doCode(Object[] vals){
+		StringBuffer sbf = new StringBuffer();
+		sbf.append("[");
+		
+		int index = 0;
+		for(Object v : vals){
+			if(index++ > 0){
+				sbf.append(",");
+			}
+			
+			sbf.append(doCode(v));
+		}
+		sbf.append("]");
+		
+		return sbf.toString();
+	}
+	
+	private static String doCode(Map<String,Object> vals){
+		StringBuffer sbf = new StringBuffer();
+		sbf.append("{");
+		
+		int index = 0;
+		for(String k:vals.keySet()){
+			if(index++ > 0){
+				sbf.append(",");
+			}
+			sbf.append(k);
+			sbf.append(":");
+			sbf.append(doCode(vals.get(k)));
+		}
+		sbf.append("}");
+		
+		return sbf.toString();
 	}
 	
 //	private static Object floatValueOf(Object value){

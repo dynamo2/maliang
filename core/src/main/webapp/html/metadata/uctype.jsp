@@ -102,35 +102,6 @@
 			});
 		}
 		
-		function readFormDatas(form) {
-			var inputs = form.find(":input");
-
-			var reqDatas = {};
-			$.each(inputs, function() {
-				if ($(this).attr("type") == "radio") {
-					if (!this.checked) {
-						return;
-					}
-				}
-				
-				var key = $(this).attr("name");
-				var oldVal = reqDatas[key];
-				if(reqDatas[key]){
-					var val = reqDatas[key];
-					
-					if(!$.isArray(val)){
-						val = [val];
-						reqDatas[key] = val;
-					}
-					val.push($(this).val());
-				}else {
-					reqDatas[key] = $(this).val();
-				}
-			});
-
-			return reqDatas;
-		}
-		
 		function factors(vals){
 			var u = $("#units").val();
 			var us = u.split(",");

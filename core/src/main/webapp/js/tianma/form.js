@@ -19,6 +19,36 @@ function Form(json){
 	return ft.form;
 }
 
+function readFormDatas(form) {
+	var inputs = form.find(":input");
+
+	var reqDatas = {};
+	$.each(inputs, function() {
+		if ($(this).attr("type") == "radio" 
+				|| $(this).attr("type") == "checkbox") {
+			if (!this.checked) {
+				return;
+			}
+		}
+		
+		var key = $(this).attr("name");
+		var oldVal = reqDatas[key];
+		if(reqDatas[key]){
+			var val = reqDatas[key];
+			
+			if(!$.isArray(val)){
+				val = [val];
+				reqDatas[key] = val;
+			}
+			val.push($(this).val());
+		}else {
+			reqDatas[key] = $(this).val();
+		}
+	});
+
+	return reqDatas;
+}
+
 /***
  * 构建以<table>排版的form表单
  * ***/

@@ -26,8 +26,11 @@
 		<script src="../js/tianma/html.js"></script>
 		<script src="../js/tianma/util.js"></script>
 		<script src="../js/tianma/bind.js"></script>
+		<script src="../js/tianma/build.js"></script>
 		<!-- tianma business end -->
 		
+		<script src="../../html/metadata/gojs/js/tree.js"></script>
+		<script src="../../html/metadata/gojs/js/metadata.js"></script>
 		<script src="../../html/metadata/gojs/js/main.js"></script>
 		
 		<script src="../../html/business/tianma.js"></script>
@@ -62,6 +65,7 @@
 		
 		<div id="addObjectMetadataDialog" title="新增对象模型" />
 		<div id="dialog" title="新增对象模型" /><div id="dialogContent" /></div>
+		<div id="formDialog" title="编辑" /><div id="formDialogContent" /></div>
 		<script type="text/javascript">
 		var json = ${resultJson};
 		var objectPanelTab = null;
@@ -74,14 +78,24 @@
 			initEditPanel();
 			initAddObjectMetadataDialog();
 			
-			$("#dialog").dialog({
+			initDefaultOptionsDialog("dialog");
+			initDefaultOptionsDialog("formDialog");
+			
+			$("body").layout({ 
+				applyDemoStyles: true,
+				west:{
+					size:300
+				}
+			});
+		});
+		
+		function initDefaultOptionsDialog(dialogId){
+			$("#"+dialogId).dialog({
 				resizable: false,
 				height:400,
 				width:500,
 				autoOpen: false});
-			
-			$("body").layout({ applyDemoStyles: true });
-		});
+		}
 		
 		function addObjectMetadata(){
 			var json = ['form','metadata',
@@ -113,22 +127,42 @@
 			            	 ['$key','key','','[n]'],
 			            	 ['$units','单位','','',{change:factors},'[n]'],
 			            	 ['$factor','单位换算','label','[n]']]];
-			 var form = build(json);
+			
+			showInDialog(json,function(){
+				var form = $("#dialogContent").find("form");
+				var reqDatas = readFormDatas(form);
+				
+				ajaxSaveUCType(reqDatas,function(){
+					metadataModel.removeData('fieldTypes');
+				});
+				
+				$(this).dialog("close");
+			});
+		}
+		
+		function showInFormDialog(json,saveFun){
+			var element = build(json);
+
+			 $("#formDialogContent").empty();
+			 $("#formDialogContent").append(element);
+			 
+			 $("#formDialog").dialog("option","buttons",{
+					"Save": saveFun,
+					Cancel: function() {
+					  $(this).dialog( "close" );
+					}
+			});
+			 $("#formDialog").dialog("open");
+		}
+		
+		function showInDialog(json,saveFun){
+			var element = build(json);
 
 			 $("#dialogContent").empty();
-			 $("#dialogContent").append(form);
+			 $("#dialogContent").append(element);
 			 
 			 $("#dialog").dialog("option","buttons",{
-					"Save": function(){
-						var form = $(this).find("form");
-						var reqDatas = readFormDatas(form);
-						
-						ajaxSaveUCType(reqDatas,function(){
-							metadataModel.removeData('fieldTypes');
-						});
-						
-						$(this).dialog("close");
-					},
+					"Save": saveFun,
 					Cancel: function() {
 					  $(this).dialog( "close" );
 					}
@@ -193,25 +227,6 @@
 						
 						var metadata = metadataModel.readRequestObject(obj);
 						saveNewMetadata(metadata);
-						
-						/*
-						var newNode = metadataModel.newTreeNode(metadata);
-						$.ajax("save2.htm",{
-							data:{metadata:JSON.stringify(metadata)},
-							dataType:'json',
-							type:'POST',
-							success:function(result,textStatus){
-								var omId = result.metadata.id.value;
-								metadataModel.syncPool(omId,result.metadata);
-
-								//重新解析metadata数据，并刷新diagram
-								metadataModel.refreshMetadataDiagram(omId);
-								
-								newNode.id = omId;
-							}
-						});
-						diagram.model.addNodeData(newNode);
-						*/
 						
 						$(this).dialog("close");
 					},

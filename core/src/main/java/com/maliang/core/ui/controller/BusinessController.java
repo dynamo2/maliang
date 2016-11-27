@@ -135,6 +135,8 @@ public class BusinessController extends BasicController {
 	protected Map<String, Object> readRequestMap(HttpServletRequest request) {
 		JSONObject json = JSONObject.fromObject(request.getParameterMap());
 		List<String> reqNames = json.names();
+		
+		System.out.println("********** reqNames : " + reqNames);
 
 		Map<String, Object> reqMap = new HashMap<String, Object>();
 		if (reqNames == null || reqNames.size() == 0) {
@@ -153,6 +155,9 @@ public class BusinessController extends BasicController {
 			if (reqValue == null)
 				continue;
 
+			if(reqName.endsWith("[]")){
+				reqName = reqName.substring(0,reqName.length()-2);
+			}
 			setValue(reqMap, reqName, reqValue);
 		}
 

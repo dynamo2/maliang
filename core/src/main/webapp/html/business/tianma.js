@@ -102,9 +102,11 @@ function HtmlBuilder(){
 		var options = builder.formalizeSelectOptions(data.options);
 		$.each(options,function(){
 			var li = $("<li />").appendTo(ul);
-			
-			builder.newInput(data).prop("type","radio").val(this.key)
-				.prop("checked",this.key == data.value)
+			var val = $.trim(this.key);
+			builder.newInput(data)
+				.prop("type","radio")
+				.val(val)
+				.prop("checked",val == $.trim(data.value))
 				.appendTo(li);
 
 			builder.newLabel2(this.label).appendTo(li);
@@ -113,49 +115,6 @@ function HtmlBuilder(){
 		
 		return ul;
 	};
-	
-	/*
-	this.newCheckbox22 = function(data){
-		var span = $("<span />");
-		
-		$.each(data.options,function(){
-			var box = builder.newInput(data).val(this.key)
-				.prop("type","checkbox")
-				.appendTo(span);
-			
-			if(utils.isString(data.value)){
-				box.prop("checked",this.key == data.value);
-			}else if($.isArray(data.value)){
-				box.prop("checked",false);
-				$.each(data.value,function(){
-					if(box.val() == this){
-						box.prop("checked",true);
-						return;
-					}
-				});
-			}
-		
-			//$("<label />").text(this.label).appendTo(span);
-			if(utils.isString(this.label)){
-				$("<label />").text(this.label).appendTo(span);
-			}else {
-				var label = $("<span />").appendTo(span);
-				$.each(this.label,function(k,v){
-					if(k == 'html'){
-						label.html(v);
-					}else if(k == 'text'){
-						label.text(v);
-					}else {
-						label.prop(k,v);
-					}
-				});
-			}
-		});
-		
-		return span;
-	};
-	*/
-	
 	
 	this.newCheckbox = function(data){
 		var ul = builder.newBoxUL(data)
@@ -173,7 +132,7 @@ function HtmlBuilder(){
 			if(utils.isString(data.value)){
 				box.prop("checked",val == $.trim(data.value));
 			}else if($.isArray(data.value)){
-				box.prop("checked",$.inArray(this.key,data.value) >= 0);
+				box.prop("checked",$.inArray(val,data.value) >= 0);
 			}
 		
 			builder.newLabel2(this.label).appendTo(li);

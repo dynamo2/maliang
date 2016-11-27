@@ -1,6 +1,7 @@
 package com.maliang.core.ui.controller;
 
 import java.beans.BeanInfo;
+import java.beans.IntrospectionException;
 import java.beans.Introspector;
 import java.beans.PropertyDescriptor;
 import java.util.ArrayList;
@@ -12,29 +13,71 @@ import java.util.TreeMap;
 
 import javax.servlet.http.HttpServletRequest;
 
+import net.sf.ezmorph.object.AbstractObjectMorpher;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 import net.sf.json.JsonConfig;
 import net.sf.json.processors.JsonValueProcessor;
+import net.sf.json.util.JSONUtils;
 
 import org.bson.types.ObjectId;
 
 import com.maliang.core.dao.BusinessDao;
 import com.maliang.core.dao.ObjectMetadataDao;
+import com.maliang.core.dao.ProjectDao;
 import com.maliang.core.dao.UCTypeDao;
+import com.maliang.core.model.Linked;
 import com.maliang.core.model.Mapped;
+import com.maliang.core.model.MongodbModel;
+import com.maliang.core.model.ObjectField;
+import com.maliang.core.model.ObjectMetadata;
 import com.maliang.core.util.StringUtil;
 import com.maliang.core.util.Utils;
 
 public class BasicController {
-	static JsonConfig defaultJsonConfig = new JsonConfig();
+	protected static JsonConfig defaultJsonConfig = new JsonConfig();
 	
 	protected ObjectMetadataDao metadataDao = new ObjectMetadataDao();
 	protected BusinessDao businessDao = new BusinessDao();
 	protected UCTypeDao uctypeDao = new UCTypeDao();
+	protected ProjectDao projectDao = new ProjectDao();
 	
 	static {
+		JSONUtils.getMorpherRegistry().registerMorpher(new ObjectIdMorpher());
 		defaultJsonConfig.registerJsonValueProcessor(ObjectId.class, new TOStringProcessor());
+	}
+	
+	protected static <T extends MongodbModel> T readMongodbModel(HttpServletRequest request,String reqName,Class<T> cls){
+		JSONObject json = JSONObject.fromObject(request.getParameterMap());
+		JSONArray ja = (JSONArray)json.get(reqName);
+
+		return (T)JSONObject.toBean(ja.getJSONObject(0), cls,readClassMap(cls));
+	}
+	
+	protected static Map<String,Class> readClassMap(Class cls){
+		Map<String,Class> cm = new HashMap<String,Class>();
+		try {
+			BeanInfo beanInfo = Introspector.getBeanInfo(cls);
+			PropertyDescriptor[] pds = beanInfo.getPropertyDescriptors();
+			
+			for(PropertyDescriptor pd : pds){
+				String pname = pd.getName();
+				if("class".equals(pname))continue;
+				
+				Mapped mapped = cls.getDeclaredField(pname).getAnnotation(Mapped.class);
+				if(mapped != null){
+					cm.put(pname, mapped.type());
+				}
+			}
+		} catch (Exception e) {}
+		
+		return cm;
+	}
+	
+	protected static Map<String,Object> newMap(String key,Object val){
+		Map<String,Object> mps = new HashMap<String,Object>();
+		mps.put(key, val);
+		return mps;
 	}
 	
 	public Integer getInt(String v){
@@ -498,5 +541,27 @@ class TOStringProcessor implements JsonValueProcessor{
 		if(arg1 == null)return null;
 		
 		return arg1.toString();
+	}
+}
+
+class ObjectIdMorpher extends AbstractObjectMorpher {
+	public Class morphsTo() {
+		return ObjectId.class;
+	}
+
+	public boolean supports(Class c) {
+		return true;
+	}
+
+	public Object morph(Object v) {
+		if(v == null || v instanceof ObjectId){
+			return v;
+		}
+		
+		try {
+			return new ObjectId(v.toString());
+		}catch(Exception e){
+			return null;
+		}
 	}
 }

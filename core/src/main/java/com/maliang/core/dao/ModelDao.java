@@ -1,6 +1,7 @@
 package com.maliang.core.dao;
 
 import java.util.List;
+import java.util.Map;
 
 import org.bson.types.ObjectId;
 
@@ -22,7 +23,15 @@ public class ModelDao<T extends MongodbModel> extends AbstractDao {
 	
 	public void save(T om) {
 		BasicDBObject doc = encode(om);
-		this.dbColl.save(doc);
+
+		System.out.println("------- save doc : " + doc);
+		
+		if(om.getId() != null){
+			this.dbColl.update(
+				new BasicDBObject("_id",om.getId()),new BasicDBObject("$set", doc));
+		}else {
+			this.dbColl.save(doc);
+		}
 		
 		if(om.getId() == null){
 			om.setId(doc.getObjectId("_id"));
@@ -57,6 +66,12 @@ public class ModelDao<T extends MongodbModel> extends AbstractDao {
 	
 	public List<T> list(){
 		return readCursor(this.dbColl.find(),this.modelClass);
+	}
+	
+	@SuppressWarnings("rawtypes")
+	public List<T> list(Map query){
+		BasicDBObject dbQuery = new BasicDBObject(query);
+		return readCursor(this.dbColl.find(dbQuery),this.modelClass);
 	}
 	
 	/**

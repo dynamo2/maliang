@@ -1,7 +1,51 @@
 var utils = new Utils();
 
+/********************Array prototype ***********************/
+/**
+ * 清空数组
+ * **/
+Array.prototype.empty = function(){
+	this.splice(0,this.length);
+};
+
+/**
+ * 判断数组是否为空
+ * **/
+Array.prototype.isEmpty = function(){
+	return this.length == 0;
+};
+
 function Utils(){
 	var _ = this;
+	
+	this.put = function(obj,key,val){
+		if(!$.isPlainObject(obj)){
+			obj = {};
+		}
+		
+		var ks = key.split(".");
+		if(ks.length > 1){
+			var last = obj;
+			var i = 0;
+			
+			for(i = 0; i < ks.length-1; i++){
+				var k = ks[i];
+				
+				if(!last[k]){
+					last[k] = {};
+				}
+				last = last[k];
+			}
+			last[ks[i]] = val;
+		}else {
+			obj[key] = val;
+		}
+		return obj;
+	};
+	
+	this.get = function(obj,key){
+		return readValue(obj,key);
+	};
 	
 	this.isString = function (obj){
 		return $.type(obj) === 'string';
@@ -58,6 +102,8 @@ function Utils(){
 function replaceVar(str, obj) {
 	return str.replace(/\$\{([\w.]+)\}/g, function(expre, key) {
 		var v = readValue(obj, key);
+		if(v == null)v = '';
+		
 		if (v instanceof Object) {
 			v = JSON.stringify(v);
 		}
@@ -71,6 +117,9 @@ function replaceVar(str, obj) {
  * return：{"id":"aaaaa","name":"雪花秀"}
  */
 function readValue(obj, key) {
+	if(!obj || !key)return null;
+	if(!$.isPlainObject(obj))return null;
+	
 	if (key == 'this') {
 		return obj;
 	}
@@ -79,11 +128,10 @@ function readValue(obj, key) {
 	var v = obj;
 	for (idx in ks) {
 		v = v[ks[idx]];
+		
+		if(!v)return null;
 	}
-
-	if (v == null)
-		return '';
-
+	
 	return v;
 }
 

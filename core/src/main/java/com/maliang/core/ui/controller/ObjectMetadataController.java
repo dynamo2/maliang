@@ -1,11 +1,13 @@
 package com.maliang.core.ui.controller;
 
 import java.beans.BeanInfo;
+import java.beans.IntrospectionException;
 import java.beans.Introspector;
 import java.beans.PropertyDescriptor;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -14,6 +16,8 @@ import javax.servlet.http.HttpServletRequest;
 
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
+import net.sf.json.JsonConfig;
+import net.sf.json.util.JSONUtils;
 
 import org.bson.types.ObjectId;
 import org.springframework.stereotype.Controller;
@@ -22,13 +26,15 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 
+import com.maliang.core.arithmetic.AE;
 import com.maliang.core.arithmetic.ArithmeticExpression;
 import com.maliang.core.dao.ObjectMetadataDao;
 import com.maliang.core.model.FieldType;
+import com.maliang.core.model.MongodbModel;
 import com.maliang.core.model.ObjectField;
 import com.maliang.core.model.ObjectMetadata;
+import com.maliang.core.model.Project;
 import com.maliang.core.model.UCType;
-import com.maliang.core.util.Utils;
 
 @Controller
 @RequestMapping(value = "metadata")
@@ -106,7 +112,7 @@ public class ObjectMetadataController extends BasicController {
 					+ "id:this.id+''"
 				+ "}}";
 	}
-	
+
 	@RequestMapping(value = "main.htm")
 	public String list2(Model model) {
 		List<ObjectMetadata> metadataList = metadataDao.list();
@@ -129,6 +135,90 @@ public class ObjectMetadataController extends BasicController {
 		return "/metadata/gojs/main";
 	}
 	
+	@RequestMapping(value = "edit3.htm")
+	@ResponseBody
+	public String edit3(String id,String pid) {
+		ObjectMetadata metadata = metadataDao.getByID(id);
+		if(metadata == null){
+			metadata = new ObjectMetadata();
+			metadata.setProject(this.projectDao.getByID(pid));
+		}
+		List<Project> projects = this.projectDao.list();
+		Map<String,Object> params = newMap("metadata",metadata);
+		params.put("projects", projects);
+		
+		String s = "{json:['form','metadata',"
+				+ "[['$id','','hidden',metadata.id,'[n]'],"
+					+ "['$project.id','项目',['select',each(projects){{key:this.id,label:this.name}}],metadata.project.id,'[n]'],"
+					+ "['$name','名称','text',metadata.name,'[n]'],"
+					+ "['$label','标签','text',metadata.label,'[n]']]]}";
+		
+		Object val = AE.execute(s,params);
+
+		return this.json(val);
+	}
+	
+	@RequestMapping(value = "toProject.htm")
+	@ResponseBody
+	public String toProject(String id) {
+		List<Project> projects = this.projectDao.list();
+		Map<String,Object> params = newMap("id",id);
+		params.put("projects", projects);
+		
+		String s = "{json:['form','metadata',"
+				+ "[['$id','','hidden',id,'[n]'],"
+					+ "['$pid','项目',['select',each(projects){{key:this.id,label:this.name}}],'','[n]']"
+					+ "]]}";
+		
+		Object val = AE.execute(s,params);
+
+		return this.json(val);
+	}
+	
+	@RequestMapping(value = "saveMove.htm")
+	@ResponseBody
+	public String saveMove(String id,String pid) {
+		ObjectMetadata metadata = this.metadataDao.getByID(id);
+		Project project = this.projectDao.getByID(pid);
+		
+		if(!isSameProject(project,metadata)){
+			String oldCollName = metadata.getName();
+			if(metadata.getProject() != null){
+				oldCollName = metadata.getProject().getKey()+"_"+oldCollName;
+			}
+			
+			String newCollName = project.getKey()+"_"+metadata.getName();
+			this.metadataDao.renameCollection(oldCollName, newCollName);
+			
+			metadata.setProject(project);
+			this.metadataDao.save(metadata);
+		}
+
+		return "{}";
+	}
+	
+	private boolean isSameProject(Project project,ObjectMetadata metadata){
+		return metadata != null 
+				&& project != null
+				&& project.getId() != null
+				&& metadata.getProject() != null 
+				&& project.getId().equals(metadata.getProject().getId());
+	}
+	
+	@RequestMapping(value = "saveCopy.htm")
+	@ResponseBody
+	public String saveCopy(String id,String pid) {
+		ObjectMetadata metadata = this.metadataDao.getByID(id);
+		Project project = this.projectDao.getByID(pid);
+		if(!isSameProject(project,metadata)){
+			metadata.setId(null);
+			metadata.setProject(project);
+			this.metadataDao.save(metadata);
+		}
+
+		return "{}";
+	}
+	
 	@RequestMapping(value = "edit2.htm", method = RequestMethod.POST)
 	@ResponseBody
 	public String edit2(String id) {
@@ -140,9 +230,7 @@ public class ObjectMetadataController extends BasicController {
 	@RequestMapping(value = "save2.htm", method = RequestMethod.POST)
 	@ResponseBody
 	public String save2(HttpServletRequest request, Model model) {
-		ObjectMetadata reqMetadata = readMetadataFromRequest(request);
-		
-		System.out.println("save id : " + reqMetadata.getId());
+		ObjectMetadata reqMetadata = readMongodbModel(request,"metadata",ObjectMetadata.class);
 		
 		System.out.println("reqMetadata  : " + reqMetadata);
 		metadataDao.save(reqMetadata);
@@ -219,23 +307,16 @@ public class ObjectMetadataController extends BasicController {
 		return fts;
 	}
 	
-	private ObjectMetadata readMetadataFromRequest(HttpServletRequest request){
-		JSONObject json = JSONObject.fromObject(request.getParameterMap());
-		JSONArray ja = (JSONArray)json.get("metadata");
-
-		Map cm = new HashMap();
-		cm.put("fields",ObjectField.class);
-		
-		ObjectMetadata metadata = (ObjectMetadata)JSONObject.toBean(ja.getJSONObject(0), ObjectMetadata.class,cm);
-		
-		JSONArray jid = (JSONArray)json.get("id");
-		if(jid != null && jid.size() > 0){
-			metadata.setId((String)jid.get(0));
-		}
-		
-		return metadata;
-	}
-
+//	private ObjectMetadata readMetadataFromRequest(HttpServletRequest request){
+//		JSONObject json = JSONObject.fromObject(request.getParameterMap());
+//		JSONArray ja = (JSONArray)json.get("metadata");
+//
+//		ObjectMetadata metadata = (ObjectMetadata)JSONObject.toBean(ja.getJSONObject(0), 
+//				ObjectMetadata.class,newMap("fields",ObjectField.class));
+//		
+//		return metadata;
+//	}
+	
 	private Object order(String id){
 		String str = "{"
 				+ "name:{value:'Order'},"
@@ -428,7 +509,11 @@ public class ObjectMetadataController extends BasicController {
 		params = (Map<String,Object>)ArithmeticExpression.execute(account, params);
 		
 		account = "ads";
-		System.out.println(ArithmeticExpression.execute(account, params));
+		//System.out.println(ArithmeticExpression.execute(account, params));
+		
+		Class pc = Project.class;
+		System.out.println(MongodbModel.class.isAssignableFrom(Project.class));
+		
 		
 		/*
 		String str = "db.Account.";

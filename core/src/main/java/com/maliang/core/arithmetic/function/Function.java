@@ -192,6 +192,10 @@ public class Function {
 			return TypeFunction.stringExecute(this, params);
 		}
 		
+		if("toCode".equals(key)){
+			return TypeFunction.codeExecute(this, params);
+		}
+		
 		if("each".equals(key)){
 			return Each.execute(this, params);
 		}

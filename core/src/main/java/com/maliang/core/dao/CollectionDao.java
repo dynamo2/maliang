@@ -280,7 +280,8 @@ public class CollectionDao extends BasicDao {
 
 		List<Map<String, Object>> results = new ArrayList<Map<String, Object>>();
 		while (ie.hasNext()) {
-			results.add(toMap(ie.next(), collName));
+			DBObject dbo = ie.next();
+			results.add(toMap(dbo, collName));
 		}
 		return results;
 	}

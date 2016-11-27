@@ -32,6 +32,7 @@
 		<script src="../js/tianma/html.js"></script>
 		<script src="../js/tianma/util.js"></script>
 		<script src="../js/tianma/bind.js"></script>
+		<script src="../js/tianma/build.js"></script>
 		
 		<script src="../html/business/tianma.js"></script>
 		
@@ -97,27 +98,6 @@
 			});
 		}
 		
-		function deleteDiv(event){
-			deleteItem(event,'div');
-		}
-		
-		function deleteTd(event){
-			deleteItem(event,'td');
-		}
-		
-		function deleteTr(event){
-			deleteItem(event,'tr');
-		}
-		
-		function deleteTable(event){
-			deleteItem(event,'table');
-		}
-		
-		function deleteItem(event,tag){
-			var item = $(event.currentTarget).closest(tag);
-		    item.remove();
-		}
-		
 		function init(){
 			$("#dialog").dialog({
 				resizable: false,
@@ -143,6 +123,30 @@
 				$("#main").append(build(json));
 			}
 		}
+		
+		/*
+		function deleteDiv(event){
+			deleteItem(event,'div');
+		}
+		
+		function deleteTd(event){
+			deleteItem(event,'td');
+		}
+		
+		function deleteTr(event){
+			deleteItem(event,'tr');
+		}
+		
+		function deleteTable(event){
+			deleteItem(event,'table');
+		}
+		
+		function deleteItem(event,tag){
+			var item = $(event.currentTarget).closest(tag);
+		    item.remove();
+		}
+		
+		
 
 		function build(json){
 			if(utils.isString(json)){
@@ -216,7 +220,7 @@
 			
 			/**
 			** Dialog options
-			**/
+			**
 			if(json.length >= 3){
 				var opts = json[2];
 				var dopts = {};
@@ -282,42 +286,10 @@
 
 			ajax(reqDatas,doneFun);
 		}
-		
-		function readFormDatas(form) {
-			var inputs = form.find(":input");
 
-			var reqDatas = {};
-			$.each(inputs, function() {
-				if ($(this).attr("type") == "radio" 
-						|| $(this).attr("type") == "checkbox") {
-					if (!this.checked) {
-						return;
-					}
-				}
-				
-				var key = $(this).attr("name");
-				var oldVal = reqDatas[key];
-				if(reqDatas[key]){
-					var val = reqDatas[key];
-					
-					if(!$.isArray(val)){
-						val = [val];
-						reqDatas[key] = val;
-					}
-					val.push($(this).val());
-				}else {
-					reqDatas[key] = $(this).val();
-				}
-			});
-
-			return reqDatas;
-		}
-		
 		function addChildren(parent,json){
 			if($.isArray(json)){
 				parent.append(build(json));
-			}else if(utils.isString(json)){
-				parent.text(json);
 			}else if($.isPlainObject(json)){
 				if(json.bind){
 					toBind(parent,json.bind);
@@ -334,8 +306,10 @@
 					});
 				}
 				
-				var opts = utils.copy(json,{},['bind','load']);
+				var opts = utils.copy(json,{},['bind','ajax']);
 				setHtmlProps(parent,opts);
+			}else {
+				parent.text(json);
 			}
 			
 			return parent;
@@ -351,7 +325,7 @@
 			
 			/**
 			 ** read events
-			**/
+			**
 			var eveNames = ['click','mouseover','mouseout','change','focus'];
 			$.each(eveNames,function(){
 				var event = opts[this];
@@ -532,7 +506,7 @@
 		 	                this.personal_profile.email,this.personal_profile.mobile,
 		 	                {html:'<a href="/business/business2.htm?bid='+bid+'&fid=4&id='+this.id+'">修改</a>
 		 		<a href="/business/business2.htm?bid='+bid+'&fid=6&id='+this.id+'">查看</a>'}]}
-		]*/
+		]*
 		function TableList(json){
 			var table = $("<table class='tableList' cellpadding='0' cellspacing='1' />");
 			

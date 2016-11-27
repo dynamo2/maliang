@@ -6,6 +6,8 @@ public class Business extends MongodbModel {
 	private String name;
 	private String uniqueCode;
 	
+	//private Project project;
+	
 	@Mapped(type=Workflow.class)
 	private List<Workflow> workflows;
 	
@@ -36,6 +38,12 @@ public class Business extends MongodbModel {
 	public void setBlocks(List<Block> blocks) {
 		this.blocks = blocks;
 	}
+//	public Project getProject() {
+//		return project;
+//	}
+//	public void setProject(Project project) {
+//		this.project = project;
+//	}
 	
 	public Workflow workFlow(int step){
 		if(this.workflows == null || this.workflows.isEmpty()){
