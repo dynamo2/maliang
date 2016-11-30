@@ -122,7 +122,15 @@ public class ExpressionNode extends Node {
 		}
 
 		if(valueLeft instanceof String || valueRight instanceof String){
-			return calculateString(valueLeft==null?null:valueLeft.toString(),valueRight==null?null:valueRight.toString());
+			try {
+				return calculateString(valueLeft==null?null:valueLeft.toString(),valueRight==null?null:valueRight.toString());
+			}catch(RuntimeException e){
+				System.out.println("======== valueLeft : " + valueLeft);
+				System.out.println("======== valueRight : " + valueRight);
+				
+				throw e;
+			}
+			
 		}
 
 		if(valueLeft instanceof Integer && valueRight instanceof Integer){

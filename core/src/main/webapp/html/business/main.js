@@ -1,3 +1,12 @@
+var businessTreeNodes = null;
+$(function(){
+	ajaxNoData("/project/businessList.htm",
+		function(result,status){
+			businessTreeNodes = [{key:'root',text:'所有项目',category:'root'}];
+			businessTreeNodes = businessTreeNodes.concat(result.result);
+	});
+});
+
 function BusinessModel(){
 	var _ = this;
 	var source = null;
@@ -94,13 +103,43 @@ function BusinessModel(){
 	};
 }
 
+function defaultAjaxEdit(options){
+	ajaxNoData(options.edit,function(result,status){
+		showInFormDialog(result.json, function() {
+			var dialog = $(this);
+			var reqDatas = readFormDatas(dialog.find("form"));
+			
+			$.ajax(options.save, {
+				data : reqDatas,
+				dataType : 'json',
+				type : 'POST',
+				async : false
+			}).done(options.done?options.done:refreshBusinessTree);
+			
+			dialog.dialog("close");
+		});
+	});
+}
+
+function refreshBusinessTree(){
+	ajaxNoData("/project/businessList.htm",
+			function(result,status){
+				businessTreeNodes = [{key:'root',text:'所有项目',category:'root'}];
+				businessTreeNodes = businessTreeNodes.concat(result.result);
+				businessModel.businessesTreeDiagram.model = new go.TreeModel(businessTreeNodes);
+	});
+}
+
 function newTreeDiagram() {
 	var G_Make = go.GraphObject.make;
 	var _ = this;
-	var yellowgrad = G_Make(go.Brush, "Linear", {
-		0 : "rgb(254, 201, 0)",
-		1 : "rgb(254, 162, 0)"
-	});
+	var yellowgrad = G_Make(go.Brush, "Linear", {0 : "rgb(254, 201, 0)",1 : "rgb(254, 162, 0)"});
+	var bluegrad = G_Make(go.Brush, "Linear", { 0: "#B0E0E6", 1: "#87CEEB" });
+	var textStyle = {
+		font : "bold 13px Helvetica, bold Arial, sans-serif",
+		stroke : "black",
+		margin : 5
+	};
 
 	var myDiagram = G_Make(go.Diagram, "businessesDiagram", {
 		allowMove : false,
@@ -121,13 +160,14 @@ function newTreeDiagram() {
 		})
 	});
 
-	this.isMetadata = function(o){
-		return true;
+	this.isBusiness = function(o){
+		var node = obj.diagram.selection.first();
+		var category = node.data && node.data.category;
+		return category == "business";
 	};
 	
 	this.menuText = function(txt){
-		return G_Make(go.TextBlock, 
-				{ text: txt, margin:5,font : "13px Helvetica"});
+		return G_Make(go.TextBlock, { text: txt, margin:5,font : "13px Helvetica"});
 	};
 	
 	
@@ -136,69 +176,81 @@ function newTreeDiagram() {
 	 * 右键菜单
 	 * **/
 	var contextMenu = G_Make(go.Adornment, "Vertical", 
-		G_Make("ContextMenuButton",_.menuText("打开"),{
-			click : function(e, obj) {
-				alert("打开");
-			}
-		},new go.Binding("visible", "", _.isMetadata).ofObject()
-    ),G_Make("ContextMenuButton",_.menuText("预览"),{
-			click : function(e, obj) {
-				var node = obj.diagram.selection.first();
-				var bid = node.data && node.data.business && node.data.business.id;
-				
-				$("#previewIframe").attr("src","/business/business.htm?bid="+bid);
-			}
-    	},new go.Binding("visible", "", _.isMetadata).ofObject()
-    ), G_Make("ContextMenuButton", _.menuText("新增页面"), {
-		click : function(e, obj) {
-			//alert("新增页面");
-			$("#businessEditerDialog").dialog("open");
-		}
-	}), G_Make("ContextMenuButton", _.menuText("删除页面"), {
-		click : function(e, obj) {
-			var node = obj.diagram.selection.first();
-			var bid = node.data && node.data.business && node.data.business.id;
-			
-			$.ajax('/business/delete.htm?id='+bid).done(function(result,status){
-				//$("#refreshMainLink").simulate("click");
-			});
-			
-			myDiagram.model.removeNodeData(node.data);
-		}
-	},new go.Binding("visible", "", _.isMetadata).ofObject()));
+		G_Make("ContextMenuButton",_.menuText("预览"),{
+				click : function(e, obj) {
+					var node = obj.diagram.selection.first();
+					var bid = node.data && node.data.key;
+					
+					$("#previewIframe").attr("src","/business/business.htm?bid="+bid);
+			}},
+			new go.Binding("visible", "", _.isBusiness).ofObject()), 
+    	G_Make("ContextMenuButton", _.menuText("新增页面"), {
+				click : function(e, obj) {
+					defaultAjaxEdit({
+						edit:'/business/edit2.htm',
+						save:'/business/add.htm'
+					});
+		}}), 
+		G_Make("ContextMenuButton", _.menuText("移动页面"), {
+				click : function(e, obj) {
+					var diagram = obj.diagram;
+					var nodeData = diagram.selection.first().data;
+					var id = nodeData.key;
+					
+					defaultAjaxEdit({
+						edit:'/project/toProject.htm?id='+id,
+						save:'/business/saveMove.htm'
+					});
+			}},
+			new go.Binding("visible", "", _.isBusiness).ofObject()),
+		G_Make("ContextMenuButton", _.menuText("删除页面"), {
+				click : function(e, obj) {
+					var node = obj.diagram.selection.first();
+					var bid = node.data && node.data.key;
+					
+					$.ajax('/business/delete.htm?id='+bid).done(refreshBusinessTree);
+			}},
+			new go.Binding("visible", "", _.isBusiness).ofObject())
+	);
 	
 	myDiagram.contextMenu = contextMenu;
-	myDiagram.nodeTemplate = G_Make(go.Node, {
-		doubleClick : function(e, node) {
-			var bid = node.data && node.data.business && node.data.business.id;
-			if(bid){
-				businessModel.openTab(bid);
-			}else {
-				alert("没有找到该对象：" + bid);
-			}
-		},
-		contextMenu : contextMenu
-	}, G_Make("TreeExpanderButton", {
-		width : 14,
-		"ButtonBorder.fill" : "whitesmoke",
-		"ButtonBorder.stroke" : null,
-		"_buttonFillOver" : "rgba(0,128,255,0.25)",
-		"_buttonStrokeOver" : null
-	}),
-
-	G_Make(go.Panel, "Auto", {
-		position : new go.Point(16, -8)
-	}, G_Make(go.Shape, "RoundedRectangle", {
-		fill : yellowgrad,
-		name : "SHAPE",
-		stroke : null
-	}), G_Make(go.TextBlock, {
-		font : "bold 13px Helvetica, bold Arial, sans-serif",
-		stroke : "white",
-		margin : 5
-	}, new go.Binding("text", "key")))
-
-	);
+	myDiagram.nodeTemplate = G_Make(go.Node, 
+		{contextMenu : contextMenu}, 
+		G_Make("TreeExpanderButton", {
+			width : 14,
+			"ButtonBorder.fill" : "whitesmoke",
+			"ButtonBorder.stroke" : null,
+			"_buttonFillOver" : "rgba(0,128,255,0.25)",
+			"_buttonStrokeOver" : null}),
+		G_Make(go.Panel, "Auto", 
+			{position : new go.Point(16, -8)}, 
+			G_Make(go.Shape, "RoundedRectangle", {
+				fill : bluegrad,
+				name : "SHAPE",
+				stroke : null}), 
+			G_Make(go.TextBlock, textStyle, new go.Binding("text", "text"))
+	));
+	
+	myDiagram.nodeTemplateMap.add("business",
+			G_Make(go.Node, {
+				doubleClick : function(e, node) {
+					var bid = node.data && node.data.key;
+					if(bid){
+						businessModel.openTab(bid);
+					}else {
+						alert("没有找到该对象：" + bid);
+					}
+				},
+				contextMenu : contextMenu
+			}, 
+			G_Make(go.Panel, "Auto", 
+				{position : new go.Point(16, -8)}, 
+				G_Make(go.Shape, "RoundedRectangle", {
+					fill : yellowgrad,
+					name : "SHAPE",
+					stroke : null}), 
+				G_Make(go.TextBlock, textStyle, new go.Binding("text", "text")))
+	));
 
 	// without lines
 	// myDiagram.linkTemplate = $(go.Link);
@@ -215,6 +267,7 @@ function newTreeDiagram() {
 		stroke : "lightgray"
 	}));
 
-	myDiagram.model = new go.TreeModel(businessModel.businessesTree);
+	//myDiagram.model = new go.TreeModel(businessModel.businessesTree);
+	myDiagram.model = new go.TreeModel(businessTreeNodes);
 	return myDiagram;
 }

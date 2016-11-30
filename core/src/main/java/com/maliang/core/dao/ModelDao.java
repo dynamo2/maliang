@@ -22,10 +22,8 @@ public class ModelDao<T extends MongodbModel> extends AbstractDao {
 	}
 	
 	public void save(T om) {
-		BasicDBObject doc = encode(om);
+		BasicDBObject doc = encode(om,true);
 
-		System.out.println("------- save doc : " + doc);
-		
 		if(om.getId() != null){
 			this.dbColl.update(
 				new BasicDBObject("_id",om.getId()),new BasicDBObject("$set", doc));
@@ -44,6 +42,10 @@ public class ModelDao<T extends MongodbModel> extends AbstractDao {
 	
 	public T getByField(String field,Object value){
 		return this.findOne(new BasicDBObject(field,value));
+	}
+	
+	public T findOne(Map query){
+		return this.findOne(new BasicDBObject(query));
 	}
 	
 	public T findOne(BasicDBObject query){

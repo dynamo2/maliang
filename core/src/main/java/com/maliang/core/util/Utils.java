@@ -7,6 +7,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
+
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
+
 public class Utils {
 	private final static List<Object> NULL_LIST = new ArrayList<Object>();
 	
@@ -119,5 +125,23 @@ public class Utils {
 		}
 		
 		return false;
+	}
+	
+	public static HttpSession getSession(){
+		HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest(); 
+		if(request != null){
+			return request.getSession();
+		}
+		
+		return null;
+	}
+	
+	public static Object getSessionValue(String key){
+		HttpSession session = getSession();
+		if(session != null){
+			return session.getAttribute(key);
+		}
+		
+		return null;
 	}
 }

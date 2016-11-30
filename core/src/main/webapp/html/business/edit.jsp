@@ -63,6 +63,7 @@
 			$("#idLabel").text(business.id);
 			$("#nameLabel").text(business.name);
 			$("#uniqueCodeLabel").text(business.uniqueCode);
+			$("#projectLabel").text(business.project && business.project.name);
 			
 			$("#name").val(business.name);
 			$("#uniqueCode").val(business.uniqueCode);
@@ -208,8 +209,7 @@
 			});
 		}
 		</script>
-		<div style="margin:20px;"><a href="list.htm">列表</a>&nbsp;&nbsp;&nbsp;&nbsp;<a href="edit.htm">新增</a></div>
-    	
+
 		<div class="title">
 			<label>Basic</label>
 			<input type="button" value="编辑" onclick="showBasicEditer();" />
@@ -220,7 +220,8 @@
 		<div id="basicDiv">
 			<div>ID:<label id="idLabel"></label></div>
 			<div>名称:<label id="nameLabel"></label></div>
-			<div>唯一代码:<label id="uniqueCodeLabel">ProductMG</label></div>
+			<div>唯一代码:<label id="uniqueCodeLabel"></label></div>
+			<div>所属项目:<label id="projectLabel"></label></div>
 		</div>
 		
 		<div class="title">

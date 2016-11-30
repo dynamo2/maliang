@@ -16,24 +16,13 @@ function ajaxNoData(url,doneFun) {
 	}).done(doneFun);
 }
 
-function ajaxEdit(url,id,doneFun) {
-	$.ajax(url, {
-		data:{id:id},
-		dataType : 'json',
-		type : 'POST',
-		async : false
-	}).done(doneFun);
-}
-
 function ajaxSaveProject(data, doneFun) {
 	$.ajax('/project/save.htm', {
 		data : {project:ts(data)},
 		dataType : 'json',
 		type : 'POST',
 		async : false
-	}).done(function(result,status) {
-		refreshProjectTree();
-	});
+	}).done(refreshProjectTree);
 }
 
 function ajaxSaveMetadata2(metadata){
@@ -57,9 +46,7 @@ function ajaxSaveMetadata2(metadata){
 		*/
 		dataType:'json',
 		type:'POST',
-		success:function(result,textStatus){
-			refreshProjectTree();
-		}
+		success:refreshProjectTree
 	});
 }
 
@@ -70,6 +57,55 @@ function refreshProjectTree(){
 			projectTreeNodes = projectTreeNodes.concat(result.result);
 			metadataModel.metadataTreeDiagram.model = new go.TreeModel(projectTreeNodes);
 			pt(ts(projectTreeNodes));
+	});
+}
+
+function readFormDatas (form) {
+	var inputs = form.find(":input");
+
+	var reqDatas = {};
+	$.each(inputs, function() {
+		if ($(this).attr("type") == "radio" 
+				|| $(this).attr("type") == "checkbox") {
+			if (!this.checked) {
+				return;
+			}
+		}
+		
+		var key = $(this).attr("name");
+		var val = $(this).val();
+		var oldVal = utils.get(reqDatas,key);
+		
+		if(oldVal){
+			if(!$.isArray(oldVal)){
+				oldVal = [oldVal];
+				utils.put(reqDatas,key,oldVal);
+			}
+			oldVal.push(val);
+		}else {
+			utils.put(reqDatas,key,val);
+		}
+	});
+
+	return reqDatas;
+}
+
+function defaultAjaxEdit (options){
+	ajaxNoData(options.edit,function(result,status){
+		showInFormDialog(result.json, function() {
+			var dialog = $(this);
+			
+			var reqDatas = readFormDatas(dialog.find("form"));
+			
+			$.ajax(options.save, {
+				data : reqDatas,
+				dataType : 'json',
+				type : 'POST',
+				async : false
+			}).done(options.done?options.done:refreshProjectTree);
+			
+			dialog.dialog("close");
+		});
 	});
 }
 
@@ -91,8 +127,8 @@ function isCategory(nodeData,name){
 
 var treeContextMenu = {
 		openMetadataTab:function(e, obj) {
-			var nodeData = obj.diagram.selection.first().data;
-			metadataModel.openMetadataTab(nodeData.key);
+			var id = obj.diagram.selection.first().data.key;
+			metadataModel.openMetadataTab(id);
 		},
 
 		addProject:function(e,obj){
@@ -100,13 +136,7 @@ var treeContextMenu = {
 		},
 		
 		editProject:function(e,obj){
-			var diagram = obj.diagram;
-			var nodeData = diagram.selection.first().data;
-			var id = null;
-			if(isCategory(nodeData,"project")){
-				id = nodeData.key;
-			}
-			
+			var id = obj.diagram.selection.first().data.key;
 			treeContextMenu.openEditProjectDialog(id);
 		},
 		
@@ -116,7 +146,7 @@ var treeContextMenu = {
 					var dialog = $(this);
 					
 					var form = dialog.find("form");
-					var reqDatas = treeContextMenu.readFormDatas(form);
+					var reqDatas = readFormDatas(form);
 					
 					ajaxSaveProject(reqDatas);
 					
@@ -126,8 +156,7 @@ var treeContextMenu = {
 		},
 		
 		addMetadata:function(e,obj){
-			var diagram = obj.diagram;
-			var nodeData = diagram.selection.first().data;
+			var nodeData = obj.diagram.selection.first().data;
 			var pid = null;
 			if(isCategory(nodeData,"project")){
 				pid = nodeData.key;
@@ -144,7 +173,7 @@ var treeContextMenu = {
 					var dialog = $(this);
 					
 					var form = dialog.find("form");
-					var reqDatas = treeContextMenu.readFormDatas(form);
+					var reqDatas = readFormDatas(form);
 					
 					pt(ts(reqDatas));
 					ajaxSaveMetadata2(reqDatas);
@@ -155,114 +184,22 @@ var treeContextMenu = {
 		},
 		
 		moveMetadata:function(e,obj){
-			var diagram = obj.diagram;
-			var nodeData = diagram.selection.first().data;
-			var id = nodeData.key;
+			var id = obj.diagram.selection.first().data.key;
 			
-			ajaxNoData('/metadata/toProject.htm?id='+id,function(result,status){
-				showInFormDialog(result.json, function() {
-					var dialog = $(this);
-					
-					var reqDatas = treeContextMenu.readFormDatas(dialog.find("form"));
-					
-					$.ajax('/metadata/saveMove.htm', {
-						data : reqDatas,
-						dataType : 'json',
-						type : 'POST',
-						async : false
-					}).done(function(result,status) {
-						refreshProjectTree();
-					});
-					
-					dialog.dialog("close");
-				});
+			defaultAjaxEdit({
+				edit:'/project/toProject.htm?id='+id,
+				save:'/metadata/saveMove.htm'
 			});
 		},
 		
 		copyMetadata:function(e,obj){
-			var diagram = obj.diagram;
-			var nodeData = diagram.selection.first().data;
-			var id = nodeData.key;
+			var id = obj.diagram.selection.first().data.key;
 			
-			ajaxNoData('/metadata/toProject.htm?id='+id,function(result,status){
-				showInFormDialog(result.json, function() {
-					var dialog = $(this);
-					
-					var reqDatas = treeContextMenu.readFormDatas(dialog.find("form"));
-					
-					$.ajax('/metadata/saveCopy.htm', {
-						data : reqDatas,
-						dataType : 'json',
-						type : 'POST',
-						async : false
-					}).done(function(result,status) {
-						refreshProjectTree();
-					});
-					
-					dialog.dialog("close");
-				});
+			defaultAjaxEdit({
+				edit:'/project/toProject.htm?id='+id,
+				save:'/metadata/saveCopy.htm'
 			});
 		},
-		
-		readFormDatas:function (form) {
-			var inputs = form.find(":input");
-
-			var reqDatas = {};
-			$.each(inputs, function() {
-				if ($(this).attr("type") == "radio" 
-						|| $(this).attr("type") == "checkbox") {
-					if (!this.checked) {
-						return;
-					}
-				}
-				
-				var key = $(this).attr("name");
-				var val = $(this).val();
-				var oldVal = utils.get(reqDatas,key);
-				
-				if(oldVal){
-					if(!$.isArray(oldVal)){
-						oldVal = [oldVal];
-						utils.put(reqDatas,key,oldVal);
-					}
-					oldVal.push(val);
-				}else {
-					utils.put(reqDatas,key,val);
-				}
-			});
-
-			return reqDatas;
-		},
-
-		/*
-		openAddMetadataDialog:function(e, obj) {
-			$("#addObjectMetadataTable").remove();
-			
-			var tObj = newEditTable("addObjectMetadataTable");
-			var props = {
-				name:{name:'name'},
-				label:{name:'label'}
-			};
-			for(x in props){
-				if(x == 'fields')continue;
-				if(x == 'id')continue;
-				if(isSystemProp(x))continue;
-				
-				var field = props[x];
-				var trObj = $("<tr />");
-				
-				trObj.append(newLabelTD(field.name)); //add label td
-				trObj.append(newEditTD(field)); // add value td
-				
-				tObj.append(trObj);
-			}
-			
-			$("#addObjectMetadataDialog").append(tObj);
-			$("#addObjectMetadataDialog").data("data",props);
-			$("#addObjectMetadataDialog").data("diagram",obj.diagram);
-			$("#addObjectMetadataDialog").dialog("open");
-		},
-		*/
 		
 		deleteMetadata:function(e, obj) {
 			var diagram = obj.diagram;
@@ -270,7 +207,7 @@ var treeContextMenu = {
 			
 			metadataModel.ajaxDelete(nodeData.key);
 			
-			diagram.model.removeNodeData(nodeData);
+			refreshProjectTree();
 		},
 		
 		openCURDDialog:function(e, obj) {
@@ -455,7 +392,7 @@ function newMetadatasTreeDiagram() {
 				G_Make(go.Shape, "RoundedRectangle",{
 					fill: yellowgrad,
 					name : "SHAPE"}),
-				G_Make(go.TextBlock, "metadata", textStyle,new go.Binding("text", "text"))
+				G_Make(go.TextBlock, textStyle,new go.Binding("text", "text"))
 		))
 	);
 

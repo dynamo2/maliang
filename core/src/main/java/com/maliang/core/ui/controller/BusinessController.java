@@ -24,6 +24,7 @@ import com.maliang.core.model.Business;
 import com.maliang.core.model.FieldType;
 import com.maliang.core.model.ObjectField;
 import com.maliang.core.model.ObjectMetadata;
+import com.maliang.core.model.Project;
 import com.maliang.core.model.Workflow;
 import com.maliang.core.service.BusinessService;
 
@@ -34,57 +35,10 @@ public class BusinessController extends BasicController {
 	BusinessService businessService = new BusinessService();
 	static Map<String, Map<String, String>> CLASS_LABELS = new HashMap<String, Map<String, String>>();
 	static final String BUSINESS_LIST;
-	
-	
 
 	static {
 		BUSINESS_LIST = "{list:each(list){{" + "name:this.name,"
 				+ "id:this.id+''" + "}}}";
-	}
-	
-	public static void main(String[] args) {
-		ObjectMetadataDao omDao = new ObjectMetadataDao();
-		ObjectMetadata om = omDao.getByName("Project");
-		
-		String omName = om.getName().toLowerCase();		
-		String form = "['form','"+omName+"',[['$fid','','hidden',2],['$bid','','hidden',bid],";
-		for(ObjectField f : om.getFields()){
-			String type = "'text'";
-			if(FieldType.DATE.is(f.getType())){
-				type = "'date'";
-			}else if(FieldType.LINK_COLLECTION.is(f.getType())){
-				type = "['select',each("+f.getLinkedObject()+"){{key:this.id,label:this.name}}]";
-			}
-			
-			form += "['"+f.getName()+"','"+f.getLabel()+"',"+type+","+omName+"."+f.getName()+",'[n]'],";//f.getName()+","+f.getLabel()+",";
-		}
-		
-		form += "['$submit','','submit','保存','[n]']]]";
-		
-		String responce = "{title:'编辑"+om.getLabel()+"',json:[${NAV},"+form+"]}";
-		System.out.println(responce);
-		
-		
-		String editCode = "{addToParams({"+omName+":db."+om.getName()+".get(request.id)})}";
-		System.out.println(editCode);
-		
-		String saveCode = "addToParams({c:db."+om.getName()+".save(request."+omName+")})";
-		String saveResponce = "business({bid:bid,fid:3})";
-		System.out.println(saveCode);
-		System.out.println(saveResponce);
-		
-		String head = "[";
-		String tbody = "each("+omName+"s){[";
-		for(ObjectField f : om.getFields()){
-			head += "'"+f.getLabel()+"',";
-			tbody += "this."+f.getName()+",";
-		}
-		head += "'操作']";
-		tbody += "[['a','编辑',{id:this.id}],['a','库存',{id:this.id,fid:5}]]]}";
-		String tableList = "['tableList',"+head+","+tbody+"]";
-		String listResponce = "{title:'"+om.getLabel()+"列表',date:{bid:bid},json:[${SYS.NAV},${NAV},"+tableList+"]}";
-		System.out.println("============ List Responce ===============");
-		System.out.println(listResponce);
 	}
 
 	@RequestMapping(value = "main.htm")
@@ -135,8 +89,6 @@ public class BusinessController extends BasicController {
 	protected Map<String, Object> readRequestMap(HttpServletRequest request) {
 		JSONObject json = JSONObject.fromObject(request.getParameterMap());
 		List<String> reqNames = json.names();
-		
-		System.out.println("********** reqNames : " + reqNames);
 
 		Map<String, Object> reqMap = new HashMap<String, Object>();
 		if (reqNames == null || reqNames.size() == 0) {
@@ -170,7 +122,6 @@ public class BusinessController extends BasicController {
 		Workflow workFlow = businessDao.getWorkFlowById(id);
 		
 		String json = this.json(workFlow);
-		System.out.println("work flow json : " + json);
 
 		return json;
 	}
@@ -181,6 +132,9 @@ public class BusinessController extends BasicController {
 		Map<String, Object> reqMap = this.readRequestMapNotJSONFilter(request);
 		
 		Map<String,Object> business = (Map<String,Object>)reqMap.get("business");
+		
+		System.out.println("---------- saveWorkFlow business : " + business);
+		
 		this.businessDao.updateBySet(business);
 
 		Business nb = businessDao.getByID(business.get("id").toString());
@@ -200,6 +154,56 @@ public class BusinessController extends BasicController {
 
 		Object editMap = AE.execute(BUSINESS_LIST, params);
 		return this.json(editMap);
+	}
+	
+	@RequestMapping(value = "edit2.htm")
+	@ResponseBody
+	public String edit2(String id) {
+		Business business = this.businessDao.getByID(id);
+		if(business == null){
+			business = new Business();
+		}
+
+		List<Project> projects = this.projectDao.list();
+		Map<String,Object> params = newMap("business",business);
+		params.put("projects", projects);
+
+		String s = "{json:['form','business',"
+						+ "[['id','','hidden',business.id,'[n]'],"
+							+ "['project','所属项目',['select',each(projects){{key:this.id,label:this.name}}],metadata.project.id,'[n]'],"
+							+ "['name','名称','text',business.name,'[n]'],"
+							+ "['uniqueCode','唯一代码','text',business.uniqueCode,'[n]']]]}";
+		Object val = AE.execute(s, params);
+		
+		return this.json(val);
+	}
+
+	@RequestMapping(value = "saveMove.htm")
+	@ResponseBody
+	public String saveMove(String id,String pid) {
+		Business business = this.businessDao.getByID(id);
+		Project project = this.projectDao.getByID(pid);
+		
+		if(business != null && project != null){
+			if(!isSameProject(project,business)){
+				Business newBus = new Business();
+				
+				newBus.setId(business.getId());
+				newBus.setProject(project);
+				
+				this.businessDao.save(newBus);
+			}
+		}
+		
+		return "{}";
+	}
+	
+	private boolean isSameProject(Project project,Business business){
+		return business != null 
+				&& project != null
+				&& project.getId() != null
+				&& business.getProject() != null 
+				&& project.getId().equals(business.getProject().getId());
 	}
 
 	@RequestMapping(value = "edit.htm")
@@ -240,6 +244,8 @@ public class BusinessController extends BasicController {
 			business = businessDao.getByName(businessName);
 		}
 
+		request.getSession().setAttribute("SYS_BUSINESS",business);
+		
 		if (business == null) {
 			return null;
 		}
@@ -285,5 +291,50 @@ public class BusinessController extends BasicController {
 
 		// System.out.println("readRequestParameters : " + params);
 		return params;
+	}
+	
+	public static void main(String[] args) {
+		ObjectMetadataDao omDao = new ObjectMetadataDao();
+		ObjectMetadata om = omDao.getByName("Project");
+		
+		String omName = om.getName().toLowerCase();		
+		String form = "['form','"+omName+"',[['$fid','','hidden',2],['$bid','','hidden',bid],";
+		for(ObjectField f : om.getFields()){
+			String type = "'text'";
+			if(FieldType.DATE.is(f.getType())){
+				type = "'date'";
+			}else if(FieldType.LINK_COLLECTION.is(f.getType())){
+				type = "['select',each("+f.getLinkedObject()+"){{key:this.id,label:this.name}}]";
+			}
+			
+			form += "['"+f.getName()+"','"+f.getLabel()+"',"+type+","+omName+"."+f.getName()+",'[n]'],";//f.getName()+","+f.getLabel()+",";
+		}
+		
+		form += "['$submit','','submit','保存','[n]']]]";
+		
+		String responce = "{title:'编辑"+om.getLabel()+"',json:[${NAV},"+form+"]}";
+		System.out.println(responce);
+		
+		
+		String editCode = "{addToParams({"+omName+":db."+om.getName()+".get(request.id)})}";
+		System.out.println(editCode);
+		
+		String saveCode = "addToParams({c:db."+om.getName()+".save(request."+omName+")})";
+		String saveResponce = "business({bid:bid,fid:3})";
+		System.out.println(saveCode);
+		System.out.println(saveResponce);
+		
+		String head = "[";
+		String tbody = "each("+omName+"s){[";
+		for(ObjectField f : om.getFields()){
+			head += "'"+f.getLabel()+"',";
+			tbody += "this."+f.getName()+",";
+		}
+		head += "'操作']";
+		tbody += "[['a','编辑',{id:this.id}],['a','库存',{id:this.id,fid:5}]]]}";
+		String tableList = "['tableList',"+head+","+tbody+"]";
+		String listResponce = "{title:'"+om.getLabel()+"列表',date:{bid:bid},json:[${SYS.NAV},${NAV},"+tableList+"]}";
+		System.out.println("============ List Responce ===============");
+		System.out.println(listResponce);
 	}
 }

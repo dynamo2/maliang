@@ -158,22 +158,22 @@ public class ObjectMetadataController extends BasicController {
 		return this.json(val);
 	}
 	
-	@RequestMapping(value = "toProject.htm")
-	@ResponseBody
-	public String toProject(String id) {
-		List<Project> projects = this.projectDao.list();
-		Map<String,Object> params = newMap("id",id);
-		params.put("projects", projects);
-		
-		String s = "{json:['form','metadata',"
-				+ "[['$id','','hidden',id,'[n]'],"
-					+ "['$pid','项目',['select',each(projects){{key:this.id,label:this.name}}],'','[n]']"
-					+ "]]}";
-		
-		Object val = AE.execute(s,params);
-
-		return this.json(val);
-	}
+//	@RequestMapping(value = "toProject.htm")
+//	@ResponseBody
+//	public String toProject(String id) {
+//		List<Project> projects = this.projectDao.list();
+//		Map<String,Object> params = newMap("id",id);
+//		params.put("projects", projects);
+//		
+//		String s = "{json:['form','metadata',"
+//				+ "[['$id','','hidden',id,'[n]'],"
+//					+ "['$pid','项目',['select',each(projects){{key:this.id,label:this.name}}],'','[n]']"
+//					+ "]]}";
+//		
+//		Object val = AE.execute(s,params);
+//
+//		return this.json(val);
+//	}
 	
 	@RequestMapping(value = "saveMove.htm")
 	@ResponseBody

@@ -3,13 +3,10 @@ package com.maliang.core.arithmetic.function;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
-
 import com.maliang.core.arithmetic.ArithmeticExpression;
+import com.maliang.core.util.Utils;
 
 public class SessionFunction {
 	public static final String HTTP_REQUEST_KEY = "httpRequest";
@@ -17,7 +14,7 @@ public class SessionFunction {
 	public static Object execute(Function function ,Map<String,Object> params){
 		Object obj = function.executeExpression(params);
 		if(obj != null){
-			HttpSession session = getSession();
+			HttpSession session = Utils.getSession();
 			if(obj instanceof Map){
 				Map<String,Object> mv = (Map<String,Object>)obj;
 				if(mv.size() > 0){
@@ -35,14 +32,7 @@ public class SessionFunction {
 		return null;
 	}
 	
-	private static HttpSession getSession(){
-		HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest(); 
-		if(request != null){
-			return request.getSession();
-		}
-		
-		return null;
-	}
+	
 	
 	public static void main(String[] args) {
 		String s = "addToParams({uname:'wmx',password:'123456',"

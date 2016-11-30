@@ -84,7 +84,7 @@
 			$("body").layout({ 
 				applyDemoStyles: true,
 				west:{
-					size:300
+					size:350
 				}
 			});
 		});

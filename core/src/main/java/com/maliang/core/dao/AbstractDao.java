@@ -14,10 +14,12 @@ import java.util.Map;
 
 import org.bson.types.ObjectId;
 
+import com.maliang.core.model.Business;
 import com.maliang.core.model.Linked;
 import com.maliang.core.model.MongodbModel;
 import com.maliang.core.model.ObjectMetadata;
-import com.maliang.core.util.StringUtil;
+import com.maliang.core.model.Project;
+import com.maliang.core.util.Utils;
 import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DB;
@@ -30,19 +32,40 @@ public class AbstractDao  {
 	protected static DB db;
 	protected static String DB_TIANMA = "tianma";
 	protected static String DB_JIRA = "jira";
+	private final static List<String> SYSTEM_DB_COLLECTIONS = new ArrayList<String>();
 
 	@SuppressWarnings("rawtypes")
 	protected static Map<String,Class> INNER_TYPE = new HashMap<String,Class>();
 	static {
 		try {
 			mongoClient = new MongoClient();
-			db = mongoClient.getDB(DB_TIANMA);
+			db = mongoClient.getDB(DB_JIRA);
+			
+			SYSTEM_DB_COLLECTIONS.add("object_metadata");
+			SYSTEM_DB_COLLECTIONS.add("Business");
+			SYSTEM_DB_COLLECTIONS.add("System");
+			SYSTEM_DB_COLLECTIONS.add("UCType");
 		} catch (UnknownHostException ue) {
 		}
 	}
 
 	protected DBCollection getDBCollection(String name){
+		if(!isSystemCollection(name)){
+			Object bus = Utils.getSessionValue("SYS_BUSINESS");
+			if(bus != null && bus instanceof Business){
+				Project project = ((Business)bus).getProject();
+				if(project != null){
+					name = project.getKey()+"_"+name;
+				}
+			}
+		}
+
+		//System.out.println(" ----- getDBCollection name : " + name);
 		return db.getCollection(name);
+	}
+	
+	protected boolean isSystemCollection(String name){
+		return SYSTEM_DB_COLLECTIONS.contains(name);
 	}
 	
 	public void renameCollection(String collName,String newName){
@@ -177,7 +200,7 @@ public class AbstractDao  {
 		return null;
 	}
 	
-	protected BasicDBObject encode(Object obj) {
+	protected BasicDBObject encode(Object obj,boolean insertID) {
 		BasicDBObject doc = new BasicDBObject();
 		
 		try {
@@ -192,22 +215,27 @@ public class AbstractDao  {
 	            	
 	            	try {
 	            		Object value = pd.getReadMethod().invoke(obj);
+	            		if(insertID && dbName.equalsIgnoreCase("id")){
+	            			dbName = "_id";
+	            			if(value == null){
+	            				value = new ObjectId();
+	            			}
+	            		}
+	            		
 	            		if(value == null) continue;
 	            		
-	            		if(dbName.equalsIgnoreCase("id")){
-	            			dbName = "_id";
-	            		}else if(value instanceof MongodbModel){
+	            		if(value instanceof MongodbModel){
 	            			Linked link = obj.getClass().getDeclaredField(dbName).getAnnotation(Linked.class);
 	            			if(link != null){
 	            				value = ecodeLinkedValue((MongodbModel)value);
 	            			}else {
-	            				value = encode(value);
+	            				value = encode(value,insertID);
 	            			}
 	            		}else if(value instanceof Collection){
 	            			List<Object> vl = new ArrayList<Object>();
 							for(Object val : (Collection)value){
 	            				if(val instanceof MongodbModel){
-	            					val = encode(val);
+	            					val = encode(val,insertID);
 	            				}
 	            				
 	            				vl.add(val);

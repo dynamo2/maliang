@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.regex.Pattern;
 
 import com.maliang.core.arithmetic.AE;
+import com.maliang.core.model.Business;
 import com.maliang.core.service.CollectionService;
 import com.maliang.core.util.Utils;
 
@@ -58,6 +59,14 @@ public class DBFunction {
 		}
 		
 		String collection = key.substring(start+1,end);
+//		Object business = Utils.getSessionValue("SYS_BUSINESS");
+//		if(business instanceof Business && business != null && ((Business)business).getProject() != null){
+//			String pname = ((Business)business).getProject().getKey();
+//			collection = pname+"_"+collection;
+//		}
+//		System.out.println("------- db fun collection : " + collection);
+		
+		
 		String method = key.substring(end+1);
 		
 		Object value = function.executeExpression(params);

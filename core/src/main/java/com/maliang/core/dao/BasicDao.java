@@ -60,8 +60,6 @@ public class BasicDao extends AbstractDao{
 	
 	public List<Map<String,Object>> findByMap(Map<String,Object> query,String collName){
 		BasicDBObject bq = build(query);
-		
-		System.out.println("**************  b query : " + bq);
 		return this.find(bq, collName);
 	}
 	

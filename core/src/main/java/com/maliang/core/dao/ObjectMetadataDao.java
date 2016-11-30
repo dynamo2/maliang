@@ -37,10 +37,10 @@ public class ObjectMetadataDao  extends ModelDao<ObjectMetadata> {
 		if(field.getId() == null) {
 			field.setId(new ObjectId());
 			
-			BasicDBObject doc = encode(field);
+			BasicDBObject doc = encode(field,true);
 			this.dbColl.update(this.getObjectId(oid), new BasicDBObject("$push",new BasicDBObject("fields",doc)));
 		}else {
-			BasicDBObject doc = encode(field);
+			BasicDBObject doc = encode(field,true);
 			this.dbColl.update(new BasicDBObject("fields._id",field.getId()), new BasicDBObject("$set",new BasicDBObject("fields.$",doc)));
 		}
 	}
