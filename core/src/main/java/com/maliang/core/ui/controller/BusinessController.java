@@ -266,6 +266,8 @@ public class BusinessController extends BasicController {
 
 	private String executeAjaxWorkFlow(Workflow flow, HttpServletRequest request) {
 		Map<String, Object> params = executeCode(flow, request);
+		
+		System.out.println("---------- executeAjaxWorkFlow rquest : " + params);
 
 		Object ajaxMap = ArithmeticExpression.execute(flow.getAjax(), params);
 

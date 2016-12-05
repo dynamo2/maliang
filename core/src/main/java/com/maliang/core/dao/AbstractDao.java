@@ -58,6 +58,9 @@ public class AbstractDao  {
 					name = project.getKey()+"_"+name;
 				}
 			}
+			
+			//Test
+			//name = "EB_"+name;
 		}
 
 		//System.out.println(" ----- getDBCollection name : " + name);

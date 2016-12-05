@@ -7,6 +7,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.bson.types.ObjectId;
+
 import com.maliang.core.arithmetic.ArithmeticExpression;
 import com.maliang.core.dao.CollectionDao;
 import com.maliang.core.dao.ObjectMetadataDao;
@@ -47,6 +49,15 @@ public class CollectionService {
 		return this.collectionDao.getByID(id, this.collection);
 	}
 	
+	public Map<String,Object> get(String id,String innerName){
+		if(id == null || id.trim().isEmpty()){
+			return null;
+		}
+		
+		id = id.trim();
+		return this.collectionDao.getInnerObject(this.collection, innerName, id);
+	}
+	
 	//command $set
 	public Object dbSet(Map<String,Object> query,Map<String,Object> set){
 		this.collectionDao.dbSet(query,set,this.collection,true);
@@ -64,7 +75,7 @@ public class CollectionService {
 		if(query != null && query instanceof Map){
 			v = (Map)query;
 		}
-
+		
 		return this.collectionDao.innerObjectById(v, this.collection);
 	}
 	
@@ -119,18 +130,54 @@ public class CollectionService {
 		if(obj == null || !(obj instanceof Map))return null;
 		
 		Map<String,Object> dataMap = (Map<String,Object>)obj;
-		if(StringUtil.isEmpty((String)dataMap.get("id"))){ // Save
+		//if(!StringUtil.isEmpty((String)dataMap.get("id"))){ 
+		if(hasId(dataMap)){// Update
+			//dataMap = this.correctData(dataMap,this.collection,false);
+			dataMap = this.collectionDao.correctData(dataMap, this.collection,false,false);
+			return this.collectionDao.updateBySet(dataMap, this.collection);
+		}else { // Save
 			//dataMap = this.correctData(dataMap,this.collection,true);
 			
 			dataMap = this.collectionDao.correctData(dataMap, this.collection,true,false);
-			dataMap = this.collectionDao.save(dataMap, this.collection);
-		}else { // Update
-			//dataMap = this.correctData(dataMap,this.collection,false);
-			dataMap = this.collectionDao.correctData(dataMap, this.collection,false,false);
-			dataMap = this.collectionDao.updateBySet(dataMap, this.collection);
+			return this.collectionDao.save(dataMap, this.collection);
+		}
+	}
+	
+	/**
+	 * 检索该对象中是否有有效ID值，支持递归检索
+	 * ***/
+	private boolean hasId(Map<String,Object> dataMap){
+		try {
+			Object id = dataMap.get("id");
+			if(id == null){
+				id = dataMap.get("_id");
+			}
+			
+			new ObjectId(id.toString());
+			return true;
+		}catch(Exception e){}
+		
+		return hasId(dataMap.values());
+	}
+	
+	private boolean hasId(Object[] os){
+		for(Object o : Utils.toArray(os)){
+			if(hasId(o)){
+				return true;
+			}
 		}
 		
-		return dataMap;
+		return false;
+	}
+	
+	private boolean hasId(Object o){
+		if(o instanceof Map){
+			return hasId((Map<String,Object>)o);
+		}
+		if(Utils.isArray(o)){
+			return hasId(Utils.toArray(o));
+		}
+		return false;
 	}
 	
 	public void removeAll(){
@@ -161,82 +208,6 @@ public class CollectionService {
 		return this.collectionDao.correctData(dataMap, this.collection,false,isDeep);
 	}
 	
-	/*
-	private Map<String,Object> correctData(Map<String,Object> dataMap,String collName,boolean dealWithId){
-		if(dataMap == null)return null;
-		
-		ObjectMetadata metadata = this.metaDao.getByName(collName);
-		return correctData(dataMap,metadata.getFields(),dealWithId);
-	}
-	
-	private Map<String,Object> correctData(Map<String,Object> dataMap,List<ObjectField> fields,boolean dealWithId){
-		if(dataMap == null)return null;
-		
-		Map<String,Object> newMap = new HashMap<String,Object>();
-		
-		if(!StringUtil.isEmpty((String)dataMap.get("id"))){
-			if(dealWithId){
-				newMap.put("_id",new ObjectId(dataMap.get("id").toString().trim()));
-			}else {
-				newMap.put("id",dataMap.get("id"));
-			}
-		}
-
-		for(ObjectField of : fields){
-			String fieldName = of.getName();
-			Object fieldValue = dataMap.get(fieldName);
-			if(fieldValue == null)continue;
-			
-			newMap.put(fieldName, correctFieldValue(of,fieldValue,dealWithId));
-		}
-		return newMap;
-	}
-	
-	private Object correctFieldValue(ObjectField of,Object fieldValue,boolean dealWithId){
-		if(FieldType.ARRAY.is(of.getType())){
-			if(fieldValue instanceof List){
-				List<Object> result = new ArrayList<Object>();
-				for(Object o : (List<Object>)fieldValue){
-					of.setType(of.getElementType());
-					
-					result.add(correctFieldValue(of,o,dealWithId));
-				}
-				
-				return result;
-			}else if(fieldValue instanceof Map){
-				of.setType(of.getElementType());
-				
-				List<Object> result = new ArrayList<Object>();
-				result.add(correctFieldValue(of,fieldValue,dealWithId));
-				return result;
-			}else {
-				return null;
-			}
-		}
-		
-		if(FieldType.INNER_COLLECTION.is(of.getType())){
-			if(fieldValue instanceof Map){
-				if(dealWithId){
-					if(((Map) fieldValue).get("id") == null){
-						((Map) fieldValue).put("id",new ObjectId().toString());
-					}
-				}
-
-				return correctData((Map<String,Object>)fieldValue,of.getFields(),dealWithId);
-			}
-		}
-		
-		if(FieldType.LINK_COLLECTION.is(of.getType())){
-			if(fieldValue instanceof Map){
-				return correctData((Map<String,Object>)fieldValue,of.getLinkedObject(),dealWithId);
-			}
-		}
-
-		return DaoHelper.correctFieldValue(of.getType(),fieldValue);
-	}
-	*/
-	
-
 	public static void main(String[] args) {
 		String s = "db.User.save({birthday:'1981-4-9', real_name:'www', password:'123456', user:'wmx', id:'', user_grade:'55c8be3f1b970b1ff3fc2f6c'})";
 		//s = "db.Product.search({})";
@@ -270,8 +241,9 @@ public class CollectionService {
 			
 			String v = value==null?null:value.toString();
 			if(isInner){
-				Map query = this.collectionDao.buildInnerGetMap(innerName, v);
-				return this.innerObjectById(query);
+				//Map query = this.collectionDao.buildInnerGetMap(innerName, v);
+				//return this.innerObjectById(query);
+				return this.get(v,innerName);
 			}else {
 				return this.get(v);
 			}
@@ -392,43 +364,4 @@ public class CollectionService {
 		return null;
 	}
 	
-//	private Object correctFieldValue(int ftype,Object value){
-//		if(FieldType.DOUBLE.is(ftype)){
-//			try {
-//				return Double.valueOf(value.toString().trim());
-//			}catch(Exception e){
-//				return null;
-//			}
-//		}
-//		
-//		if(FieldType.INT.is(ftype)){
-//			try {
-//				return Integer.valueOf(value.toString().trim());
-//			}catch(Exception e){
-//				return null;
-//			}
-//		}
-//		
-//		if(FieldType.DATE.is(ftype)){
-//			try {
-//				return timestampFormat.parse(value.toString().trim());
-//			}catch(ParseException e){
-//				try {
-//					return dateFormat.parse(value.toString().trim());
-//				}catch(ParseException ee){
-//					return null;
-//				}
-//			}
-//		}
-//		
-//		if(FieldType.STRING.is(ftype)){
-//			try {
-//				return value.toString();
-//			}catch(Exception e){
-//				return null;
-//			}
-//		}
-//
-//		return value;
-//	}
 }

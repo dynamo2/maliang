@@ -128,20 +128,18 @@ public class Utils {
 	}
 	
 	public static HttpSession getSession(){
-		HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest(); 
-		if(request != null){
-			return request.getSession();
+		try {
+			return ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest().getSession();
+		}catch(Exception e){
+			return null;
 		}
-		
-		return null;
 	}
 	
 	public static Object getSessionValue(String key){
-		HttpSession session = getSession();
-		if(session != null){
-			return session.getAttribute(key);
+		try {
+			return getSession().getAttribute(key);
+		}catch(Exception e){
+			return null;
 		}
-		
-		return null;
 	}
 }

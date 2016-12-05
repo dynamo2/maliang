@@ -23,23 +23,26 @@ function Utils(){
 			obj = {};
 		}
 		
-		var ks = key.split(".");
-		if(ks.length > 1){
-			var last = obj;
-			var i = 0;
-			
-			for(i = 0; i < ks.length-1; i++){
-				var k = ks[i];
+		if(_.isString(key)){
+			var ks = key.split(".");
+			if(ks.length > 1){
+				var last = obj;
+				var i = 0;
 				
-				if(!last[k]){
-					last[k] = {};
+				for(i = 0; i < ks.length-1; i++){
+					var k = ks[i];
+					
+					if(!last[k]){
+						last[k] = {};
+					}
+					last = last[k];
 				}
-				last = last[k];
+				last[ks[i]] = val;
+			}else {
+				obj[key] = val;
 			}
-			last[ks[i]] = val;
-		}else {
-			obj[key] = val;
 		}
+		
 		return obj;
 	};
 	

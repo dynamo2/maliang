@@ -2,6 +2,7 @@ package com.maliang.core.dao;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -16,12 +17,12 @@ import com.maliang.core.model.UCValue;
 import com.maliang.core.service.MapHelper;
 import com.maliang.core.util.StringUtil;
 import com.maliang.core.util.Utils;
+import com.mongodb.AggregationOutput;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
 
 public class BasicDao extends AbstractDao{
-	private static String OBJECT_METADATA_KEY = "_object_metadata_";
 	private static String META_KEY = ".meta";
 	
 	protected ObjectMetadataDao metaDao = new ObjectMetadataDao();
@@ -46,9 +47,31 @@ public class BasicDao extends AbstractDao{
 		this.getDBCollection(collName).save(doc);
 	}
 	
+	
+	public Map<String,Object> getInnerObject(String collName,String innerName,String oid){
+		List<DBObject> pipe = new ArrayList<DBObject>();
+		
+		BasicDBObject query = new BasicDBObject(innerName+"._id",new ObjectId(oid));
+		
+		pipe.add(new BasicDBObject("$match",query));
+		pipe.add(new BasicDBObject("$unwind","$"+innerName));
+		pipe.add(new BasicDBObject("$match",query));
+		pipe.add(new BasicDBObject("$project",new BasicDBObject().append(innerName,1).append("_id",0)));
+		
+		AggregationOutput aout = this.getDBCollection(collName).aggregate(pipe);
+		Iterator<DBObject> ie = aout.results().iterator();
+		while(ie.hasNext()){
+			return this.toMap((BasicDBObject)ie.next().get(innerName), collName,innerName);
+		}
+		
+		return null;
+	}
+	
 	public Map<String,Object> innerObjectById(Map<String,Object> query,String collName){
 		Map<String,Object> dbQuery = buildDBQueryMap(query,null);
+		
 		List<Map<String,Object>> results = this.findByMap(dbQuery, collName);
+		
 		if(results != null && results.size() > 0){
 			Map<String,Object> returnObject = findInnerById(results.get(0),dbQuery);
 			if(returnObject != null){
@@ -179,6 +202,8 @@ public class BasicDao extends AbstractDao{
 			preName = prefix+".";
 		}
 		
+		//System.out.println("======= innMap : " + innMap+", updateQuery : " + updateQuery);
+		
 		for(ObjectField ff : fields){
 			if(!innMap.containsKey(ff.getName()))continue;
 			
@@ -215,6 +240,9 @@ public class BasicDao extends AbstractDao{
 	
 	protected static void buildInnerUpdates(Map<String,Object> valMap,ObjectField innerField,String fieldKey,
 			List<Map<String,BasicDBObject>> updates,BasicDBObject updateQuery){
+		//System.out.println("========== buildInnerUpdates valMap : " + valMap);
+		if(valMap == null)return;
+		
 		Map<String,Object> updateMap = new HashMap<String,Object>();
 		updateMap.putAll(valMap);
 		
@@ -393,6 +421,10 @@ public class BasicDao extends AbstractDao{
 			newMap.put("_id",dataMap.get("_id"));
 		}
 		
+		if(!newMap.containsKey("id") || !newMap.containsKey("_id")){
+			//newMap.put("_id",new ObjectId());
+		}
+		
 		for(ObjectField of : fields){
 			String fieldName = of.getName();
 			Object fieldValue = dataMap.get(fieldName);
@@ -555,9 +587,14 @@ public class BasicDao extends AbstractDao{
 		if(FieldType.INNER_COLLECTION.is(of.getType())){
 			if(fieldValue instanceof Map){
 				if(dealWithId){
-					if(((Map) fieldValue).get("id") == null){
-						((Map) fieldValue).put("id",new ObjectId().toString());
+					Object id = ((Map) fieldValue).get("id");
+					try {
+						id = new ObjectId(id.toString()).toString();
+					}catch(Exception e){
+						id = new ObjectId().toString();
 					}
+					
+					((Map) fieldValue).put("id",id);
 				}
 				
 				return correctData((Map<String,Object>)fieldValue,of.getFields(),dealWithId,isDeep);
@@ -628,6 +665,26 @@ public class BasicDao extends AbstractDao{
 		Map<String,Object> dataMap = doc.toMap();
 		mergeLinkedObject(dataMap,collName);
 		return dataMap;
+	}
+	
+	protected Map<String,Object> toMap(DBObject doc,String collName,String innerName){
+		ObjectMetadata metedata = this.metaDao.getByName(collName);
+		if(metedata == null){
+			return null;
+		}
+		
+		for(ObjectField f : metedata.getFields()){
+			if(f.getName().equals(innerName)){
+				if(FieldType.ARRAY.is(f.getType()) && FieldType.INNER_COLLECTION.is(f.getElementType())){
+					Map<String,Object> dataMap = doc.toMap();
+
+					correctField(dataMap,f.getFields(),rootMeta(collName));
+					return dataMap;
+				}
+			}
+		}
+
+		return null;
 	}
 	
 	protected void mergeLinkedObject(Map<String,Object> dataMap,String collName){

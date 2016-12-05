@@ -33,14 +33,12 @@ function readFormDatas(form) {
 		
 		var key = $(this).attr("name");
 		var oldVal = reqDatas[key];
-		if(reqDatas[key]){
-			var val = reqDatas[key];
-			
-			if(!$.isArray(val)){
-				val = [val];
-				reqDatas[key] = val;
+		if(oldVal){
+			if(!$.isArray(oldVal)){
+				oldVal = [oldVal];
+				reqDatas[key] = oldVal;
 			}
-			val.push($(this).val());
+			oldVal.push($(this).val());
 		}else {
 			reqDatas[key] = $(this).val();
 		}
@@ -99,26 +97,108 @@ function FormTable(){
 		if(_.isGroup(opts)){
 			_.append(etd,opts);
 		}else if(_.isList(opts)){
-			var listTable = $("<table class='tableList' cellpadding='0' cellspacing='1' />").appendTo(etd);
-			var tr = $("<tr />").appendTo(listTable);
-			
-			if($.isArray(opts.type.header)){
-				$.each(opts.type.header,function(){
-					$("<th class='header' />").text(this).appendTo(tr);
-				});
-			}
-			
-			$.each(opts.type.inputs,function(){
-				tr = $("<tr />").appendTo(listTable);
-				$.each(this,function(){
-					_.append($("<td />").appendTo(tr),this);
-				});
-			});
+			_.buildListInputs(opts).appendTo(etd);
 		}else {
 			_.appendInput(etd,opts);
 		}
 		
 		return etd;
+	};
+	
+	/**
+	 * 生成列表编辑模式
+	 * ***/
+	this.buildListInputs = function(opts){
+		var listTable = $("<table class='tableList' cellpadding='0' cellspacing='1' />");
+		var tr = $("<tr />").appendTo(listTable);
+		
+		if($.isArray(opts.type.header)){
+			$.each(opts.type.header,function(){
+				$("<th class='header' />").text(this).appendTo(tr);
+			});
+		}
+		
+		listTable.data("index",0);
+		var newTemplate = null;
+		$.each(opts.type.inputs,function(){
+			if(newTemplate == null){
+				newTemplate = _.readNewInputs(this);
+			}
+			_.addListRow(listTable,this);
+		});
+		
+		if(newTemplate){
+			tr = $("<tr />").prependTo(listTable);
+			var td = $("<td colspan='"+newTemplate.length+"' />").appendTo(tr);
+			var addButton = $("<input type='button' value='添加' />").appendTo(td);
+			addButton.click(function(){
+				_.addListRow(listTable,newTemplate);
+			});
+		}
+		return listTable;
+	};
+	
+	/***
+	 * 根据原始input组生成[‘新增’input组]
+	 * **/
+	this.readNewInputs = function(inputs){
+		var newInputs = [];
+		if($.isArray(inputs)){
+			$.each(inputs,function(){
+				newInputs.push(utils.copy(this,{},['value']));
+			});
+		}
+		return newInputs;
+	};
+	
+	/***
+	 * 根据inputs添加[编辑row]到指定table
+	 * **/
+	this.addListRow = function(listTable,inputs){
+		var tr = $("<tr />").appendTo(listTable);
+		var hidden = $("<td class='hidden' />").appendTo(tr);
+		var idx = listTable.data("index");
+		$.each(inputs,function(){
+			var oldName = this.name;
+			
+			_.addListIndex(this,idx);
+			
+			if(_.isHidden(this)){
+				_.append(hidden,this);
+			}else {
+				_.append($("<td />").insertBefore(hidden),this);
+			}
+			
+			this.name = oldName;
+		});
+		listTable.data("index",idx+1);
+	};
+	
+	/***
+	 * 将input.name转换成数组格式：
+	 *    如：provice.city 转换成 province.0.city
+	 * **/
+	this.addListIndex = function(opts,idx){
+		if(!opts || !opts.name 
+				|| !utils.isString(opts.name))return;
+		
+		var n = '';
+		var ns = opts.name.split(".");
+		if(ns.length > 1){
+			for(var i = 0; i<ns.length-1;i++){
+				if(n.length > 0){
+					n += '.';
+				}
+				n += ns[i];
+			}
+		}
+		
+		if(n.length > 0){
+			n += '.';
+		}
+		n += idx+'.'+ns[ns.length-1];
+		
+		opts.name = n;
 	};
 	
 	/**
