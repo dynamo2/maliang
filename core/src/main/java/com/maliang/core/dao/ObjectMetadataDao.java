@@ -1,12 +1,13 @@
 package com.maliang.core.dao;
 
 import java.util.List;
-import java.util.UUID;
 
 import org.bson.types.ObjectId;
 
 import com.maliang.core.model.ObjectField;
 import com.maliang.core.model.ObjectMetadata;
+import com.maliang.core.model.Trigger;
+import com.maliang.core.model.TriggerAction;
 import com.mongodb.BasicDBObject;
 
 public class ObjectMetadataDao  extends ModelDao<ObjectMetadata> {
@@ -14,7 +15,9 @@ public class ObjectMetadataDao  extends ModelDao<ObjectMetadata> {
 	
 	static {
 		INNER_TYPE.put("ObjectMetadata.fields",ObjectField.class);
+		INNER_TYPE.put("ObjectMetadata.triggers",Trigger.class);
 		INNER_TYPE.put("ObjectField.fields",ObjectField.class);
+		INNER_TYPE.put("Trigger.actions",TriggerAction.class);
 	}
 	
 	public ObjectMetadataDao(){
@@ -43,6 +46,18 @@ public class ObjectMetadataDao  extends ModelDao<ObjectMetadata> {
 			BasicDBObject doc = encode(field,true);
 			this.dbColl.update(new BasicDBObject("fields._id",field.getId()), new BasicDBObject("$set",new BasicDBObject("fields.$",doc)));
 		}
+	}
+	
+	public Trigger getTriggerById(String tid){
+		try {
+			return this.getArrayInnerById("triggers", new ObjectId(tid),Trigger.class);
+		}catch(Exception e){
+			return null;
+		}
+	}
+	
+	public void saveTrigger(String oid,Trigger trigger){
+		this.saveArrayInnerFields(oid, "triggers", trigger);
 	}
 
 	/**

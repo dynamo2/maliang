@@ -177,6 +177,10 @@ public class GeneraterController extends BasicController {
 	}
 
 	private String gTableList(String parentName,List<ObjectField> fields){
+		if(Utils.isEmpty(fields)){
+			return "";
+		}
+		
 		StringBuffer tableSbf = new StringBuffer();
 		StringBuffer headSbf = new StringBuffer();
 		StringBuffer tbodySbf = new StringBuffer();

@@ -59,16 +59,21 @@ public class CollectionService {
 	}
 	
 	//command $set
-	public Object dbSet(Map<String,Object> query,Map<String,Object> set){
-		this.collectionDao.dbSet(query,set,this.collection,true);
+	public Object update(Map<String,Object> query,Map<String,Object> set){
+		this.collectionDao.update(query,set,this.collection);
 		return null;
 	}
 	
 	//command $set
-	public Object dbSetOne(Map<String,Object> query,Map<String,Object> set){
-		this.collectionDao.dbSet(query,set,this.collection,false);
-		return null;
-	}
+		public int updateAll(Map<String,Object> update){
+			return this.collectionDao.updateAll(update,this.collection);
+		}
+	
+	//command $set
+//	public Object dbSetOne(Map<String,Object> query,Map<String,Object> set){
+//		this.collectionDao.update(query,set,this.collection,false);
+//		return null;
+//	}
 	
 	public Map<String,Object> innerObjectById(Object query){
 		Map v = null;
@@ -282,13 +287,13 @@ public class CollectionService {
 				Map delMap = new HashMap();
 				delMap.put(innerName+".$", null);
 				
-				return this.dbSet(query,delMap);
+				return this.update(query,delMap);
 			}
 			
 			return this.remove(v);
 		}
 		
-		if("set".equals(method)){
+		if("update".equals(method)){
 			if(value != null && value instanceof List && ((List)value).size() == 2){
 				Object query = ((List)value).get(0);
 				if(query == null || !(query instanceof Map))return null;
@@ -296,23 +301,31 @@ public class CollectionService {
 				Object set = ((List)value).get(1);
 				if(set == null || !(set instanceof Map))return null;
 				
-				return this.dbSet((Map<String,Object>)query,(Map<String,Object>)set);
+				return this.update((Map<String,Object>)query,(Map<String,Object>)set);
 			}
 			return null;
 		}
 		
-		if("setOne".equals(method)){
-			if(value != null && value instanceof List && ((List)value).size() == 2){
-				Object query = ((List)value).get(0);
-				if(query == null || !(query instanceof Map))return null;
-				
-				Object set = ((List)value).get(1);
-				if(set == null || !(set instanceof Map))return null;
-				
-				return this.dbSetOne((Map<String,Object>)query,(Map<String,Object>)set);
+		if("updateAll".equals(method)){
+			if(value instanceof Map){
+				return this.updateAll((Map<String,Object>)value);
 			}
-			return null;
+			
+			return 0;
 		}
+		
+//		if("updateOne".equals(method)){
+//			if(value != null && value instanceof List && ((List)value).size() == 2){
+//				Object query = ((List)value).get(0);
+//				if(query == null || !(query instanceof Map))return null;
+//				
+//				Object set = ((List)value).get(1);
+//				if(set == null || !(set instanceof Map))return null;
+//				
+//				return this.dbSetOne((Map<String,Object>)query,(Map<String,Object>)set);
+//			}
+//			return null;
+//		}
 		
 		if("removeAll".equals(method)){
 			this.removeAll();

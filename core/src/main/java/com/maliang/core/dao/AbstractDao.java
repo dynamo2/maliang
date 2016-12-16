@@ -45,8 +45,7 @@ public class AbstractDao  {
 			SYSTEM_DB_COLLECTIONS.add("Business");
 			SYSTEM_DB_COLLECTIONS.add("System");
 			SYSTEM_DB_COLLECTIONS.add("UCType");
-		} catch (UnknownHostException ue) {
-		}
+		} catch (UnknownHostException ue) {}
 	}
 
 	protected DBCollection getDBCollection(String name){

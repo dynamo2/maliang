@@ -30,7 +30,7 @@ function build(json) {
 		if (json.html) {
 			return $(json.html);
 		}
-	} else if ($.isArray(json)) {
+	} else if ($.isArray(json) && json.length > 0) {
 		var type = json[0];
 		if (utils.isString(type)) {
 			return buildOne(json);
@@ -39,7 +39,7 @@ function build(json) {
 			$.each(json, function() {
 				var ccs = build(this);
 				if ($.isArray(ccs)) {
-					comps = comps.concat(css);
+					comps = comps.concat(ccs);
 				} else {
 					comps.push(ccs);
 				}
@@ -49,7 +49,7 @@ function build(json) {
 		}
 	}
 
-	return null;
+	return $("<span />");
 }
 
 function buildOne(json) {
@@ -340,14 +340,16 @@ function Menu(json) {
 	var menu = $("<p class='menu' />");
 
 	if ($.isArray(json) && json.length > 1) {
+		
 		var menuList = json[1];
 		var bid = menuList[0];
 
 		if (utils.isString(bid) && $.trim(bid).length > 0) {
 			bid = 'bid=' + bid;
-		} else
+		} else{
 			bid = '';
-
+		}
+		
 		var href = '/business/business.htm?' + bid;
 		for (var i = 1; i < menuList.length; i++) {
 			var opts = menuList[i];
@@ -369,6 +371,7 @@ function Menu(json) {
 				}
 			}
 		}
+		
 	}
 	return menu;
 }

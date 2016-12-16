@@ -202,8 +202,6 @@ public class BasicDao extends AbstractDao{
 			preName = prefix+".";
 		}
 		
-		//System.out.println("======= innMap : " + innMap+", updateQuery : " + updateQuery);
-		
 		for(ObjectField ff : fields){
 			if(!innMap.containsKey(ff.getName()))continue;
 			

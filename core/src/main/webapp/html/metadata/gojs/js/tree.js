@@ -50,6 +50,13 @@ function ajaxSaveMetadata2(metadata){
 	});
 }
 
+function editTrigger(id,oid){
+	defaultAjaxEdit({
+		edit:'/metadata/trigger.htm?id='+id+'&omId='+oid,
+		save:'/metadata/saveMove.htm'
+	});
+}
+
 function refreshProjectTree(){
 	ajaxNoData("/project/ajaxList.htm",
 		function(result,status){
@@ -180,6 +187,14 @@ var treeContextMenu = {
 					
 					dialog.dialog("close");
 				});
+			});
+		},
+		
+		triggers:function(e,obj){
+			var id = obj.diagram.selection.first().data.key;
+			
+			ajaxNoData('/metadata/triggers.htm?id='+id,function(result,status){
+				build(result.json);
 			});
 		},
 		
@@ -342,6 +357,9 @@ function newMetadatasTreeDiagram() {
 		},new go.Binding("visible", "", _.isProject).ofObject()), 
 		G_Make("ContextMenuButton", _.menuText("新增对象模型"), 
 				{click : treeContextMenu.addMetadata}), 
+		G_Make("ContextMenuButton", _.menuText("触发器列表"), 
+				{click : treeContextMenu.triggers},
+			new go.Binding("visible", "", _.isMetadata).ofObject()),
 		G_Make("ContextMenuButton", _.menuText("移动对象模型"), 
 			{click : treeContextMenu.moveMetadata},
 			new go.Binding("visible", "", _.isMetadata).ofObject()),

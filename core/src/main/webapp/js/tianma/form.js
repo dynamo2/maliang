@@ -182,6 +182,11 @@ function FormTable(){
 		if(!opts || !opts.name 
 				|| !utils.isString(opts.name))return;
 		
+		if(opts.name.charAt(opts.name.length-1) == '.'){
+			opts.name = opts.name.substr(0,opts.name.length-1);
+			return;
+		}
+		
 		var n = '';
 		var ns = opts.name.split(".");
 		if(ns.length > 1){

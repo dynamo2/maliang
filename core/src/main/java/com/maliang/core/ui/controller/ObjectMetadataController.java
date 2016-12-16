@@ -1,23 +1,18 @@
 package com.maliang.core.ui.controller;
 
 import java.beans.BeanInfo;
-import java.beans.IntrospectionException;
 import java.beans.Introspector;
 import java.beans.PropertyDescriptor;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
 
-import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
-import net.sf.json.JsonConfig;
-import net.sf.json.util.JSONUtils;
 
 import org.bson.types.ObjectId;
 import org.springframework.stereotype.Controller;
@@ -34,7 +29,11 @@ import com.maliang.core.model.MongodbModel;
 import com.maliang.core.model.ObjectField;
 import com.maliang.core.model.ObjectMetadata;
 import com.maliang.core.model.Project;
+import com.maliang.core.model.Trigger;
+import com.maliang.core.model.TriggerAction;
 import com.maliang.core.model.UCType;
+import com.maliang.core.util.Utils;
+import com.mongodb.util.Util;
 
 @Controller
 @RequestMapping(value = "metadata")
@@ -158,22 +157,63 @@ public class ObjectMetadataController extends BasicController {
 		return this.json(val);
 	}
 	
-//	@RequestMapping(value = "toProject.htm")
-//	@ResponseBody
-//	public String toProject(String id) {
-//		List<Project> projects = this.projectDao.list();
-//		Map<String,Object> params = newMap("id",id);
-//		params.put("projects", projects);
-//		
-//		String s = "{json:['form','metadata',"
-//				+ "[['$id','','hidden',id,'[n]'],"
-//					+ "['$pid','项目',['select',each(projects){{key:this.id,label:this.name}}],'','[n]']"
-//					+ "]]}";
-//		
-//		Object val = AE.execute(s,params);
-//
-//		return this.json(val);
-//	}
+	@RequestMapping(value = "triggers.htm")
+	@ResponseBody
+	public String triggerList(String id) {
+		ObjectMetadata metadata = metadataDao.getByID(id);
+		Map<String,Object> params = newMap("metadata",metadata);
+		
+		String s = "{json:['dialog',[['button','新增','editTrigger(\"\",\"'+metadata.id+'\")'],"
+				+ "['tableList',['名称','条件','行为','操作'],"
+					+ "each(metadata.triggers){[this.name,this.when,"
+						+ "['tableBlock',each(this.actions){[this.field,this.code]}],"
+						+ "[['button','编辑','editTrigger(\"'+this.id+'\",\"'+metadata.id+'\")'],['button','删除','']]]}]],"
+			+ "{title:'触发器列表',width:1000,height:700}]"
+		+ "}";
+		
+		Object val = AE.execute(s,params);
+
+		System.out.println("triggerList json : " + val);
+		return this.json(val);
+	}
+	
+	@RequestMapping(value = "trigger.htm")
+	@ResponseBody
+	public String trigger(String id,String omId) {
+		Trigger trigger = this.metadataDao.getTriggerById(id);
+		if(trigger == null){
+			trigger = new Trigger();
+		}
+		
+		if(Utils.isEmpty(trigger.getActions())){
+			TriggerAction ta = new TriggerAction();
+			List<TriggerAction> as = new ArrayList<TriggerAction>();
+			as.add(ta);
+			trigger.setActions(as);
+		}
+		
+		Map<String,Object> params = newMap("trigger",trigger);
+		params.put("omId", omId);
+		
+		String s = "{json:['form','metadata',["
+					+ "['id','','hidden',omId,'[n]'],"
+					+ "['trigger.id','','hidden',trigger.id,'[n]'],"
+					+ "['trigger.name','名称','text',trigger.name,'[n]'],"
+					+ "['trigger.when','条件','text',trigger.when,'[n]'],"
+					+ "['trigger.actions','行为',"
+						+ "['list',['字段','执行代码'],"
+							+ "each(trigger.actions){["
+								+ "['field','','text',this.field],"
+								+ "['code','','text',this.code]"
+						+ "]}],"
+					+ "'','[n]']"
+			+ "]]}";
+		
+		Object val = AE.execute(s,params);
+
+		System.out.println("trigger form : " + val);
+		return this.json(val);
+	}
 	
 	@RequestMapping(value = "saveMove.htm")
 	@ResponseBody

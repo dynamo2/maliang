@@ -64,7 +64,8 @@
 		</div>
 		
 		<div id="addObjectMetadataDialog" title="新增对象模型" />
-		<div id="dialog" title="新增对象模型" /><div id="dialogContent" /></div>
+		<div id="uctypedialog" title="新增对象模型" /><div id="dialogContent" /></div>
+		<div id="dialog" title="新增对象模型" /><div id="dialogPanel" /></div>
 		<div id="formDialog" title="编辑" /><div id="formDialogContent" /></div>
 		<script type="text/javascript">
 		var json = ${resultJson};
@@ -161,13 +162,13 @@
 			 $("#dialogContent").empty();
 			 $("#dialogContent").append(element);
 			 
-			 $("#dialog").dialog("option","buttons",{
+			 $("#uctypedialog").dialog("option","buttons",{
 					"Save": saveFun,
 					Cancel: function() {
 					  $(this).dialog( "close" );
 					}
 			});
-			 $("#dialog").dialog("open");
+			 $("#uctypedialog").dialog("open");
 		}
 		
 		function factors(){
@@ -455,6 +456,120 @@
 }
 
 #objectPanel li .ui-icon-close { float: left; margin: 0.4em 0.2em 0 0; cursor: pointer; }
+
+
+/**************
+ * Copy from business.jsp 
+ *
+*************************/
+		form table td {
+			padding:3px 10px;
+			border-bottom:1px dashed #ccc;
+		}
+		
+		form table .label {
+			text-align:right;
+		}
+		
+		form table .hidden {
+			display:none;
+		}
+		
+		form table td div {
+			margin:5px;
+		}
+		
+		form table td label {
+			margin-left:3px;
+			margin-right:10px;
+		}
+		
+		.tableBlock {
+			min-width:400px;
+		}
+		
+		.tableBlock td {
+			padding:8px 10px;
+			border-bottom:1px dashed #ccc;
+			max-width:700px;
+		}
+		
+		.tableBlock .label {
+			text-align:right;
+			font-weight:bold;
+			vertical-align:top;
+		}
+		
+		.tableBlock img {
+			max-width:200px;
+			max-height:200px;
+		}
+		
+		.tableList {
+			background-color:#ccc;
+		}
+		
+		.tableList td,.tableList th{
+			padding:8px 10px;
+			background-color:#fff;
+			min-width:150px;
+			border:0px;
+		}
+		
+		.tableList a{
+			margin-left:10px;
+		}
+		
+		.tableList input{
+			max-width:80px;
+		}
+		
+		#title {
+			border-bottom:2px solid #AFE2E4;
+			width:600px;
+			padding-left:15px;
+			padding-bottom:10px;
+		}
+		
+		#main {
+			margin:30px;
+		}
+		
+		.menu a {
+			margin:10px;
+		}
+		
+		.error {
+			border:0px solid red;
+			margin-top:30px;
+			margin-left:200px;
+			font-size:20px;
+			font-weight:bold;
+			color:red;
+		}
+		
+		.horizontal li {
+			float:left;
+		}
+		
+		.vertical li {
+			float:none;
+		}
+		
+		.ul-checkbox,
+		.ul-radio {
+			margin:0px;
+			padding:0px;
+		}
+		
+		.ul-checkbox li,
+		.ul-radio li {
+			border:0px;
+			margin:0px;
+			padding:0px;
+			list-style:none;
+			padding-top:5px;
+		}
 </style>
 	</body>
 </html>

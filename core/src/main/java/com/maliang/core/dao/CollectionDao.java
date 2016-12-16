@@ -1,22 +1,19 @@
 package com.maliang.core.dao;
 
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import org.bson.types.ObjectId;
-
 import com.maliang.core.arithmetic.AE;
 import com.maliang.core.arithmetic.ArithmeticExpression;
-import com.maliang.core.arithmetic.calculator.DateCalculator;
-import com.maliang.core.model.FieldType;
-import com.maliang.core.model.ObjectField;
 import com.maliang.core.model.ObjectMetadata;
+import com.maliang.core.model.Trigger;
+import com.maliang.core.model.TriggerAction;
 import com.maliang.core.service.MapHelper;
 import com.maliang.core.ui.controller.Pager;
+import com.maliang.core.util.Utils;
 import com.mongodb.AggregationOutput;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
@@ -73,26 +70,35 @@ public class CollectionDao extends BasicDao {
 
 	
 
-	public void dbSet(Map qMap, Map sMap, String collName, boolean all) {
-		BasicDBObject query = this.build(this.buildDBQueryMap(qMap, null));
+	public int update(Map qMap, Map sMap, String collName) {
+		BasicDBObject query = null;
+		if(qMap == null){
+			query = new BasicDBObject();
+		}else {
+			query = this.build(this.buildDBQueryMap(qMap, null)); 
+		}
 		BasicDBObject set = this.build(this.buildDBQueryMap(sMap, null));
 
-		this.dbSet(query, set, collName, all);
+		WriteResult result  = this.getDBCollection(collName).updateMulti(query,
+				new BasicDBObject("$set", set));
+		
+		return result.getN();
 	}
 
-	public void dbSet(BasicDBObject query, BasicDBObject set, String collName,
-			boolean all) {
-		int max = 100;
-		int i = 0;
-		WriteResult result = null;
-		do {
-			result = this.getDBCollection(collName).update(query,
-					new BasicDBObject("$set", set));
-		} while (result.isUpdateOfExisting() && all && (i++ < max));
+	public int updateAll(Map value, String collName) {
+		return this.update(null, value, collName);
 	}
 
 	public Map<String, Object> updateBySet(Map value, String collName) {
 		value = this.toDBModel(value, collName);
+		
+		System.out.println("update value : " + value);
+		/**
+		 * 执行触发器
+		 * **/
+		this.trigger(value, collName);
+		
+		System.out.println("after trigger value : " + value);
 		
 		String id = (String) value.remove("id");
 		BasicDBObject query = this.getObjectId(id);
@@ -116,6 +122,97 @@ public class CollectionDao extends BasicDao {
 		value.put("id", id);
 
 		return value;
+	}
+	
+	public void trigger(Map<String,Object> value, String collName) {
+		ObjectMetadata metadata = this.metaDao.getByName(collName);
+		List<Trigger> triggers = metadata.getTriggers();
+		
+		if(Utils.isEmpty(triggers))return;
+		
+		Map<String,Object> dbDataMap = this.getByID((String)value.get("id"), collName);
+		Map<String,Object> whenMap = new HashMap<String,Object>();
+		triggerParams(whenMap,dbDataMap,value);
+		
+		boolean newUpdate = true;
+		while(newUpdate && !Utils.isEmpty(triggers)){
+			List<Trigger> next = new ArrayList<Trigger>();
+			newUpdate = false;
+			
+			for(Trigger trigger : triggers){
+				Object when = AE.execute(trigger.getWhen(),whenMap);
+				
+				if(when instanceof Boolean && (Boolean)when){
+					List<TriggerAction> actions = trigger.getActions();
+					
+					for(TriggerAction ac:actions){
+						if(value.get(ac.getField()) != null){
+							continue;
+						}
+						
+						Object val = AE.execute(ac.getCode(),dbDataMap);
+						String fname = ac.getField();
+						
+						MapHelper.setValue(value, fname, val);
+						MapHelper.setValue(dbDataMap, fname, val);
+						MapHelper.setValue(whenMap, fname, true);
+						
+						newUpdate = true;	
+					}
+				}else {
+					next.add(trigger);
+				}
+			}
+			
+			triggers = next;
+		}
+	}
+	
+	private static Map<String,Object> map(Object o){
+		if(o instanceof Map){
+			return (Map<String,Object>)o;
+		}
+		return null;
+	}
+	
+	private static void triggerParams(Map<String,Object> whenMap,
+			Map<String,Object> dbDataMap,Map<String,Object> updateValue){
+		for(String key:updateValue.keySet()){
+			if("id".equals(key) || "_id".equals(key)){
+				continue;
+			}
+			
+			Object val = updateValue.get(key);
+			if(val instanceof Map){
+				Map<String,Object> wm2 = new HashMap<String,Object>();
+				Object dbVal = dbDataMap.get(key);
+				if(!(dbVal instanceof Map)){
+					dbVal = val;
+				}
+				
+				triggerParams(wm2,map(dbVal),map(val));
+				
+				whenMap.put(key,wm2);
+			}else if(Utils.isArray(val)){
+				for(Object vo : Utils.toArray(val)){
+					if(vo instanceof Map){
+						//待实现
+					}else {
+						whenMap.put(key,true);
+						dbDataMap.put(key, val);
+						break;
+					}
+				}
+			}else if(val != null){
+				if(whenMap != null){
+					whenMap.put(key,true);
+				}
+				
+				if(dbDataMap != null){
+					dbDataMap.put(key,val);
+				}
+			}
+		}
 	}
 	
 	public Map<String, Object> save(Map value, String collName) {
