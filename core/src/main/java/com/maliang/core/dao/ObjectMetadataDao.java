@@ -56,8 +56,11 @@ public class ObjectMetadataDao  extends ModelDao<ObjectMetadata> {
 		}
 	}
 	
-	public void saveTrigger(String oid,Trigger trigger){
-		this.saveArrayInnerFields(oid, "triggers", trigger);
+	/**
+	 * omId: ObjectMetadata.id
+	 * **/
+	public void saveTrigger(String omId,Trigger trigger){
+		this.saveArrayInnerFields(omId, "triggers", trigger);
 	}
 
 	/**

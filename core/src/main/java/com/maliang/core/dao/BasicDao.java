@@ -562,24 +562,21 @@ public class BasicDao extends AbstractDao{
 		if(FieldType.ARRAY.is(of.getType())){
 			of.setType(of.getElementType());
 			
+			Object result = null;
 			if(fieldValue instanceof List){
-				List<Object> result = new ArrayList<Object>();
+				List<Object> list = new ArrayList<Object>();
 				for(Object o : (List<Object>)fieldValue){
-					result.add(correctFieldValue(of,o,dealWithId,isDeep));
+					list.add(correctFieldValue(of,o,dealWithId,isDeep));
 				}
-				
-				of.setType(FieldType.ARRAY.getCode());
-				return result;
+				result = list;
 			}else if(fieldValue instanceof Map){
-				List<Object> result = new ArrayList<Object>();
-				result.add(correctFieldValue(of,fieldValue,dealWithId,isDeep));
-				
-				of.setType(FieldType.ARRAY.getCode());
-				return result;
-			}else {
-				of.setType(FieldType.ARRAY.getCode());
-				return null;
+				List<Object> list = new ArrayList<Object>();
+				list.add(correctFieldValue(of,fieldValue,dealWithId,isDeep));
+				result = list;
 			}
+			
+			of.setType(FieldType.ARRAY.getCode());
+			return result;
 		}
 		
 		if(FieldType.INNER_COLLECTION.is(of.getType())){
