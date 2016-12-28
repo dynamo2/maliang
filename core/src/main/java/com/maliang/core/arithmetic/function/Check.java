@@ -23,6 +23,27 @@ public class Check {
 		throw new TianmaException(errMsg);
 	}
 	
+	public static Boolean isNull(Function function,Map<String,Object> params){
+		Object obj = (Object)function.executeExpression(params);
+		return obj == null;
+	}
+	
+	public static Boolean notNull(Function function,Map<String,Object> params){
+		Object obj = (Object)function.executeExpression(params);
+		
+		return obj != null;
+	}
+	
+	public static Boolean not(Function function,Map<String,Object> params){
+		Object obj = (Object)function.executeExpression(params);
+		
+		if(obj instanceof Boolean){
+			return !((Boolean)obj);
+		}
+		
+		return false;
+	}
+	
 	public static void main(String[] args) {
 		String s = "[user.pwd = password,'error message']";
 		

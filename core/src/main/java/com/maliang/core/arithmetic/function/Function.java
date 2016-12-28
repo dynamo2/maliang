@@ -225,15 +225,15 @@ public class Function {
 		}
 		
 		if("notNull".equals(key)){
-			return NotNull.execute(this, params);
+			return Check.notNull(this, params);
 		}
 		
 		if("isNull".equals(key)){
-			return IsNull.execute(this, params);
+			return Check.isNull(this, params);
 		}
 		
 		if("not".equals(key)){
-			return Not.execute(this, params);
+			return Check.not(this, params);
 		}
 		
 		if("check".equals(key)){
