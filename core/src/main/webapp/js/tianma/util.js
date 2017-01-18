@@ -47,7 +47,7 @@ function Utils(){
 	};
 	
 	this.get = function(obj,key){
-		return readValue(obj,key);
+		return _.readValue(obj,key);
 	};
 	
 	this.isString = function (obj){
@@ -94,6 +94,35 @@ function Utils(){
 		}
 		return is;
 	};
+	
+	/**
+	 * eq.: obj : {"name":"臻秀修护美颜水125ML","brand":{"id":"aaaaa","name":"雪花秀"}} if key =
+	 * "name" return："臻秀修护美颜水125ML" if key = "brand"
+	 * return：{"id":"aaaaa","name":"雪花秀"}
+	 */
+	this.readValue = function (obj, key) {
+		if(!obj || !key)return null;
+		if(!$.isPlainObject(obj))return null;
+		
+		if (key == 'this') {
+			return obj;
+		}
+
+		var ks = key.split('.');
+		var temp = obj;
+		var v = null;
+		$.each(ks,function(){
+			if(temp){
+				v = temp[this];
+				temp = v;
+			}else {
+				v = null;
+				return;
+			}
+		});
+
+		return v;
+	};
 }
 
 
@@ -127,14 +156,19 @@ function readValue(obj, key) {
 		return obj;
 	}
 
-	ks = key.split('.');
-	var v = obj;
-	for (idx in ks) {
-		v = v[ks[idx]];
-		
-		if(!v)return null;
-	}
-	
+	var ks = key.split('.');
+	var temp = obj;
+	var v = null;
+	$.each(ks,function(){
+		if(temp){
+			v = temp[this];
+			temp = v;
+		}else {
+			v = null;
+			return;
+		}
+	});
+
 	return v;
 }
 

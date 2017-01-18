@@ -168,6 +168,10 @@ public class Function {
 			//return null;
 		}
 		
+		if("contains".equalsIgnoreCase(key)){
+			return ListFunction.contains(this, params);
+		}
+		
 		if("sum".equalsIgnoreCase(key)){
 			return Sum.execute(this, params);
 		}
@@ -241,7 +245,15 @@ public class Function {
 		}
 		
 		if("query".equals(key)){
-			return QueryFunction.execute(this, params);
+			return QueryFunction.find(this, params);
+		}
+		
+		if("find".equals(key)){
+			return QueryFunction.find(this, params);
+		}
+		
+		if("findOne".equals(key)){
+			return QueryFunction.findOne(this, params);
 		}
 		
 		if("remove".equals(key)){

@@ -183,6 +183,7 @@ public class ObjectMetadataController extends BasicController {
 		Trigger trigger = this.metadataDao.getTriggerById(id);
 		if(trigger == null){
 			trigger = new Trigger();
+			trigger.setMode(2);
 		}
 		
 		if(Utils.isEmpty(trigger.getActions())){
@@ -195,9 +196,10 @@ public class ObjectMetadataController extends BasicController {
 		Map<String,Object> params = newMap("trigger",trigger);
 		params.put("omId", omId);
 		
-		String s = "{json:['form','metadata',["
+		String s = "{json:['form','',["
 					+ "['id','','hidden',omId,'[n]'],"
 					+ "['trigger.id','','hidden',trigger.id,'[n]'],"
+					+ "['trigger.mode','类型',['radio',{1:'insert',2:'update'}],trigger.mode,'[n]'],"
 					+ "['trigger.name','名称','text',trigger.name,'[n]'],"
 					+ "['trigger.when','条件','text',trigger.when,'[n]'],"
 					+ "['trigger.actions','行为',"
@@ -215,6 +217,17 @@ public class ObjectMetadataController extends BasicController {
 		return this.json(val);
 	}
 	
+	@RequestMapping(value = "saveTrigger.htm", method = RequestMethod.POST)
+	@ResponseBody
+	public String saveTrigger(HttpServletRequest request) {
+		Trigger trigger = readMongodbModel(request,"trigger",Trigger.class);
+		String omid = request.getParameter("metaId");
+		
+		this.metadataDao.saveTrigger(omid, trigger);
+		
+		return "";
+	}
+
 	@RequestMapping(value = "saveMove.htm")
 	@ResponseBody
 	public String saveMove(String id,String pid) {
@@ -272,7 +285,7 @@ public class ObjectMetadataController extends BasicController {
 	public String save2(HttpServletRequest request, Model model) {
 		ObjectMetadata reqMetadata = readMongodbModel(request,"metadata",ObjectMetadata.class);
 		
-		System.out.println("reqMetadata  : " + reqMetadata);
+		System.out.println("********* save reqMetadata  : " + reqMetadata);
 		metadataDao.save(reqMetadata);
 		
 		return jsonEditCode2(reqMetadata);

@@ -6,6 +6,9 @@ import java.util.List;
 import com.maliang.core.dao.ObjectMetadataDao;
 
 public class Trigger extends MongodbModel{
+	public static int INSERT = 1;
+	public static int UPDATE = 2;
+	
 	private int mode=2;//1=insert,2=update
 	
 	private String name;
@@ -65,16 +68,18 @@ public class Trigger extends MongodbModel{
 		
 		ObjectMetadata om = dao.getByName("Order");
 		
-		String tid = "5850ed2a8f77f51d6d68579b";
+		String tid = "5850ed2a8f77f51d6d68579b"; //订单触发器
+		tid = "584784cab243513c15f97c30";  //产品触发器
 		Trigger tt = dao.getTriggerById(tid);
 		System.out.println(" ttt : " + tt);
 		
+		tt.setWhen("orderStock");
 		List<TriggerAction> ts = new ArrayList<TriggerAction>();
 		tt.setActions(ts);
 		
 		TriggerAction ta = new TriggerAction();
-		ta.setField("items.product.orderStock");
-		ta.setCode("items.$.product.orderStock-items.$.num");
+		ta.setField("grounding");
+		ta.setCode("if(orderStock>0){1}else{0}");
 		ts.add(ta);
 		
 		dao.saveTrigger(om.getId().toString(), tt);

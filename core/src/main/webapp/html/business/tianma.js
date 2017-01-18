@@ -53,6 +53,12 @@ function HtmlBuilder(){
 		var options = builder.formalizeSelectOptions(data.options);
 		selObj.append(builder.buildOptions(options,data.value));
 		
+		if($.isPlainObject(data.events)){
+			$.each(data.events,function(k,v){
+				selObj.on(k,eval(v));
+			});
+		}
+		
 		return selObj;
 	};
 	

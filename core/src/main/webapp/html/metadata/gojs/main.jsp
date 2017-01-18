@@ -93,8 +93,8 @@
 		function initDefaultOptionsDialog(dialogId){
 			$("#"+dialogId).dialog({
 				resizable: false,
-				height:400,
-				width:500,
+				height:600,
+				width:800,
 				autoOpen: false});
 		}
 		

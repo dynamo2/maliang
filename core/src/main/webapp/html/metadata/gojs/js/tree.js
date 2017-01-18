@@ -16,44 +16,23 @@ function ajaxNoData(url,doneFun) {
 	}).done(doneFun);
 }
 
-function ajaxSaveProject(data, doneFun) {
-	$.ajax('/project/save.htm', {
-		data : {project:ts(data)},
-		dataType : 'json',
-		type : 'POST',
-		async : false
-	}).done(refreshProjectTree);
-}
-
-function ajaxSaveMetadata2(metadata){
-	$.ajax("/metadata/save2.htm",{
-		data:{metadata:JSON.stringify(metadata)},
-		/*
-		data:{"metadata":JSON.stringify({
-				"id":"5833fcc9af7901929c42fab3",
-				"project":{
-					"id":"5833fcc9af7901929c42fab2",
-					"name":"电商管理系统",
-					"key":"EB"
-				},
-				"fields":[
-				     {"id":"556424cabd777e5a5087db0a","name":"名称","type":1},
-				     {"id":"56cfb7b7e45900ecf9b71d4a","name":"价格","type":3}
-				 ],
-				"name":"User",
-				"label":"用户"
-		})},
-		*/
-		dataType:'json',
-		type:'POST',
-		success:refreshProjectTree
-	});
-}
-
 function editTrigger(id,oid){
 	defaultAjaxEdit({
 		edit:'/metadata/trigger.htm?id='+id+'&omId='+oid,
-		save:'/metadata/saveMove.htm'
+		save:'/metadata/saveTrigger.htm',
+		data:function(formDatas){
+			var actions = formDatas && formDatas.trigger && formDatas.trigger.actions;
+			
+			if(actions && $.isPlainObject(actions)){
+				var temp = [];
+				$.each(actions,function(){
+					temp.push(this);
+				});
+				formDatas.trigger.actions = temp;
+			}
+			
+			return {metaId:formDatas.id,trigger:ts(formDatas.trigger)};
+		}
 	});
 }
 
@@ -82,7 +61,7 @@ function readFormDatas (form) {
 		var key = $(this).attr("name");
 		var val = $(this).val();
 		var oldVal = utils.get(reqDatas,key);
-		
+
 		if(oldVal){
 			if(!$.isArray(oldVal)){
 				oldVal = [oldVal];
@@ -103,6 +82,9 @@ function defaultAjaxEdit (options){
 			var dialog = $(this);
 			
 			var reqDatas = readFormDatas(dialog.find("form"));
+			if(options.data){
+				reqDatas = $.isFunction(options.data)?options.data(reqDatas):reqDatas;
+			}
 			
 			$.ajax(options.save, {
 				data : reqDatas,
@@ -148,17 +130,12 @@ var treeContextMenu = {
 		},
 		
 		openEditProjectDialog:function(id){
-			ajaxNoData('/project/edit.htm?id='+id,function(result,status){
-				showInFormDialog(result.json, function() {
-					var dialog = $(this);
-					
-					var form = dialog.find("form");
-					var reqDatas = readFormDatas(form);
-					
-					ajaxSaveProject(reqDatas);
-					
-					dialog.dialog("close");
-				});
+			defaultAjaxEdit({
+				edit:'/project/edit.htm?id='+id,
+				save:'/project/save.htm',
+				data:function(formDatas){
+					return {project:JSON.stringify(formDatas)};
+				}
 			});
 		},
 		
@@ -175,18 +152,12 @@ var treeContextMenu = {
 		},
 
 		openEditMetadataDialog:function(id,pid){
-			ajaxNoData('/metadata/edit3.htm?id='+id+'&pid='+pid,function(result,status){
-				showInFormDialog(result.json, function() {
-					var dialog = $(this);
-					
-					var form = dialog.find("form");
-					var reqDatas = readFormDatas(form);
-					
-					pt(ts(reqDatas));
-					ajaxSaveMetadata2(reqDatas);
-					
-					dialog.dialog("close");
-				});
+			defaultAjaxEdit({
+				edit:'/metadata/edit3.htm?id='+id+'&pid='+pid,
+				save:'/metadata/save2.htm',
+				data:function(formDatas){
+					return {metadata:JSON.stringify(formDatas)};
+				}
 			});
 		},
 		
@@ -434,3 +405,40 @@ function newMetadatasTreeDiagram() {
 	
 	return myDiagram;
 }
+
+
+/*
+function ajaxSaveProject(data, doneFun) {
+	$.ajax('/project/save.htm', {
+		data : {project:ts(data)},
+		dataType : 'json',
+		type : 'POST',
+		async : false
+	}).done(refreshProjectTree);
+}
+
+function ajaxSaveMetadata2(metadata){
+	$.ajax("/metadata/save2.htm",{
+		data:{metadata:JSON.stringify(metadata)},
+		/*
+		data:{"metadata":JSON.stringify({
+				"id":"5833fcc9af7901929c42fab3",
+				"project":{
+					"id":"5833fcc9af7901929c42fab2",
+					"name":"电商管理系统",
+					"key":"EB"
+				},
+				"fields":[
+				     {"id":"556424cabd777e5a5087db0a","name":"名称","type":1},
+				     {"id":"56cfb7b7e45900ecf9b71d4a","name":"价格","type":3}
+				 ],
+				"name":"User",
+				"label":"用户"
+		})},
+		*
+		dataType:'json',
+		type:'POST',
+		success:refreshProjectTree
+	});
+}
+*/

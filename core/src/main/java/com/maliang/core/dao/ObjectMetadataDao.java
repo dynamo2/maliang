@@ -1,13 +1,18 @@
 package com.maliang.core.dao;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.bson.types.ObjectId;
 
+import com.maliang.core.model.Business;
 import com.maliang.core.model.ObjectField;
 import com.maliang.core.model.ObjectMetadata;
+import com.maliang.core.model.Project;
 import com.maliang.core.model.Trigger;
 import com.maliang.core.model.TriggerAction;
+import com.maliang.core.util.Utils;
 import com.mongodb.BasicDBObject;
 
 public class ObjectMetadataDao  extends ModelDao<ObjectMetadata> {
@@ -29,7 +34,18 @@ public class ObjectMetadataDao  extends ModelDao<ObjectMetadata> {
 	}
 	
 	public ObjectMetadata getByName(String name){
-		return this.getByField("name", name);
+		Map query = new HashMap();
+		query.put("name", name);
+		
+		if(!this.isSystemCollection(name)){
+			Object bus = Utils.getSessionValue("SYS_BUSINESS");
+			if(bus != null && bus instanceof Business){
+				Project project = ((Business)bus).getProject();
+				query.put("project", project.getId().toString());
+			}
+		}
+		
+		return this.findOne(new BasicDBObject(query));
 	}
 
 	public void saveFields(String oid,ObjectField field) {

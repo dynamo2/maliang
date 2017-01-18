@@ -135,14 +135,11 @@ public class CollectionService {
 		if(obj == null || !(obj instanceof Map))return null;
 		
 		Map<String,Object> dataMap = (Map<String,Object>)obj;
-		//if(!StringUtil.isEmpty((String)dataMap.get("id"))){ 
+		
 		if(hasId(dataMap)){// Update
-			//dataMap = this.correctData(dataMap,this.collection,false);
 			dataMap = this.collectionDao.correctData(dataMap, this.collection,false,false);
 			return this.collectionDao.updateBySet(dataMap, this.collection);
 		}else { // Save
-			//dataMap = this.correctData(dataMap,this.collection,true);
-			
 			dataMap = this.collectionDao.correctData(dataMap, this.collection,true,false);
 			return this.collectionDao.save(dataMap, this.collection);
 		}
@@ -227,6 +224,15 @@ public class CollectionService {
 		return this.collection.contains(".");
 	}
 	
+	private void deleteOneArrayInner(String innerName,String id){
+		Map query = this.collectionDao.buildInnerGetMap(innerName, id);
+		
+		Map delMap = new HashMap();
+		delMap.put(innerName+".$", null);
+		
+		this.update(query,delMap);
+	}
+	
 	
 	@SuppressWarnings("rawtypes")
 	public Object invoke(String method,Object value){
@@ -280,16 +286,20 @@ public class CollectionService {
 				return this.remove((Map<String,Object>)value);
 			}
 			
-			String v = value==null?null:value.toString();
 			if(isInner){
-				Map query = this.collectionDao.buildInnerGetMap(innerName, v);
-				
-				Map delMap = new HashMap();
-				delMap.put(innerName+".$", null);
-				
-				return this.update(query,delMap);
+				if(Utils.isArray(value)){
+					for(Object ov : Utils.toArray(value)){
+						String id = ov==null?null:ov.toString();
+						deleteOneArrayInner(innerName,id);
+					}
+				}else {
+					String id = value==null?null:value.toString();
+					deleteOneArrayInner(innerName,id);
+				}
+				return null;
 			}
 			
+			String v = value==null?null:value.toString();
 			return this.remove(v);
 		}
 		

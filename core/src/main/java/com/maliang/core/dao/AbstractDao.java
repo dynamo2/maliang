@@ -58,7 +58,7 @@ public class AbstractDao  {
 				}
 			}
 			
-			//Test
+			//Test  电商项目
 			//name = "EB_"+name;
 		}
 

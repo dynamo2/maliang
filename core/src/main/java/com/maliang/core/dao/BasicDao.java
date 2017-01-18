@@ -238,7 +238,6 @@ public class BasicDao extends AbstractDao{
 	
 	protected static void buildInnerUpdates(Map<String,Object> valMap,ObjectField innerField,String fieldKey,
 			List<Map<String,BasicDBObject>> updates,BasicDBObject updateQuery){
-		//System.out.println("========== buildInnerUpdates valMap : " + valMap);
 		if(valMap == null)return;
 		
 		Map<String,Object> updateMap = new HashMap<String,Object>();
@@ -444,8 +443,8 @@ public class BasicDao extends AbstractDao{
 				fieldValue = readObjectIdToString((Map)fieldValue);
 			}
 			
-			if(!(fieldValue instanceof String)){
-				fieldValue = null;
+			if(fieldValue != null && !(fieldValue instanceof String)){
+				fieldValue = fieldValue.toString();
 			}
 		}
 		
@@ -630,8 +629,7 @@ public class BasicDao extends AbstractDao{
 				String[] colls = coll.split("\\.");
 				String collName = colls[0];
 				if(colls.length > 1){
-					Map query = this.buildInnerGetMap(coll, oid);
-					return this.innerObjectById(query, collName);
+					return this.getInnerObject(colls[0], colls[1], oid);
 				}else {
 					return this.getByID(oid, collName);
 				}
@@ -673,7 +671,7 @@ public class BasicDao extends AbstractDao{
 				if(FieldType.ARRAY.is(f.getType()) && FieldType.INNER_COLLECTION.is(f.getElementType())){
 					Map<String,Object> dataMap = doc.toMap();
 
-					correctField(dataMap,f.getFields(),rootMeta(collName));
+					correctField(dataMap,f.getFields(),rootMeta(collName+"."+innerName));
 					return dataMap;
 				}
 			}

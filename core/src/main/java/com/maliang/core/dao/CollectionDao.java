@@ -80,7 +80,6 @@ public class CollectionDao extends BasicDao {
 			return null;
 		}
 		
-		System.out.println("****** before trigger value : " + value);
 		this.insertTrigger(value, collName);
 		System.out.println("****** after trigger value : " + value);
 		
@@ -208,8 +207,6 @@ public class CollectionDao extends BasicDao {
 		return this.readCursor(cursor, collName);
 	}
 
-	
-
 	public int update(Map qMap, Map sMap, String collName) {
 		BasicDBObject query = null;
 		if(qMap == null){
@@ -232,7 +229,7 @@ public class CollectionDao extends BasicDao {
 	public Map<String, Object> updateBySet(Map value, String collName) {
 		value = this.toDBModel(value, collName);
 		
-		System.out.println("update value : " + value);
+		System.out.println("updateBySet value : " + value);
 		/**
 		 * 执行触发器
 		 * **/
@@ -276,9 +273,6 @@ public class CollectionDao extends BasicDao {
 	
 	public void insertTrigger(Map<String,Object> insertValue, String collName) {
 		Map<String,Object> dbDataMap = this.correctData(insertValue, collName, false, true);
-		
-		System.out.println("=== insertTrigger dbDataMap : " + dbDataMap);
-		
 		trigger(insertValue,dbDataMap,collName,Trigger.INSERT);
 	}
 	
@@ -290,12 +284,11 @@ public class CollectionDao extends BasicDao {
 	/***
 	 * 原则：
 	 * 1. 已设定的属性不重复计算
+	 * 2. insert模式时，不覆盖dbDataMap的值
 	 * 
 	 * Bug
-	 * 1. value : {consigneeInfo:{address:'浙江'}}
-	 *    trigger.when: consigneeInfo  计算结果：false
-	 *    trigger.when: consigneeInfo.address  计算结果：true
-	 *    结论：以上两个when都应为true
+	 * 1. Utils.clone(): 不能进行深度clone
+	 * 
 	 * ***/
 	private void trigger(Map<String,Object> value,Map<String,Object> dbDataMap, String collName,int triggerMode) {
 		ObjectMetadata metadata = this.metaDao.getByName(collName);
@@ -314,8 +307,8 @@ public class CollectionDao extends BasicDao {
 
 		Map<String,Object> whenMap = newMap();
 		Map<String,Map<String,Map<String,Object>>> triggerLinkedMap = new HashMap<String,Map<String,Map<String,Object>>>();
-		triggerParams(whenMap,dbDataMap,value);
-		
+		triggerParams(whenMap,dbDataMap,value,triggerMode);
+
 		boolean newUpdate = true;
 		while(newUpdate && !Utils.isEmpty(triggers)){
 			List<Trigger> next = new ArrayList<Trigger>();
@@ -323,8 +316,12 @@ public class CollectionDao extends BasicDao {
 			
 			for(Trigger trigger : triggers){
 				Object when = AE.execute(trigger.getWhen(),whenMap);
+				boolean match = (when != null);
+				if(when instanceof Boolean){
+					match = (Boolean)when;
+				}
 				
-				if(when instanceof Boolean && (Boolean)when){
+				if(match){
 					List<TriggerAction> actions = trigger.getActions();
 					
 					for(TriggerAction ac:actions){
@@ -590,7 +587,8 @@ public class CollectionDao extends BasicDao {
 	}
 	
 	private static void triggerParams(Map<String,Object> whenMap,
-			Map<String,Object> dbDataMap,Map<String,Object> updateValue){
+			Map<String,Object> dbDataMap,Map<String,Object> updateValue,int triggerMode){
+		boolean updateMode = triggerMode == Trigger.UPDATE;
 		for(String key:updateValue.keySet()){
 			if(isId(key)){
 				continue;
@@ -604,16 +602,19 @@ public class CollectionDao extends BasicDao {
 				}
 
 				Map<String,Object> wm2 = newMap();
-				triggerParams(wm2,toMap(dbVal),toMap(val));
+				triggerParams(wm2,toMap(dbVal),toMap(val),triggerMode);
 				
 				whenMap.put(key,wm2);
 			}else if(Utils.isArray(val)){
+				whenMap.put(key,true);
 				for(Object vo : Utils.toArray(val)){
 					if(vo instanceof Map){
 						//待实现
 					}else {
-						whenMap.put(key,true);
-						dbDataMap.put(key, val);
+						if(updateMode){
+							dbDataMap.put(key, val);
+						}
+						
 						break;
 					}
 				}
@@ -622,8 +623,8 @@ public class CollectionDao extends BasicDao {
 					whenMap.put(key,true);
 				}
 				
-				if(dbDataMap != null){
-					dbDataMap.put(key,val);
+				if(dbDataMap != null && updateMode){
+					dbDataMap.put(key, val);
 				}
 			}
 		}

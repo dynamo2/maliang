@@ -1,7 +1,6 @@
 package com.maliang.core.ui.controller;
 
 import java.beans.BeanInfo;
-import java.beans.IntrospectionException;
 import java.beans.Introspector;
 import java.beans.PropertyDescriptor;
 import java.util.ArrayList;
@@ -26,11 +25,9 @@ import com.maliang.core.dao.BusinessDao;
 import com.maliang.core.dao.ObjectMetadataDao;
 import com.maliang.core.dao.ProjectDao;
 import com.maliang.core.dao.UCTypeDao;
-import com.maliang.core.model.Linked;
 import com.maliang.core.model.Mapped;
 import com.maliang.core.model.MongodbModel;
-import com.maliang.core.model.ObjectField;
-import com.maliang.core.model.ObjectMetadata;
+import com.maliang.core.model.TriggerAction;
 import com.maliang.core.util.StringUtil;
 import com.maliang.core.util.Utils;
 
@@ -50,7 +47,7 @@ public class BasicController {
 	protected static <T extends MongodbModel> T readMongodbModel(HttpServletRequest request,String reqName,Class<T> cls){
 		JSONObject json = JSONObject.fromObject(request.getParameterMap());
 		JSONArray ja = (JSONArray)json.get(reqName);
-
+		
 		return (T)JSONObject.toBean(ja.getJSONObject(0), cls,readClassMap(cls));
 	}
 	
