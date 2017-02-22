@@ -47,7 +47,7 @@ public class BasicController {
 	protected static <T extends MongodbModel> T readMongodbModel(HttpServletRequest request,String reqName,Class<T> cls){
 		JSONObject json = JSONObject.fromObject(request.getParameterMap());
 		JSONArray ja = (JSONArray)json.get(reqName);
-		
+
 		return (T)JSONObject.toBean(ja.getJSONObject(0), cls,readClassMap(cls));
 	}
 	

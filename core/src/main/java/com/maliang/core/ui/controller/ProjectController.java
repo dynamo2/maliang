@@ -20,7 +20,9 @@ import com.maliang.core.arithmetic.AE;
 import com.maliang.core.model.Business;
 import com.maliang.core.model.ObjectMetadata;
 import com.maliang.core.model.Project;
+import com.maliang.core.model.Subproject;
 import com.maliang.core.util.StringUtil;
+import com.maliang.core.util.Utils;
 
 @Controller
 @RequestMapping(value = "project")
@@ -50,6 +52,45 @@ public class ProjectController extends BasicController {
 		Object val = AE.execute(s, newMap("project",project));
 		
 		return this.json(val);
+	}
+	
+	@RequestMapping(value = "subproject.htm")
+	@ResponseBody
+	public String subproject(String id,String pid) {
+		Subproject subp = this.projectDao.getSubprojectById(id);
+		Project project = this.projectDao.getByID(pid);
+		
+		Map<String,Object> params = newMap("subproject",subp);
+		params.put("project", project);
+		
+		String s = "{json:['form','subproject',"
+						+ "[['$pid','','hidden',project.id,'[n]'],"
+							+ "['id','','hidden',subproject.id,'[n]'],"
+							+ "['$pname','所属项目','label',project.name,'[n]'],"
+							+ "['name','子项目名称','text',subproject.name,'[n]'],"
+							+ "['key','key','text',subproject.key,'[n]']]]}";
+		Object val = AE.execute(s, params);
+		
+		return this.json(val);
+	}
+	
+	@RequestMapping(value = "saveSubproject.htm", method = RequestMethod.POST)
+	@ResponseBody
+	public String saveSub(HttpServletRequest request, Model model) {
+		Subproject subp = this.readMongodbModel(request, "subproject", Subproject.class);
+		String pid = request.getParameter("pid");
+		
+		this.projectDao.saveSubproject(pid, subp);
+		return this.json(subp);
+	}
+	
+	@RequestMapping(value = "deleteSubproject.htm")
+	@ResponseBody
+	public String deleteSubproject(HttpServletRequest request) {
+		String id = request.getParameter("id");
+		
+		this.projectDao.deleteSubproject(id);
+		return this.json("{result:1}");
 	}
 	
 	@RequestMapping(value = "save.htm", method = RequestMethod.POST)
@@ -89,17 +130,37 @@ public class ProjectController extends BasicController {
 		List<Object> results = new ArrayList<Object>();
 		List<String> pids = new ArrayList<String>();
 		for(Project p:projects){
-			pids.add(p.getId().toString());
 			Map<String,Object> params = newMap("project",p);
+			String pid = p.getId().toString();
+			String bpid = "Project,"+pid;
+			pids.add(bpid);
 			
 			String s = "{text:project.name+'('+project.key+')',category:'project',key:project.id,parent:'root'}";
 			Object val = AE.execute(s,params);
 			results.add(val);
 			
-			String ids = p.getId().toString();
-			results.addAll(this.businessNodes(newMap("project",ids),newMap("parent",ids)));
+			//子项目节点
+			if(!Utils.isEmpty(p.getSubprojects())){
+				for(Subproject sp:p.getSubprojects()){
+					String spid = sp.getId().toString();
+					params = newMap("subproject",sp);
+					params.put("parent", pid);
+					
+					s = "{text:subproject.name+'('+subproject.key+')',category:'subproject',key:subproject.id,parent:parent}";
+					val = AE.execute(s,params);
+					results.add(val);
+					
+					//子项目的business节点
+					String bspid = "Subproject,"+sp.getId().toString();
+					pids.add(bspid);
+					results.addAll(this.businessNodes(newMap("project",bspid),newMap("parent",spid)));
+				}
+			}
+			
+			results.addAll(this.businessNodes(newMap("project",bpid),newMap("parent",pid)));
 		}
 		
+		//加载剩余的business节点
 		Map query = (Map)AE.execute("{project:{$nin:pids}}",newMap("pids",pids));
 		results.addAll(businessNodes(query,newMap("parent","root")));
 
@@ -116,13 +177,27 @@ public class ProjectController extends BasicController {
 		for(Project p:projects){
 			pids.add(p.getId().toString());
 			Map<String,Object> params = newMap("project",p);
+			String pid = p.getId().toString();
 			
+			//项目节点
 			String s = "{text:project.name+'('+project.key+')',category:'project',key:project.id,parent:'root'}";
 			Object val = AE.execute(s,params);
 			results.add(val);
 			
-			String ids = p.getId().toString();
-			results.addAll(metadataNodes(newMap("project",ids),newMap("parent",ids)));
+			//子项目节点
+			if(!Utils.isEmpty(p.getSubprojects())){
+				for(Subproject sp:p.getSubprojects()){
+					params = newMap("subproject",sp);
+					params.put("parent", pid);
+					
+					s = "{text:subproject.name+'('+subproject.key+')',category:'subproject',key:subproject.id,parent:parent}";
+					val = AE.execute(s,params);
+					results.add(val);
+				}
+			}
+
+			//对象模型节点
+			results.addAll(metadataNodes(newMap("project",pid),newMap("parent",pid)));
 		}
 		
 		Map query = (Map)AE.execute("{project:{$nin:pids}}",newMap("pids",pids));

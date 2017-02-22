@@ -198,7 +198,7 @@ function newTreeDiagram() {
 					var id = nodeData.key;
 					
 					defaultAjaxEdit({
-						edit:'/project/toProject.htm?id='+id,
+						edit:'/business/toProject.htm?id='+id,
 						save:'/business/saveMove.htm'
 					});
 			}},

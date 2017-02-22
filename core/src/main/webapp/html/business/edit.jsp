@@ -133,6 +133,16 @@
 			$("#blockId").val(block.id);
 			$("#blockName").val(block.name);
 			$("#blockCode").val(block.code);
+
+			$.each($("input[name='business.blocks.type']"),function(){
+				if(this.value == 1){
+					this.checked = true;
+				}
+				
+				if(this.value == block.type){
+					this.checked = true;
+				}
+			});
 			
 			blockEditerDialog.dialog("open");
 		}
@@ -319,6 +329,11 @@
 						<div>
 							<label>名称:</label>
 							<input type="text" name="business.blocks.name" id="blockName" value="" />
+						</div>
+						<div>
+							<label>类型:</label>
+							<input type="radio" name="business.blocks.type" value="1" />code
+							<input type="radio" name="business.blocks.type" value="2" />html
 						</div>
 					</div>
 					<div id="blockCodeDiv">

@@ -36,6 +36,8 @@ function editTrigger(id,oid){
 	});
 }
 
+
+
 function refreshProjectTree(){
 	ajaxNoData("/project/ajaxList.htm",
 		function(result,status){
@@ -196,6 +198,39 @@ var treeContextMenu = {
 			refreshProjectTree();
 		},
 		
+		addSubproject:function(e,obj){
+			var id = obj.diagram.selection.first().data.key;
+			
+			defaultAjaxEdit({
+				edit:'/project/subproject.htm?pid='+id,
+				save:'/project/saveSubproject.htm',
+				data:function(formDatas){
+					return {pid:formDatas.pid,subproject:ts(formDatas.subproject)};
+				}
+			});
+		},
+		
+		updateSubproject:function(e,obj){
+			var id = obj.diagram.selection.first().data.key;
+			var pid = obj.diagram.selection.first().data.parent;
+			
+			defaultAjaxEdit({
+				edit:'/project/subproject.htm?id='+id+'&pid='+pid,
+				save:'/project/saveSubproject.htm',
+				data:function(formDatas){
+					return {pid:formDatas.pid,subproject:ts(formDatas.subproject)};
+				}
+			});
+		},
+		
+		deleteSubproject:function(e, obj) {
+			var id = obj.diagram.selection.first().data.key;
+			
+			ajaxNoData('/project/deleteSubproject.htm?id='+id,function(result,status){
+				refreshProjectTree();
+			});
+		},
+		
 		openCURDDialog:function(e, obj) {
 			var diagram = obj.diagram;
 			var nodeData = diagram.selection.first().data;
@@ -280,12 +315,16 @@ function newMetadatasTreeDiagram() {
 		return isCategory(_.nodeData(o),"project");
 	};
 	
+	this.isSubproject = function(o){
+		return isCategory(_.nodeData(o),"subproject");
+	};
+	
 	this.isRoot = function(o){
 		return isCategory(_.nodeData(o),"root");
 	};
 	
 	this.isAddProject = function(o){
-		return !_.isMetadata(o);
+		return _.isRoot(o) || _.isProject(o);
 	};
 	
 	this.nodeData = function(o){
@@ -323,6 +362,17 @@ function newMetadatasTreeDiagram() {
 	    G_Make("ContextMenuButton", _.menuText("新增项目"), {
 			click : treeContextMenu.addProject
 		},new go.Binding("visible", "", _.isAddProject).ofObject()),
+		
+		G_Make("ContextMenuButton", _.menuText("新增子项目"), {
+			click : treeContextMenu.addSubproject
+		},new go.Binding("visible", "", _.isProject).ofObject()), 
+		G_Make("ContextMenuButton", _.menuText("编辑子项目"), {
+			click : treeContextMenu.updateSubproject
+		},new go.Binding("visible", "", _.isSubproject).ofObject()), 
+		G_Make("ContextMenuButton", _.menuText("删除子项目"), {
+			click : treeContextMenu.deleteSubproject
+		},new go.Binding("visible", "", _.isSubproject).ofObject()), 
+		
 		G_Make("ContextMenuButton", _.menuText("编辑项目"), {
 			click : treeContextMenu.editProject
 		},new go.Binding("visible", "", _.isProject).ofObject()), 

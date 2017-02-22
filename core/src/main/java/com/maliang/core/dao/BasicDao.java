@@ -12,6 +12,7 @@ import com.maliang.core.arithmetic.AE;
 import com.maliang.core.model.FieldType;
 import com.maliang.core.model.ObjectField;
 import com.maliang.core.model.ObjectMetadata;
+import com.maliang.core.model.Project;
 import com.maliang.core.model.UCType;
 import com.maliang.core.model.UCValue;
 import com.maliang.core.service.MapHelper;
@@ -83,6 +84,18 @@ public class BasicDao extends AbstractDao{
 	
 	public List<Map<String,Object>> findByMap(Map<String,Object> query,String collName){
 		BasicDBObject bq = build(query);
+		
+		if(this.isSystemCollection(collName)){
+			Project project = getSessionProject();
+			if(project != null){
+				if(bq == null){
+					bq = new BasicDBObject();
+				}
+				
+				bq.append("project", project.getId().toString());
+			}
+		}
+		
 		return this.find(bq, collName);
 	}
 	

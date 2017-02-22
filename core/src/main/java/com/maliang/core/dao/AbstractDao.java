@@ -19,6 +19,8 @@ import com.maliang.core.model.Linked;
 import com.maliang.core.model.MongodbModel;
 import com.maliang.core.model.ObjectMetadata;
 import com.maliang.core.model.Project;
+import com.maliang.core.model.Subproject;
+import com.maliang.core.model.VariableLinked;
 import com.maliang.core.util.Utils;
 import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
@@ -50,12 +52,9 @@ public class AbstractDao  {
 
 	protected DBCollection getDBCollection(String name){
 		if(!isSystemCollection(name)){
-			Object bus = Utils.getSessionValue("SYS_BUSINESS");
-			if(bus != null && bus instanceof Business){
-				Project project = ((Business)bus).getProject();
-				if(project != null){
-					name = project.getKey()+"_"+name;
-				}
+			Project project = getSessionProject();
+			if(project != null){
+				name = project.getKey()+"_"+name;
 			}
 			
 			//Test  电商项目
@@ -68,6 +67,21 @@ public class AbstractDao  {
 	
 	protected boolean isSystemCollection(String name){
 		return SYSTEM_DB_COLLECTIONS.contains(name);
+	}
+	
+	protected static Project getSessionProject(){
+		Object bus = Utils.getSessionValue("SYS_BUSINESS");
+		if(bus != null && bus instanceof Business){
+			MongodbModel bpro = ((Business)bus).getProject();
+			if(bpro instanceof Project){
+				return (Project)bpro;
+			}else if(bpro instanceof Subproject){
+				ProjectDao dao = new ProjectDao();
+				
+				return dao.findOne(new BasicDBObject("subprojects._id",bpro.getId()));
+			}
+		}
+		return null;
 	}
 	
 	public void renameCollection(String collName,String newName){
@@ -105,6 +119,10 @@ public class AbstractDao  {
 		BasicDBObject fval = this.getDBObject(collName,oid);
 		return this.decode(fval,cls);
 	}
+	
+	protected MongodbModel loadVariableLinkedObject(String val){
+		return null;
+	}
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	protected <T> T decode(BasicDBObject dbObj,Class<T> cls) {
@@ -132,8 +150,21 @@ public class AbstractDao  {
 					if(link != null && value != null){
 						value = loadLinkedObject((String)value,field.getType());
 	    			}
-				}catch(Exception e){}
+				}catch(Exception e){
+					value = null;
+				}
 				
+				//load VariableLinked object
+				try {
+					Field field = cls.getDeclaredField(fname);
+					VariableLinked link = field.getAnnotation(VariableLinked.class);
+					if(link != null && value != null){
+						value = loadVariableLinkedObject((String)value);
+	    			}
+				}catch(Exception e){
+					value = null;
+				}
+
 				
 				if(value instanceof BasicDBObject){
 					value = decode((BasicDBObject)value,pd.getPropertyType());

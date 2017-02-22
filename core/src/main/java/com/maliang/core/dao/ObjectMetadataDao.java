@@ -38,11 +38,8 @@ public class ObjectMetadataDao  extends ModelDao<ObjectMetadata> {
 		query.put("name", name);
 		
 		if(!this.isSystemCollection(name)){
-			Object bus = Utils.getSessionValue("SYS_BUSINESS");
-			if(bus != null && bus instanceof Business){
-				Project project = ((Business)bus).getProject();
-				query.put("project", project.getId().toString());
-			}
+			Project project = getSessionProject();
+			query.put("project", project.getId().toString());
 		}
 		
 		return this.findOne(new BasicDBObject(query));

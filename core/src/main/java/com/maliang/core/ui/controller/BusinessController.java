@@ -1,5 +1,6 @@
 package com.maliang.core.ui.controller;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -20,6 +21,7 @@ import com.maliang.core.arithmetic.function.SessionFunction;
 import com.maliang.core.dao.ObjectMetadataDao;
 import com.maliang.core.exception.TianmaException;
 import com.maliang.core.exception.TurnToPage;
+import com.maliang.core.model.Block;
 import com.maliang.core.model.Business;
 import com.maliang.core.model.FieldType;
 import com.maliang.core.model.ObjectField;
@@ -27,6 +29,7 @@ import com.maliang.core.model.ObjectMetadata;
 import com.maliang.core.model.Project;
 import com.maliang.core.model.Workflow;
 import com.maliang.core.service.BusinessService;
+import com.maliang.core.util.Utils;
 
 @Controller
 @RequestMapping(value = "business")
@@ -164,14 +167,49 @@ public class BusinessController extends BasicController {
 		List<Project> projects = this.projectDao.list();
 		Map<String,Object> params = newMap("business",business);
 		params.put("projects", projects);
+		params.put("options", new ArrayList());
+		
+		String s = "each(projects){["
+						+ "options.set(options+[{key:'Project,'+this.id,label:this.name}]),"
+						+ "each(this.subprojects){["
+							+ "options.set(options+[{key:'Subproject,'+this.id,label:'--[子项目]'+this.name}]),"
+						+ "]}"
+					+ "]}";
+		AE.execute(s, params);
 
-		String s = "{json:['form','business',"
+		s = "{json:['form','business',"
 						+ "[['id','','hidden',business.id,'[n]'],"
-							+ "['project','所属项目',['select',each(projects){{key:this.id,label:this.name}}],metadata.project.id,'[n]'],"
+							+ "['project','所属项目',['select',options],metadata.project.id,'[n]'],"
 							+ "['name','名称','text',business.name,'[n]'],"
 							+ "['uniqueCode','唯一代码','text',business.uniqueCode,'[n]']]]}";
 		Object val = AE.execute(s, params);
 		
+		return this.json(val);
+	}
+	
+	@RequestMapping(value = "toProject.htm")
+	@ResponseBody
+	public String toProject(String id) {
+		List<Project> projects = this.projectDao.list();
+		Map<String,Object> params = newMap("id",id);
+		params.put("projects", projects);
+		params.put("options", new ArrayList());
+		
+		String s = "each(projects){["
+						+ "options.set(options+[{key:'Project,'+this.id,label:this.name}]),"
+						+ "each(this.subprojects){["
+							+ "options.set(options+[{key:'Subproject,'+this.id,label:'--[子项目]'+this.name}]),"
+						+ "]}"
+					+ "]}";
+		AE.execute(s, params);
+		
+		s = "{json:['form','',"
+				+ "[['$id','','hidden',id,'[n]'],"
+					+ "['$pid','项目',['select',options],'','[n]']"
+					+ "]]}";
+		
+		Object val = AE.execute(s,params);
+
 		return this.json(val);
 	}
 
@@ -179,17 +217,39 @@ public class BusinessController extends BasicController {
 	@ResponseBody
 	public String saveMove(String id,String pid) {
 		Business business = this.businessDao.getByID(id);
-		Project project = this.projectDao.getByID(pid);
+		if(business != null){
+			Map<String,Object> newBus = new HashMap<String,Object>();
+			
+			newBus.put("id", id);
+			newBus.put("project", pid);
+			
+			this.businessDao.updateBySet(newBus);
+		}
 		
-		if(business != null && project != null){
-			if(!isSameProject(project,business)){
-				Business newBus = new Business();
+		return "{}";
+	}
+	
+	@RequestMapping(value = "saveMove2.htm")
+	@ResponseBody
+	public String saveMove2(String id,String pid) {
+		Business business = this.businessDao.getByID(id);
+		//Project project = this.projectDao.getByID(pid);
+		
+		if(business != null){
+			//if(!isSameProject(project,business)){
 				
-				newBus.setId(business.getId());
-				newBus.setProject(project);
 				
-				this.businessDao.save(newBus);
-			}
+				Map<String,Object> newBus = new HashMap<String,Object>();
+				
+				newBus.put("id", id);
+				newBus.put("project", pid);
+				
+//				Business newBus = new Business();
+//				newBus.setId(business.getId());
+//				newBus.setProject(project);
+				
+				this.businessDao.updateBySet(newBus);
+			//}
 		}
 		
 		return "{}";
@@ -248,7 +308,7 @@ public class BusinessController extends BasicController {
 		}
 		
 		Workflow flow = business.workFlow(flowStep);
-		businessService.readBlock(flow,business.getUniqueCode());
+		businessService.readBlock(flow,business.getUniqueCode(),Block.TYPE_CODE);
 		
 		return flow;
 	}
@@ -258,7 +318,15 @@ public class BusinessController extends BasicController {
 		Object responseMap = ArithmeticExpression.execute(flow.getResponse(),
 				params);
 
-		return JSONObject.fromObject(responseMap).toString();
+		String response = JSONObject.fromObject(responseMap).toString();
+		
+		System.out.println("-------------- response --------------------");
+		System.out.println(response);
+		
+		Business business = (Business)Utils.getSessionValue("SYS_BUSINESS");
+		response = businessService.readBlock(response,business.getUniqueCode(),Block.TYPE_HTML);
+		
+		return response;
 	}
 
 	private String executeAjaxWorkFlow(Workflow flow, HttpServletRequest request) {

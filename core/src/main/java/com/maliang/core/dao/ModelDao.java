@@ -9,7 +9,6 @@ import org.bson.types.ObjectId;
 
 import com.maliang.core.model.MongodbModel;
 import com.maliang.core.model.ObjectField;
-import com.maliang.core.model.Workflow;
 import com.mongodb.AggregationOutput;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
@@ -59,7 +58,8 @@ public class ModelDao<T extends MongodbModel> extends AbstractDao {
 	public T findOne(BasicDBObject query){
 		DBCursor cursor = this.dbColl.find(query);
 		while(cursor.hasNext()){
-			return this.decode((BasicDBObject)cursor.next(), this.modelClass);
+			BasicDBObject dbo = (BasicDBObject)cursor.next();
+			return this.decode(dbo, this.modelClass);
 		}
 		
 		return null;
@@ -106,12 +106,18 @@ public class ModelDao<T extends MongodbModel> extends AbstractDao {
 			mmo.setId(new ObjectId());
 			
 			BasicDBObject doc = encode(mmo,true);
+
 			this.dbColl.update(this.getObjectId(oid), new BasicDBObject("$push",new BasicDBObject(fname,doc)));
 		}else {
 			BasicDBObject doc = encode(mmo,true);
 			this.dbColl.update(new BasicDBObject(fname+"._id",mmo.getId()), 
 					new BasicDBObject("$set",new BasicDBObject(fname+".$",doc)));
 		}
+	}
+	
+	public void deleteArrayInnerFields(String innerId,String fname) {
+		this.dbColl.update(new BasicDBObject(fname+"._id",new ObjectId(innerId)), 
+				new BasicDBObject("$set",new BasicDBObject(fname+".$",null)));
 	}
 	
 	/**

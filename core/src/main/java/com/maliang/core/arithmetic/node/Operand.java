@@ -28,7 +28,8 @@ public class Operand extends Node {
 		}
 		
 		if(this.isString()){
-			return this.operand.subSequence(1,this.operand.length()-1);
+			String s = this.operand.substring(1,this.operand.length()-1);
+			return ExpressionNode.doDoubleColon(s, paramsMap);
 		}
 		
 		if(this.operand.startsWith("D")){
