@@ -43,6 +43,7 @@
 			initBasic();
 			initWorkflows();
 			initBlocks();
+			initHtmlTemplates();
 		}
 		
 		function save(formId){
@@ -69,7 +70,7 @@
 			$("#uniqueCode").val(business.uniqueCode);
 			
 			//预览
-			$("#previewLink").attr("href","/business/business.htm?bid="+business.id);
+			$("#previewLink").attr("href","/flows/flow.htm?bid="+business.id);
 
 			basicEditerDialog = $("#basicEditerDialog").dialog({
 				autoOpen: false,
@@ -125,6 +126,23 @@
 				});
 			
 			$("#blockTab").tabs();
+		}
+		
+		function initHtmlTemplates(){
+			if(business && business.htmlTemplates){
+				$("#htmlTemplateDiv").empty();
+
+				$.each(business.htmlTemplates,function(){
+					var bnt = $("<input type='button' />");
+					bnt.val(this.name);
+					
+					bnt.on("click",{"id":this.id},function(event){
+						htmlTemplate(event.data.id);
+					});
+					
+					$("#htmlTemplateDiv").append(bnt);
+				});
+			}
 		}
 		
 		function showBlockEditer(block){
@@ -210,12 +228,26 @@
 			$("#javaScript").val(flow.javaScript);
 			$("#ajax").val(flow.ajax);
 			
-			$("#previewFlowLink").prop("href","/business/business.htm?bid="+business.id+"&fid="+flow.step);
+			$("#previewFlowLink").prop("href","/flows/flow.htm?bid="+business.id+"&fid="+flow.step);
 		}
 		
 		function deleteBusiness(){
 			$.ajax('/business/delete.htm?id='+business.id).done(function(result,status){
 				$("#refreshMainLink").simulate("click");
+			});
+		}
+		
+		function htmlTemplate(id){
+			defaultAjaxEdit({
+				edit:'/business/htmlTemplate.htm?id='+id,
+				save:'/business/save.htm',
+				data:function(formDatas){
+					formDatas['business.id'] = business.id;
+					return formDatas;
+				},
+				done:function(result,status){
+					refresh(result);
+				}
 			});
 		}
 		</script>
@@ -239,6 +271,12 @@
 			<input type="button" value="新增" onclick="showBlockEditer({});" />
 		</div>
 		<div id="blockDiv"></div>
+		
+		<div class="title">
+			<label>HtmlTemplate</label>
+			<input type="button" value="新增" onclick="htmlTemplate(null);" />
+		</div>
+		<div id="htmlTemplateDiv"></div>
 		
 		<div class="title">
 			<label>Workflow</label>
@@ -294,13 +332,20 @@
 		}
 		
 		#workflowDiv,
-		#blockDiv {
+		#blockDiv,
+		#htmlTemplateDiv {
 			padding:15px;
 		}
 		
 		#workflowDiv input[type='button'],
-		#blockDiv input[type='button'] {
+		#blockDiv input[type='button'],
+		#htmlTemplateDiv input[type='button'] {
 			margin:5px;
+		}
+		
+		#formDialog textarea {
+			width:900px;
+			height:600px;
 		}
 		</style>
 		
@@ -316,7 +361,7 @@
 				</div>
 			</form>
 		<div>
-		
+
 		<div id="blockEditerDialog" title="Block Editer">
 			<form id="blockEditForm">
 				<div id="blockTab">
@@ -387,4 +432,66 @@
 			</form>
 		<div>
 	</body>
+	
+	<script>
+		function initFormDialog(){
+			if($("#formDialog").size() == 0){
+				var dialog = $('<div id="formDialog" title="编辑"><div id="formDialogContent" /></div>');
+				$("body").append(dialog);
+				
+				dialog.dialog({
+					resizable: false,
+					height:800,
+					width:1000,
+					autoOpen: false});
+			}
+		}
+
+		function showInFormDialog(json,saveFun){
+			initFormDialog();
+			
+			var element = build(json);
+			
+			$("#formDialogContent").empty();
+			$("#formDialogContent").append(element);
+			 
+			$("#formDialog").dialog("option","buttons",{
+					"Save": saveFun,
+					Cancel: function() {
+					  $(this).dialog( "close" );
+					}
+			});
+			$("#formDialog").dialog("open");
+		}
+		
+		function ajaxJSONData(url,doneFun) {
+			$.ajax(url, {
+				dataType : 'json',
+				type : 'POST',
+				async : false
+			}).done(doneFun);
+		}
+		
+		function defaultAjaxEdit(options){
+			ajaxJSONData(options.edit,function(result,status){
+				showInFormDialog(result.json, function() {
+					var dialog = $(this);
+					
+					var reqDatas = readFormDatas(dialog.find("form"));
+					if(options.data){
+						reqDatas = $.isFunction(options.data)?options.data(reqDatas):reqDatas;
+					}
+					
+					$.ajax(options.save, {
+						data : reqDatas,
+						dataType : 'json',
+						type : 'POST',
+						async : false
+					}).done(options.done?options.done:function(){});
+					
+					dialog.dialog("close");
+				});
+			});
+		}
+	</script>
 </html>

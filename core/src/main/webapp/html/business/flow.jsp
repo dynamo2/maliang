@@ -39,18 +39,14 @@
 		<link href="../html/business/style.css" rel="stylesheet" type="text/css"/>
     </head>
     <body>
-   		<h1 id="title">完善个人资料</h1>
 		<div id="main">
+			<h1 id="title">完善个人资料</h1>
 			<div id="html"></div>
 		</div>
 		
+		<textarea id="print" style="width:700px;height:500px;display:none;"></textarea>
 		
-		<textarea id="print" style="width:700px;height:500px;"></textarea>
-		 
-		 
-		<div id="dialog">
-			<div id="dialogPanel">
-		</div>
+		<div id="dialog"><div id="dialogPanel" /></div>
 		<script>
 		/**
 		input:
@@ -84,8 +80,9 @@
 		var result = ${resultJson};
 		var data = result && result.data;
 
-		var json = result.json;
-		var htmlCode = result.html;
+		var json = result && result.json;
+		var htmlTemplate = result && result.ht;
+		var htmlCode = result && result.html;
 		var jsUrl = result.jsUrl;
 		if(!jsUrl && data && data.bid && data.fid){
 		    jsUrl = '/business/js.htm?bid='+data.bid+'&fid='+data.fid;
@@ -125,8 +122,21 @@
 			if(json){
 				$("#main").append(build(json));
 			}
+			
+			if(htmlTemplate){
+				$("#main").html(htmlTemplate.template);
+				
+				
+				if(htmlTemplate.options){
+					$.each(htmlTemplate.options,function(k,v){
+						var tempDiv = $("#htmlTemplate-"+k);
+						
+						tempDiv.after(build(v));
+						tempDiv.remove();
+					});
+				}
+			}
 		}
-		
 		
 		</script>
 		<style>
