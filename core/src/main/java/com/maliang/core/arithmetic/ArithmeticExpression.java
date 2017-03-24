@@ -18,6 +18,11 @@ import com.maliang.core.arithmetic.node.Parentheses;
 import com.maliang.core.service.MapHelper;
 import com.maliang.core.util.StringUtil;
 
+/**
+ * FIXME Let's deprecate it with ParenthesesTest for UT
+ * @author fwang
+ *
+ */
 public class ArithmeticExpression {
 	public static Object execute(String expre){
 		return execute(expre,null);
