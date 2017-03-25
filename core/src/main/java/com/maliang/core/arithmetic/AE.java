@@ -14,7 +14,6 @@ public class AE {
 		return ArithmeticExpression.execute(expre,params);
 	}
 	
-	@Deprecated
 	public static void main(String[] args) {
 		String s = "{gfdsgfdgds${AAA.BBB} rtrewt } fdsafdsa ${ CCCC.DDDD } }";
 		
