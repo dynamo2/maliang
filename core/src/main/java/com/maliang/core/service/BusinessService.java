@@ -46,7 +46,7 @@ public class BusinessService {
 		flow.setResponse(this.readBlock(flow.getResponse(), defaultUniqueCode,blockType));
 		flow.setAjax(this.readBlock(flow.getAjax(), defaultUniqueCode,blockType));
 	}
-	
+
 	public String readBlock(String code,String defaultUniqueCode,int blockType) {
 		if(code == null)return null;
 		
@@ -95,7 +95,7 @@ public class BusinessService {
 				
 				this.source.replace(start, end+1,repCnt);
 				
-				this.cursor = start+repCnt.length()+1;
+				this.cursor = start+repCnt.length();
 			}
 		}
 		

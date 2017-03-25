@@ -7,7 +7,6 @@ import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
 
-import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 
 import org.springframework.stereotype.Controller;
@@ -64,69 +63,13 @@ public class BusinessController extends BasicController {
 		this.businessDao.remove(id);
 		return "删除业务： " + id;
 	}
-
-	@RequestMapping(value = "business.htm")
-	public String business(Model model, HttpServletRequest request) {
-		try {
-			Workflow workFlow = readWorkFlow(request);
-			String resultJson = executeWorkFlow(workFlow, request);
-
-			model.addAttribute("resultJson", resultJson);
-			return "/business/business";
-		} catch (TurnToPage page) {
-			model.addAttribute("resultJson", json(page.getResult()));
-			return "/business/business";
-		} catch (TianmaException e) {
-			model.addAttribute("errorMsg", e.getMessage());
-			return "/business/error";
-		}
-	}
-
-	@RequestMapping(value = "request.htm")
-	@ResponseBody
-	public String request(Model model, HttpServletRequest request) {
-		Map<String, Object> params = readRequestMap(request);
-		return params.toString();
-	}
-
-	protected Map<String, Object> readRequestMap(HttpServletRequest request) {
-		JSONObject json = JSONObject.fromObject(request.getParameterMap());
-		List<String> reqNames = json.names();
-
-		Map<String, Object> reqMap = new HashMap<String, Object>();
-		if (reqNames == null || reqNames.size() == 0) {
-			return reqMap;
-		}
-
-		for (String reqName : reqNames) {
-			JSONArray ja = (JSONArray) json.get(reqName);
-			
-			Object reqValue = null;
-			if(ja.size() == 1){
-				reqValue = ((JSONArray) json.get(reqName)).get(0);
-			}else if(ja.size() > 1){
-				reqValue = ja;
-			}
-			if (reqValue == null)
-				continue;
-
-			if(reqName.endsWith("[]")){
-				reqName = reqName.substring(0,reqName.length()-2);
-			}
-			setValue(reqMap, reqName, reqValue);
-		}
-
-		return reqMap;
-	}
-
+	
 	@RequestMapping(value = "workFlow.htm")
 	@ResponseBody
 	public String workFlow(String id, HttpServletRequest request) {
 		Workflow workFlow = businessDao.getWorkFlowById(id);
 		
-		String json = this.json(workFlow);
-
-		return json;
+		return this.json(workFlow);
 	}
 
 	@RequestMapping(value = "save.htm")
@@ -187,6 +130,26 @@ public class BusinessController extends BasicController {
 		return this.json(val);
 	}
 	
+	@RequestMapping(value = "htmlTemplate.htm")
+	@ResponseBody
+	public String htmlTemplate(String id){
+		System.out.println("--------- ht : id " + id);
+		
+		Map<String,Object> params = newMap("htmlTemplate",this.businessDao.getHtmlTeplateById(id));
+
+		String s = "{json:['form','business.htmlTemplates',"
+				+ "[['id','','hidden',htmlTemplate.id,'[n]'],"
+					+ "['name','名称','text',htmlTemplate.name,'[n]'],"
+					+ "['code','code','textarea',htmlTemplate.code,'[n]']]]}";
+		
+		return json(s,params);
+	}
+	
+	private String json(String s,Map<String,Object> params){
+		Object val = AE.execute(s,params);
+		return this.json(val);
+	}
+	
 	@RequestMapping(value = "toProject.htm")
 	@ResponseBody
 	public String toProject(String id) {
@@ -228,40 +191,6 @@ public class BusinessController extends BasicController {
 		
 		return "{}";
 	}
-	
-	@RequestMapping(value = "saveMove2.htm")
-	@ResponseBody
-	public String saveMove2(String id,String pid) {
-		Business business = this.businessDao.getByID(id);
-		//Project project = this.projectDao.getByID(pid);
-		
-		if(business != null){
-			//if(!isSameProject(project,business)){
-				
-				
-				Map<String,Object> newBus = new HashMap<String,Object>();
-				
-				newBus.put("id", id);
-				newBus.put("project", pid);
-				
-//				Business newBus = new Business();
-//				newBus.setId(business.getId());
-//				newBus.setProject(project);
-				
-				this.businessDao.updateBySet(newBus);
-			//}
-		}
-		
-		return "{}";
-	}
-	
-	private boolean isSameProject(Project project,Business business){
-		return business != null 
-				&& project != null
-				&& project.getId() != null
-				&& business.getProject() != null 
-				&& project.getId().equals(business.getProject().getId());
-	}
 
 	@RequestMapping(value = "edit.htm")
 	public String edit(String id, Model model, HttpServletRequest request) {
@@ -269,9 +198,26 @@ public class BusinessController extends BasicController {
 		if (business == null) {
 			business = new Business();
 		}
-		
+
 		model.addAttribute("resultJson", json(business));
 		return "/business/edit";
+	}
+	
+	@RequestMapping(value = "business.htm")
+	public String business(Model model, HttpServletRequest request) {
+		try {
+			Workflow workFlow = readWorkFlow(request);
+			String resultJson = executeWorkFlow(workFlow, request);
+
+			model.addAttribute("resultJson", resultJson);
+			return "/business/business";
+		} catch (TurnToPage page) {
+			model.addAttribute("resultJson", json(page.getResult()));
+			return "/business/business";
+		} catch (TianmaException e) {
+			model.addAttribute("errorMsg", e.getMessage());
+			return "/business/error";
+		}
 	}
 	
 	@RequestMapping(value = "ajax.htm")

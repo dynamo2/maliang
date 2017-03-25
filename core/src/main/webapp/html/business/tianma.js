@@ -181,6 +181,47 @@ function HtmlBuilder(){
 		return buildHtmlElement(label);
 	};
 	
+	this.newButton = function(data){
+		if(!(data && data.type == "button")){
+			return null;
+		}
+	
+		var options = utils.copy(data,null,["type"]);
+		return this.props($("<button />"),options);
+	};
+	
+	this.props = function(ele,options){
+		if(!options){
+			return ele;
+		}
+		
+		if(options.text){
+			ele.text(options.text);
+		}
+		
+		if(options.html){
+			ele.html(options.html);
+		}
+		
+		if(options.class){
+			ele.addClass(options.class);
+		}
+		
+		if($.isPlainObject(options.events)){
+			for(x in options.events){
+				var fun = options.events[x];
+				ele.on(x,eval(fun));
+			}
+		}
+		
+		options = utils.copy(options,null,["text","html","class","events"]);
+		if(!$.isPlainObject(options)){
+			options = {};
+		}
+		
+		return ele.prop(options);
+	};
+	
 	this.newInput = function(data){
 		var input = $("<input></input>");
 		if(data){
@@ -336,6 +377,8 @@ function FormBuilder(){
 			return TM_htmlBuilder.newCheckbox(inputData);
 		}else if(inputData.type == "textarea"){
 			return TM_htmlBuilder.newTextarea(inputData);
+		}else if(inputData.type == "button"){
+			return TM_htmlBuilder.newButton(inputData);
 		}else if(inputData.type == "label"){
 			return builder.newLabel(inputData);
 		}else if(inputData.type == "between"){

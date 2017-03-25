@@ -9,6 +9,7 @@ import org.bson.types.ObjectId;
 
 import com.maliang.core.model.Block;
 import com.maliang.core.model.Business;
+import com.maliang.core.model.HtmlTemplate;
 import com.maliang.core.model.MongodbModel;
 import com.maliang.core.model.Workflow;
 import com.maliang.core.util.StringUtil;
@@ -25,6 +26,7 @@ public class BusinessDao extends ModelDao<Business> {
 	static {
 		INNER_TYPE.put("Business.workflows",Workflow.class);
 		INNER_TYPE.put("Business.blocks",Block.class);
+		INNER_TYPE.put("Business.htmlTemplates",HtmlTemplate.class);
 	}
 	
 	public BusinessDao(){
@@ -48,20 +50,40 @@ public class BusinessDao extends ModelDao<Business> {
 		return null;
 	}
 	
+	public Block getBlockById(String oid){
+		return this.getArrayInnerById("blocks", new ObjectId(oid), Block.class);
+	}
+	
+	public HtmlTemplate getHtmlTeplateById(String oid){
+		try {
+			return this.getArrayInnerById("htmlTemplates", new ObjectId(oid), HtmlTemplate.class);
+		}catch(Exception e){
+			return null;
+		}
+	}
+	
 	public Block getBlock(String canonicalName){
+		return getSubObjectByName(canonicalName,"blocks",Block.class);
+	}
+	
+	public HtmlTemplate getHtmlTemplate(String canonicalName){
+		return getSubObjectByName(canonicalName,"htmlTemplates",HtmlTemplate.class);
+	}
+	
+	private <T> T getSubObjectByName(String canonicalName,String subName,Class<T> subCls){
 		String[] names = canonicalName.split("\\.");
 		
 		List<DBObject> pipe = new ArrayList<DBObject>();
 		
 		pipe.add(new BasicDBObject("$match",new BasicDBObject("uniqueCode",names[0])));
-		pipe.add(new BasicDBObject("$unwind","$blocks"));
-		pipe.add(new BasicDBObject("$match",new BasicDBObject("blocks.name",names[1])));
-		pipe.add(new BasicDBObject("$project",new BasicDBObject().append("blocks",1).append("_id",0)));
+		pipe.add(new BasicDBObject("$unwind","$"+subName));
+		pipe.add(new BasicDBObject("$match",new BasicDBObject(subName+".name",names[1])));
+		pipe.add(new BasicDBObject("$project",new BasicDBObject().append(subName,1).append("_id",0)));
 		
 		AggregationOutput aout = dbColl.aggregate(pipe);
 		Iterator<DBObject> ie = aout.results().iterator();
 		while(ie.hasNext()){
-			return decode((BasicDBObject)ie.next().get("blocks"), Block.class);
+			return decode((BasicDBObject)ie.next().get(subName), subCls);
 		}
 		
 		return null;

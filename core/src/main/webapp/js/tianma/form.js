@@ -47,6 +47,8 @@ function readFormDatas(form) {
 	return reqDatas;
 }
 
+
+
 /***
  * 构建以<table>排版的form表单
  * ***/
@@ -57,7 +59,7 @@ function FormTable(){
 	var form;
 	
 	this.init = function(options){
-		_.form = $('<form action="/business/business.htm" method="post" />');
+		_.form = $('<form action="/flows/flow.htm" method="post" />');
 		_.form.attr("id",options.id);
 		
 		_.newTable();

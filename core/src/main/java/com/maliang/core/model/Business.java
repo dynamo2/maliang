@@ -18,6 +18,9 @@ public class Business extends MongodbModel {
 	@Mapped(type=Block.class)
 	private List<Block> blocks;
 	
+	@Mapped(type=HtmlTemplate.class)
+	private List<HtmlTemplate> htmlTemplates;
+	
 	public String getName() {
 		return name;
 	}
@@ -54,7 +57,12 @@ public class Business extends MongodbModel {
 	public void setProject(MongodbModel project) {
 		this.project = project;
 	}
-	
+	public List<HtmlTemplate> getHtmlTemplates() {
+		return htmlTemplates;
+	}
+	public void setHtmlTemplates(List<HtmlTemplate> htmlTemplates) {
+		this.htmlTemplates = htmlTemplates;
+	}
 	public Workflow workFlow(int step){
 		if(this.workflows == null || this.workflows.isEmpty()){
 			return null;
