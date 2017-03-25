@@ -58,13 +58,22 @@ function Utils(){
 	 * 复制对象属性， exts：不操作的属性
 	 */
 	 this.copy = function (fromObj, toObj, exts) {
-		for (x in fromObj) {
-			if (_.hasName(exts, x))
-				continue;
-
-			toObj[x] = fromObj[x];
-		}
-		return toObj;
+		 if(!$.isPlainObject(fromObj)){
+			return toObj; 
+		 }
+		 
+		 if(!$.isPlainObject(toObj)){
+			 toObj = {};
+		 }
+		 
+		 $.each(fromObj,function(k,v){
+			if(_.hasName(exts, k) || !v){
+				return;
+			}
+			
+			toObj[k] = v;
+		 });
+		 return toObj;
 	};
 	
 	this.addEvent = function(element,eveName,funs){

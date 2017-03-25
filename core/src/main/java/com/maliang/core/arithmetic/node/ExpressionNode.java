@@ -218,7 +218,7 @@ public class ExpressionNode extends Node {
 	 * 执行<java::>代码
 	 * ***/
 	public static String doDoubleColon(String s,Map<String,Object> paramsMap){
-		return new DoubleColonReplacer(s).replace(paramsMap);	
+		return new DoubleColonReplacer(s).replace(paramsMap);
 	}
 	
 	public String toString(){

@@ -23,10 +23,17 @@ function deleteItem(event, tag) {
 	item.remove();
 }
 
+
+
 function build(json) {
 	if (utils.isString(json)) {
 		return $("<span />").text(json);
 	} else if ($.isPlainObject(json)) {
+		var generator = json && json.generator;
+		if(generator){
+			return eval(generator+"(json)");
+		}
+		
 		if (json.html) {
 			return $(json.html);
 		}
@@ -54,6 +61,14 @@ function build(json) {
 
 function buildOne(json) {
 	var type = json[0];
+	
+	var generator = null;
+	if(json.length > 1 && $.isPlainObject(json[1])){
+		generator = json[1]["generator"];
+		if(generator){
+			return eval(generator+"(json)");
+		}
+	}
 
 	if (type === 'tableBlock') {
 		return TableBlock(json);
@@ -86,6 +101,8 @@ function buildOne(json) {
 		return buildBind(json);
 	} else if (type === 'ajax') {
 		return buildAjax(json);
+	} else if (type === 'inputs') {
+		return buildInputs(json);
 	}
 }
 
@@ -232,7 +249,7 @@ function buildA(json) {
 	addChildren(a, json[1]);
 
 	var reqs = json[2];
-	var href = "/business/business.htm?";
+	var href = "/flows/flow.htm?";
 	if (utils.isString(reqs)) {
 		href += reqs;
 	} else if ($.isPlainObject(reqs)) {
@@ -350,7 +367,7 @@ function Menu(json) {
 			bid = '';
 		}
 		
-		var href = '/business/business.htm?' + bid;
+		var href = '/flows/flow.htm?' + bid;
 		for (var i = 1; i < menuList.length; i++) {
 			var opts = menuList[i];
 
