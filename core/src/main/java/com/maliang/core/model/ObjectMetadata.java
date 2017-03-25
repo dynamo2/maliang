@@ -7,8 +7,14 @@ public class ObjectMetadata extends MongodbModel {
 	private String uniqueMark;
 	private String label;
 	
+	@Linked
+	private Project project;
+	
 	@Mapped(type=ObjectField.class)
 	private List<ObjectField> fields;
+	
+	@Mapped(type=Trigger.class)
+	private List<Trigger> triggers;
 	
 	public String getName() {
 		return name;
@@ -33,5 +39,17 @@ public class ObjectMetadata extends MongodbModel {
 	}
 	public void setLabel(String label) {
 		this.label = label;
+	}
+	public Project getProject() {
+		return project;
+	}
+	public void setProject(Project project) {
+		this.project = project;
+	}
+	public List<Trigger> getTriggers() {
+		return triggers;
+	}
+	public void setTriggers(List<Trigger> triggers) {
+		this.triggers = triggers;
 	}
 }

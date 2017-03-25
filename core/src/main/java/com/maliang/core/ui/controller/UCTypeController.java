@@ -29,14 +29,13 @@ public class UCTypeController extends BasicController {
 		Map<String,Object> params = new HashMap<String,Object>();
 		params.put("types",types);
 		
-		String json = "['tableList',['名称','key','units','操作'],each(types){[this.name,this.key,''+this.units,[['button','编辑','edit(\"'+this.id+'\")']]]}]";
+		String json = "['tableList',['名称','key','units','操作'],each(types){[this.name,this.key,this.units+'',[['button','编辑','edit(\"'+this.id+'\")']]]}]";
 		List list = (List)AE.execute(json, params);
 		
 		Map resultMap = new HashMap();
 		resultMap.put("json", list);
 
 		model.addAttribute("resultJson", json(resultMap));
-		//model.addAttribute("resultJson",list.toString());
 		return "/metadata/uctype";
 	}
 	
@@ -84,7 +83,7 @@ public class UCTypeController extends BasicController {
 		
 		String jid = (String)ja.getJSONObject(0).get("id");
 		if(!StringUtil.isEmpty(jid)){
-			metadata.setId(jid);
+			//metadata.setId(jid);
 		}
 		
 		return metadata;

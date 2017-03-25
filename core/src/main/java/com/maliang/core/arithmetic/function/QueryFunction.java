@@ -42,7 +42,19 @@ public class QueryFunction {
 		return false;
 	}
 
-	public static Object execute(Function function,Map<String,Object> params){
+	public static Object findOne(Function function,Map<String,Object> params){
+		Object result = find(function,params);
+		if(Utils.isArray(result)){
+			if(Utils.isEmpty(result)){
+				return null;
+			}
+			
+			return Utils.toArray(result)[0];
+		}
+		return result;
+	}
+	
+	public static Object find(Function function,Map<String,Object> params){
 		Object operatedObj = function.getKeyValue();
 		
 		if(Utils.isArray(operatedObj)){

@@ -29,7 +29,7 @@ public class TestDao extends AbstractDao {
 	}
 	
 	public void save(User u) {
-		BasicDBObject doc = encode(u);
+		BasicDBObject doc = encode(u,true);
 		this.dbColl.save(doc);
 	}
 	

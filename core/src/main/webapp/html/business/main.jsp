@@ -71,7 +71,12 @@
 			$("#businessPanel").tabs();
 			addTabClose($("#businessPanel"));
 			
-			$("body").layout({ applyDemoStyles: true });
+			$("body").layout({ 
+				applyDemoStyles: true,
+				west:{
+					size:300
+				}
+			});
 			
 			initBusinessEditer();
 		});
@@ -303,6 +308,75 @@
 				}
 			});
 		}
+		
+		function ajaxNoData(url,doneFun) {
+			$.ajax(url, {
+				dataType : 'json',
+				type : 'POST',
+				async : false
+			}).done(doneFun);
+		}
+		
+		function initDefaultOptionsDialog(dialogId){
+			$("#"+dialogId).dialog({
+				resizable: false,
+				height:400,
+				width:500,
+				autoOpen: false});
+		}
+		
+		function showInFormDialog(json,saveFun){
+			var formDialog = $("#formDialog");
+			if(formDialog.length == 0){
+				$("body").append($('<div id="formDialog" title="编辑" /></div>').append($('<div id="formDialogContent" />')));
+				initDefaultOptionsDialog("formDialog");
+			}
+			
+			var element = build(json);
+
+			 $("#formDialogContent").empty();
+			 $("#formDialogContent").append(element);
+			 
+			 $("#formDialog").dialog("option","buttons",{
+					"Save": saveFun,
+					Cancel: function() {
+					  $(this).dialog( "close" );
+					}
+			});
+			 $("#formDialog").dialog("open");
+		}
+		
+		/*
+		function readFormDatas22 (form) {
+			var inputs = form.find(":input");
+
+			var reqDatas = {};
+			$.each(inputs, function() {
+				if ($(this).attr("type") == "radio" 
+						|| $(this).attr("type") == "checkbox") {
+					if (!this.checked) {
+						return;
+					}
+				}
+				
+				var key = $(this).attr("name");
+				var val = $(this).val();
+				var oldVal = utils.get(reqDatas,key);
+				
+				if(oldVal){
+					if(!$.isArray(oldVal)){
+						oldVal = [oldVal];
+						utils.put(reqDatas,key,oldVal);
+					}
+					oldVal.push(val);
+				}else {
+					utils.put(reqDatas,key,val);
+				}
+			});
+
+			return reqDatas;
+		}
+		*/
 		
 		function print(str){
 			$('#print').text(str);

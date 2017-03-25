@@ -152,7 +152,6 @@ public class Operator implements Comparable<Operator> {
 	}
 
 	public static boolean isOperator(char c) {
-		// FIXME This logic can be optimized with String search.
 		for(char oc : OPERATOR_CHAR){
 			if(c == oc){
 				return true;

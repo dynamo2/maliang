@@ -6,6 +6,12 @@ public class Business extends MongodbModel {
 	private String name;
 	private String uniqueCode;
 	
+	//@Linked
+	//private Project project;
+	
+	@VariableLinked
+	private MongodbModel project;
+	
 	@Mapped(type=Workflow.class)
 	private List<Workflow> workflows;
 	
@@ -35,6 +41,18 @@ public class Business extends MongodbModel {
 	}
 	public void setBlocks(List<Block> blocks) {
 		this.blocks = blocks;
+	}
+//	public Project getProject() {
+//		return project;
+//	}
+//	public void setProject(Project project) {
+//		this.project = project;
+//	}
+	public MongodbModel getProject() {
+		return project;
+	}
+	public void setProject(MongodbModel project) {
+		this.project = project;
 	}
 	
 	public Workflow workFlow(int step){

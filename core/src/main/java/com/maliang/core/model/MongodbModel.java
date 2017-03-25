@@ -12,16 +12,19 @@ public class MongodbModel {
 	public ObjectId getId() {
 		return id;
 	}
+	
 	public void setId(ObjectId id) {
 		this.id = id;
 	}
-	public void setId(String id) {
-		try {
-			this.id = new ObjectId(id);
-		}catch(IllegalArgumentException e){
-			this.id = new ObjectId();
-		}
-	}
+	
+//	public void setId(String id) {
+//		System.out.println("-------- setId(String id) : " + id);
+//		try {
+//			this.id = new ObjectId(id);
+//		}catch(IllegalArgumentException e){
+//			this.id = new ObjectId();
+//		}
+//	}
 	
 	public String toString(){
 		StringBuffer sbf = null;
@@ -36,7 +39,7 @@ public class MongodbModel {
 				Object fieldValue = pd.getReadMethod().invoke(this);
 				
 				if(sbf == null){
-					sbf = new StringBuffer();
+					sbf = new StringBuffer("{");
 				}else {
 					sbf.append(",");
 				}
@@ -47,6 +50,7 @@ public class MongodbModel {
 		}
 		
 		if(sbf != null){
+			sbf.append("}");
 			return sbf.toString();
 		}
 		

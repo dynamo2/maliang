@@ -41,6 +41,17 @@ public class ListFunction {
 		return ((Object[])keyData)[index];
 	}
 	
+	public static boolean contains(Function function ,Map<String,Object> params){
+		Object keyVal = function.getKeyValue();
+		Object value = function.executeExpression(params);
+		
+		if(keyVal instanceof List){
+			return ((List)keyVal).contains(value);
+		}
+
+		return keyVal != null && value != null && keyVal.equals(value);
+	}
+	
 	public static boolean isList(Function function ,Map<String,Object> params){
 		Object value = ArithmeticExpression.execute(function.getKey(), params);
 		if(value == null){

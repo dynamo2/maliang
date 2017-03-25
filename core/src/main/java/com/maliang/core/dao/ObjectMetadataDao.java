@@ -1,12 +1,18 @@
 package com.maliang.core.dao;
 
+import java.util.HashMap;
 import java.util.List;
-import java.util.UUID;
+import java.util.Map;
 
 import org.bson.types.ObjectId;
 
+import com.maliang.core.model.Business;
 import com.maliang.core.model.ObjectField;
 import com.maliang.core.model.ObjectMetadata;
+import com.maliang.core.model.Project;
+import com.maliang.core.model.Trigger;
+import com.maliang.core.model.TriggerAction;
+import com.maliang.core.util.Utils;
 import com.mongodb.BasicDBObject;
 
 public class ObjectMetadataDao  extends ModelDao<ObjectMetadata> {
@@ -14,7 +20,9 @@ public class ObjectMetadataDao  extends ModelDao<ObjectMetadata> {
 	
 	static {
 		INNER_TYPE.put("ObjectMetadata.fields",ObjectField.class);
+		INNER_TYPE.put("ObjectMetadata.triggers",Trigger.class);
 		INNER_TYPE.put("ObjectField.fields",ObjectField.class);
+		INNER_TYPE.put("Trigger.actions",TriggerAction.class);
 	}
 	
 	public ObjectMetadataDao(){
@@ -26,7 +34,15 @@ public class ObjectMetadataDao  extends ModelDao<ObjectMetadata> {
 	}
 	
 	public ObjectMetadata getByName(String name){
-		return this.getByField("name", name);
+		Map query = new HashMap();
+		query.put("name", name);
+		
+		if(!this.isSystemCollection(name)){
+			Project project = getSessionProject();
+			query.put("project", project.getId().toString());
+		}
+		
+		return this.findOne(new BasicDBObject(query));
 	}
 
 	public void saveFields(String oid,ObjectField field) {
@@ -37,12 +53,27 @@ public class ObjectMetadataDao  extends ModelDao<ObjectMetadata> {
 		if(field.getId() == null) {
 			field.setId(new ObjectId());
 			
-			BasicDBObject doc = encode(field);
+			BasicDBObject doc = encode(field,true);
 			this.dbColl.update(this.getObjectId(oid), new BasicDBObject("$push",new BasicDBObject("fields",doc)));
 		}else {
-			BasicDBObject doc = encode(field);
+			BasicDBObject doc = encode(field,true);
 			this.dbColl.update(new BasicDBObject("fields._id",field.getId()), new BasicDBObject("$set",new BasicDBObject("fields.$",doc)));
 		}
+	}
+	
+	public Trigger getTriggerById(String tid){
+		try {
+			return this.getArrayInnerById("triggers", new ObjectId(tid),Trigger.class);
+		}catch(Exception e){
+			return null;
+		}
+	}
+	
+	/**
+	 * omId: ObjectMetadata.id
+	 * **/
+	public void saveTrigger(String omId,Trigger trigger){
+		this.saveArrayInnerFields(omId, "triggers", trigger);
 	}
 
 	/**

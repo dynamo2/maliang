@@ -42,6 +42,11 @@
     		return true;
     	}
     	
+    	if(key == 'class'){
+    		jObj.addClass(value);
+    		return true;
+    	}
+    	
     	jObj.prop(key,value);
     });
     

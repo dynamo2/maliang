@@ -4,6 +4,8 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
+import com.maliang.core.arithmetic.AE;
+import com.maliang.core.arithmetic.DoubleColonReplacer;
 import com.maliang.core.arithmetic.calculator.CompareCalculator;
 import com.maliang.core.arithmetic.calculator.DateCalculator;
 import com.maliang.core.arithmetic.calculator.DoubleCalculator;
@@ -89,7 +91,7 @@ public class ExpressionNode extends Node {
 				list.addAll((List)valueRight);
 				return list;
 			}else {
-				return calculateString(valueLeft.toString(),valueRight.toString());
+				return calculateString(valueLeft.toString(),valueRight.toString(),paramsMap);
 			}
 		}
 		
@@ -105,7 +107,7 @@ public class ExpressionNode extends Node {
 				map.putAll((Map)valueRight);
 				return map;
 			}else {
-				return calculateString(valueLeft.toString(),valueRight.toString());
+				return calculateString(valueLeft.toString(),valueRight.toString(),paramsMap);
 			}
 		}
 		
@@ -122,7 +124,16 @@ public class ExpressionNode extends Node {
 		}
 
 		if(valueLeft instanceof String || valueRight instanceof String){
-			return calculateString(valueLeft==null?null:valueLeft.toString(),valueRight==null?null:valueRight.toString());
+			try {
+				return calculateString(valueLeft==null?null:valueLeft.toString(),
+						valueRight==null?null:valueRight.toString(),paramsMap);
+			}catch(RuntimeException e){
+				System.out.println("======== valueLeft : " + valueLeft);
+				System.out.println("======== valueRight : " + valueRight);
+				
+				throw e;
+			}
+			
 		}
 
 		if(valueLeft instanceof Integer && valueRight instanceof Integer){
@@ -148,6 +159,10 @@ public class ExpressionNode extends Node {
 			return false;
 		}else if(this.operator.isOr()){
 			return LogicalCalculator.getBoolean(leftV);
+		}
+		
+		if(leftV instanceof String){
+			return doDoubleColon((String)leftV,paramsMap);
 		}
 		
 		return leftV;
@@ -181,13 +196,29 @@ public class ExpressionNode extends Node {
 		return null;
 	}
 	
-	
-	private String calculateString(String left,String right){
+	public static void main(String[] args) {
+		String c = "{product:{id:'123456',name:'wmx'}}";
+		Map<String,Object> params = (Map<String,Object>)AE.execute(c);
+		
+		c = "'<a href=\"http://www.sohu.com#<java::product.id+'poi'>\"><java:'+':min([1,2])></a>'";
+		
+		Object v = AE.execute(c,params);
+		System.out.println("--------- v : " + v);
+	}
+
+	private String calculateString(String left,String right,Map<String,Object> paramsMap){
 		if(!this.operator.isPlus()){
 			throw new RuntimeException("Error operator '"+this.operator.getOperatorKey()+"' for String");
 		}
 		
-		return left+right;
+		return doDoubleColon(left+right,paramsMap);	
+	}
+	
+	/**
+	 * 执行<java::>代码
+	 * ***/
+	public static String doDoubleColon(String s,Map<String,Object> paramsMap){
+		return new DoubleColonReplacer(s).replace(paramsMap);	
 	}
 	
 	public String toString(){
@@ -195,3 +226,4 @@ public class ExpressionNode extends Node {
 		//return ""+this.left+this.operator+this.right;
 	}
 }
+

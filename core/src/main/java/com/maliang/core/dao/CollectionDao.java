@@ -1,22 +1,22 @@
 package com.maliang.core.dao;
 
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-
-import org.bson.types.ObjectId;
+import java.util.Set;
 
 import com.maliang.core.arithmetic.AE;
 import com.maliang.core.arithmetic.ArithmeticExpression;
-import com.maliang.core.arithmetic.calculator.DateCalculator;
 import com.maliang.core.model.FieldType;
 import com.maliang.core.model.ObjectField;
 import com.maliang.core.model.ObjectMetadata;
+import com.maliang.core.model.Trigger;
+import com.maliang.core.model.TriggerAction;
 import com.maliang.core.service.MapHelper;
 import com.maliang.core.ui.controller.Pager;
+import com.maliang.core.util.Utils;
 import com.mongodb.AggregationOutput;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
@@ -25,7 +25,7 @@ import com.mongodb.DBObject;
 import com.mongodb.WriteResult;
 
 public class CollectionDao extends BasicDao {
-	public static void main(String[] args) {
+	public static void main2(String[] args) {
 
 		String str = "db.Region.aggregateOne([{$match:{province.name:'浙江'}},{ $unwind :'$province.cities'},"
 				+ "{$group:{_id:{$cond:{if:{$eq:['$province.cities.name','绍兴']},then:{ $ifNull:[ '$province.cities.districts',[]]},else:[]}}}},"
@@ -65,86 +65,13 @@ public class CollectionDao extends BasicDao {
 	// public
 
 	// For test
-	private BasicDBObject executeDBObject(String str) {
+	public BasicDBObject executeDBObject(String str) {
 		Map<String, Object> map = (Map<String, Object>) ArithmeticExpression
 				.execute(str, null);
 		return this.build(this.buildDBQueryMap(map, null));
 	}
-
-	private static void printTest(String id, String collName) {
-		String str = "db." + collName + ".get('" + id + "')";
-		Map<String, Object> val = (Map<String, Object>) ArithmeticExpression
-				.execute(str, null);
-		System.out.println("val : " + val);
-		System.out.println("");
-	}
-
-	public void dbSet(Map qMap, Map sMap, String collName, boolean all) {
-		BasicDBObject query = this.build(this.buildDBQueryMap(qMap, null));
-		BasicDBObject set = this.build(this.buildDBQueryMap(sMap, null));
-
-		this.dbSet(query, set, collName, all);
-	}
-
-	public void dbSet(BasicDBObject query, BasicDBObject set, String collName,
-			boolean all) {
-		int max = 100;
-		int i = 0;
-		WriteResult result = null;
-		do {
-			result = this.getDBCollection(collName).update(query,
-					new BasicDBObject("$set", set));
-		} while (result.isUpdateOfExisting() && all && (i++ < max));
-	}
-
-	public Map<String, Object> updateBySet(Map value, String collName) {
-		value = this.toDBModel(value, collName);
-		
-		String id = (String) value.remove("id");
-		BasicDBObject query = this.getObjectId(id);
-
-		ObjectMetadata meta = this.metaDao.getByName(collName);
-		List<Map<String, BasicDBObject>> updates = new ArrayList<Map<String, BasicDBObject>>();
-		Map<String, Object> daoMap = buildUpdates(meta.getFields(), value,
-				null, updates, query);
-		updates.add(buildSetUpdateMap(query, daoMap));
-
-		DBCollection db = this.getDBCollection(collName);
-		DBObject result = null;
-		List<Map<Object,Object>> resultValueMap = new ArrayList<Map<Object,Object>>();
-		for (Map<String, BasicDBObject> um : updates) {
-			if (um != null) {
-				result = db.findAndModify(um.get("query"), null, null, false,
-						um.get("update"), true, false);
-				
-				//resultValueMap.add(um.get("value").toMap());
-			}
-		}
-
-		value.put("id", id);
-		
-//		System.out.println("======= value : " + value);
-//		if (result != null) {
-//			return this.toMap(result, collName);
-//		}
-
-		return value;
-	}
-
-	// public Map<String,Object> innerObjectById(Map<String,Object> query,String
-	// collName){
-	// Map<String,Object> dbQuery = buildDBQueryMap(query,null);
-	//
-	// List<Map<String,Object>> results = this.findByMap(dbQuery, collName);
-	// if(results != null && results.size() > 0){
-	// Map<String,Object> returnObject = findInnerById(results.get(0),dbQuery);
-	// if(returnObject != null){
-	// return returnObject;
-	// }
-	// }
-	// return null;
-	// }
-
+	
+	
 	public Map<String, Object> save(Map value, String collName) {
 		value = this.toDBModel(value, collName);
 
@@ -152,6 +79,10 @@ public class CollectionDao extends BasicDao {
 		if (doc == null) {
 			return null;
 		}
+		
+		this.insertTrigger(value, collName);
+		System.out.println("****** after trigger value : " + value);
+		
 		this.getDBCollection(collName).save(doc);
 
 		value.put("id", doc.getObjectId("_id").toByteArray());
@@ -167,6 +98,16 @@ public class CollectionDao extends BasicDao {
 
 		WriteResult result = this.getDBCollection(collName).remove(doc);
 		return result.getN();
+	}
+	
+	public int remove(String oid, String collName) {
+		WriteResult result = this.getDBCollection(collName).remove(
+				this.getObjectId(oid));
+		return result.getN();
+	}
+
+	public void removeAll(String collName) {
+		this.getDBCollection(collName).remove(new BasicDBObject());
 	}
 
 	protected Map<String, Object> toMap(DBObject doc, String collName) {
@@ -185,6 +126,56 @@ public class CollectionDao extends BasicDao {
 		}
 
 		return this.emptyResult();
+	}
+	
+	//================ aggregate ==================
+	
+	public Map<String, Object> aggregateOne(List<Map<String, Object>> query,
+			String collName) {
+		List<Map<String, Object>> results = aggregateByMap(query, collName);
+		if (results != null && results.size() > 0) {
+			return results.get(0);
+		}
+		return null;
+	}
+
+	public List<Map<String, Object>> aggregateByMap(
+			List<Map<String, Object>> query, String collName) {
+		if (query == null || query.isEmpty()) {
+			return this.emptyResults();
+		}
+
+		List<DBObject> pipeline = new ArrayList<DBObject>();
+		for (Map<String, Object> map : query) {
+			if (map.isEmpty())
+				continue;
+
+			pipeline.add(new BasicDBObject(map));
+		}
+
+		return this.aggregate(pipeline, collName);
+	}
+	
+	public List<Map<String, Object>> aggregate(List<DBObject> pipeline,
+			String collName) {
+		if (pipeline == null || pipeline.isEmpty()) {
+			return this.emptyResults();
+		}
+
+		DBCollection db = this.getDBCollection(collName);
+		AggregationOutput aout = db.aggregate(pipeline);
+		Iterator<DBObject> ie = aout.results().iterator();
+
+		List<Map<String, Object>> results = new ArrayList<Map<String, Object>>();
+		while (ie.hasNext()) {
+			DBObject dbo = ie.next();
+			results.add(toMap(dbo, collName));
+		}
+		return results;
+	}
+	
+	private List<Map<String, Object>> emptyResults() {
+		return new ArrayList<Map<String, Object>>();
 	}
 
 	/***
@@ -216,159 +207,433 @@ public class CollectionDao extends BasicDao {
 		return this.readCursor(cursor, collName);
 	}
 
-	// public List<Map<String,Object>> findByMap(Map<String,Object> query,String
-	// collName){
-	// return this.find(build(query), collName);
-	// }
-	//
-	// public List<Map<String,Object>> find(BasicDBObject query,String
-	// collName){
-	// DBCursor cursor = this.getDBCollection(collName).find(query);
-	//
-	// return readCursor(cursor,collName);
-	// }
-	//
-	// private List<Map<String,Object>> readCursor(DBCursor cursor,String
-	// collName){
-	// List<Map<String,Object>> results = new ArrayList<Map<String,Object>>();
-	// for(DBObject dob : cursor.toArray()){
-	// results.add(toMap(dob,collName));
-	// }
-	//
-	// return results;
-	// }
-
-	public Map<String, Object> aggregateOne(List<Map<String, Object>> query,
-			String collName) {
-		List<Map<String, Object>> results = aggregateByMap(query, collName);
-		if (results != null && results.size() > 0) {
-			return results.get(0);
+	public int update(Map qMap, Map sMap, String collName) {
+		BasicDBObject query = null;
+		if(qMap == null){
+			query = new BasicDBObject();
+		}else {
+			query = this.build(this.buildDBQueryMap(qMap, null)); 
 		}
-		return null;
-	}
+		BasicDBObject set = this.build(this.buildDBQueryMap(sMap, null));
 
-	public List<Map<String, Object>> aggregateByMap(
-			List<Map<String, Object>> query, String collName) {
-		if (query == null || query.isEmpty()) {
-			return this.emptyResults();
-		}
-
-		List<DBObject> pipeline = new ArrayList<DBObject>();
-		for (Map<String, Object> map : query) {
-			if (map.isEmpty())
-				continue;
-
-			pipeline.add(new BasicDBObject(map));
-		}
-
-		return this.aggregate(pipeline, collName);
-	}
-
-	private List<Map<String, Object>> emptyResults() {
-		return new ArrayList<Map<String, Object>>();
-	}
-
-	public List<Map<String, Object>> aggregate(List<DBObject> pipeline,
-			String collName) {
-		if (pipeline == null || pipeline.isEmpty()) {
-			return this.emptyResults();
-		}
-
-		DBCollection db = this.getDBCollection(collName);
-		AggregationOutput aout = db.aggregate(pipeline);
-		Iterator<DBObject> ie = aout.results().iterator();
-
-		List<Map<String, Object>> results = new ArrayList<Map<String, Object>>();
-		while (ie.hasNext()) {
-			results.add(toMap(ie.next(), collName));
-		}
-		return results;
-	}
-
-	public int remove(String oid, String collName) {
-		WriteResult result = this.getDBCollection(collName).remove(
-				this.getObjectId(oid));
+		WriteResult result  = this.getDBCollection(collName).updateMulti(query,
+				new BasicDBObject("$set", set));
+		
 		return result.getN();
 	}
 
-	public void removeAll(String collName) {
-		this.getDBCollection(collName).remove(new BasicDBObject());
+	public int updateAll(Map value, String collName) {
+		return this.update(null, value, collName);
 	}
 
-	// private void mergeLinkedObject(Map<String,Object> dataMap,String
-	// collName){
-	// //dataMap.put("id",dataMap.remove("_id").toString());
-	//
-	// ObjectMetadata metedata = this.metaDao.getByName(collName);
-	// if(metedata == null)return;
-	//
-	// correctField(dataMap,metedata.getFields());
-	//
-	// /*
-	// for(ObjectField of : metedata.getFields()){
-	// String fieldName = of.getName();
-	// if(FieldType.LINK_COLLECTION.is(of.getType())){
-	// String linkCollName = getLinkedCollectionName(of.getLinkedObject());
-	// if(linkCollName == null)continue;
-	//
-	// Object fieldValue = dataMap.get(fieldName);
-	// if(fieldValue != null && fieldValue instanceof String &&
-	// !((String)fieldValue).trim().isEmpty()){
-	// String linkOid = ((String)fieldValue).trim();
-	// fieldValue = this.getByID(linkOid, linkCollName);
-	// }
-	// dataMap.put(fieldName, fieldValue);
-	// }else if(FieldType.INNER_COLLECTION.is(of.getType())){
-	//
-	// }
-	// }*/
-	// }
+	public Map<String, Object> updateBySet(Map value, String collName) {
+		value = this.toDBModel(value, collName);
+		
+		System.out.println("updateBySet value : " + value);
+		/**
+		 * 执行触发器
+		 * **/
+		this.updateTrigger(value, collName);
+		
+		System.out.println("after trigger value : " + value);
+		
+		String id = (String) value.remove("id");
+		BasicDBObject query = this.getObjectId(id);
 
-	// private void correctField(Map<String,Object> dataMap,List<ObjectField>
-	// fields){
-	// if(dataMap.get("_id") != null){
-	// Object id = dataMap.remove("_id");
-	// if(id instanceof ObjectId){
-	// id = id.toString();
-	// }
-	// dataMap.put("id",id);
-	// }
-	//
-	// for(ObjectField field : fields){
-	// String fieldName = field.getName();
-	//
-	// if(FieldType.LINK_COLLECTION.is(field.getType())){
-	// // String linkCollName =
-	// this.getLinkedCollectionName(field.getLinkedObject());
-	// // if(linkCollName == null)return;
-	//
-	// String linkCollName = field.getLinkedObject();
-	// Object fieldValue = dataMap.get(fieldName);
-	// if(fieldValue != null && fieldValue instanceof String &&
-	// !((String)fieldValue).trim().isEmpty()){
-	// String linkOid = ((String)fieldValue).trim();
-	// fieldValue = this.getByID(linkOid, linkCollName);
-	// }
-	// dataMap.put(fieldName, fieldValue);
-	// }else if(FieldType.INNER_COLLECTION.is(field.getType())){
-	// Object fValue = dataMap.get(fieldName);
-	// if(fValue instanceof Map){
-	// Map<String,Object> innMap = (Map<String,Object>)fValue;
-	// correctField(innMap,field.getFields());
-	// }
-	// }else if(FieldType.ARRAY.is(field.getType())){
-	// if(FieldType.INNER_COLLECTION.is(field.getElementType())){
-	// Object fValue = dataMap.get(fieldName);
-	// if(fValue instanceof List){
-	// List<Map<String,Object>> innList = (List<Map<String,Object>>)fValue;
-	// for(Map<String,Object> map:innList){
-	// correctField(map,field.getFields());
-	// }
-	// }
-	// }
-	// }
-	// }
-	// }
+		ObjectMetadata meta = this.metaDao.getByName(collName);
+		List<Map<String, BasicDBObject>> updates = new ArrayList<Map<String, BasicDBObject>>();
+		Map<String, Object> daoMap = buildUpdates(meta.getFields(), value,
+				null, updates, query);
+		updates.add(buildSetUpdateMap(query, daoMap));
+
+		DBCollection db = this.getDBCollection(collName);
+		DBObject result = null;
+		List<Map<Object,Object>> resultValueMap = new ArrayList<Map<Object,Object>>();
+		for (Map<String, BasicDBObject> um : updates) {
+			if (um != null) {
+				result = db.findAndModify(um.get("query"), null, null, false,
+						um.get("update"), true, false);
+			}
+		}
+
+		value.put("id", id);
+
+		return value;
+	}
+
+	public static void main(String[] args) {
+		String s = "info.items.product";
+		int idx = s.indexOf(".",4+1);
+		
+		System.out.println(idx);
+		System.out.println(s.substring(4+1,idx));
+		System.out.println(s.substring(idx+1));
+		
+	}
+	
+	public void insertTrigger(Map<String,Object> insertValue, String collName) {
+		Map<String,Object> dbDataMap = this.correctData(insertValue, collName, false, true);
+		trigger(insertValue,dbDataMap,collName,Trigger.INSERT);
+	}
+	
+	public void updateTrigger(Map<String,Object> updateValue, String collName) {
+		Map<String,Object> dbDataMap = this.getByID((String)updateValue.get("id"), collName);
+		trigger(updateValue,dbDataMap,collName,Trigger.UPDATE);
+	}
+	
+	/***
+	 * 原则：
+	 * 1. 已设定的属性不重复计算
+	 * 2. insert模式时，不覆盖dbDataMap的值
+	 * 
+	 * Bug
+	 * 1. Utils.clone(): 不能进行深度clone
+	 * 
+	 * ***/
+	private void trigger(Map<String,Object> value,Map<String,Object> dbDataMap, String collName,int triggerMode) {
+		ObjectMetadata metadata = this.metaDao.getByName(collName);
+		List<Trigger> allT = metadata.getTriggers();
+		
+		if(Utils.isEmpty(allT))return;
+		
+		List<Trigger> triggers = new ArrayList<Trigger>();
+		for(Trigger t : allT){
+			if(t.getMode() == triggerMode){
+				triggers.add(t);
+			}
+		}
+
+		if(Utils.isEmpty(triggers))return;
+
+		Map<String,Object> whenMap = newMap();
+		Map<String,Map<String,Map<String,Object>>> triggerLinkedMap = new HashMap<String,Map<String,Map<String,Object>>>();
+		triggerParams(whenMap,dbDataMap,value,triggerMode);
+
+		boolean newUpdate = true;
+		while(newUpdate && !Utils.isEmpty(triggers)){
+			List<Trigger> next = new ArrayList<Trigger>();
+			newUpdate = false;
+			
+			for(Trigger trigger : triggers){
+				Object when = AE.execute(trigger.getWhen(),whenMap);
+				boolean match = (when != null);
+				if(when instanceof Boolean){
+					match = (Boolean)when;
+				}
+				
+				if(match){
+					List<TriggerAction> actions = trigger.getActions();
+					
+					for(TriggerAction ac:actions){
+						if(value.get(ac.getField()) != null){
+							continue;
+						}
+
+						String fname = ac.getField();
+						
+						if(isArrayField(fname,metadata.getFields())){
+							int start = 0;
+							int end = fname.length()-1;
+
+							List<ObjectField> fields = metadata.getFields();
+							Map<String,Object> dbMap = dbDataMap;
+							do{
+								int idx = fname.indexOf(".",start);
+								if(idx < 0)idx = end;
+								
+								String firstName = fname.substring(start,idx);
+								String lastName = fname.substring(idx+1);
+								
+								for(ObjectField of:fields){
+									if(!of.getName().equals(firstName)){
+										continue;
+									}
+
+									if(FieldType.ARRAY.is(of.getType())){
+										Object dbArrayVal = MapHelper.readValue(dbMap, firstName);
+										
+										if(Utils.isArray(dbArrayVal)){
+											boolean isLinkedField = false;
+											boolean isInnerField = false;
+											if(FieldType.INNER_COLLECTION.is(of.getElementType())){
+												isLinkedField = isLinkedField(lastName,of.getFields());
+												isInnerField = true;
+											}else if(FieldType.LINK_COLLECTION.is(of.getElementType())){
+												isLinkedField = true;
+											}
+											
+											Map<String,Object> params = (Map<String,Object>)Utils.clone(dbDataMap);
+											for(Object o:Utils.toArray(dbArrayVal)){
+												params.put("this", o);
+												Object triggerVal =  AE.execute(ac.getCode(),params);
+
+												if(isLinkedField){
+													doTriggerLinkedMap(lastName,triggerVal,of.getFields(),(Map<String,Object>)o,triggerLinkedMap);
+												}else if(isInnerField){
+													String arrayName = fname.substring(0,idx);
+													doArrayInnerUpdate(lastName,triggerVal,o,arrayName,value);
+												}
+											}
+										}
+										
+										start = end;
+									}else if(FieldType.INNER_COLLECTION.is(of.getType())){
+										fields = of.getFields();
+										dbMap = (Map<String,Object>)MapHelper.readValue(dbMap, firstName);
+									}
+									
+									break;
+								}
+
+								start = idx+1;
+							}while(start < end);
+						}else {
+							Object val = AE.execute(ac.getCode(),dbDataMap);
+							if(isLinkedField(fname,metadata.getFields())){
+								doTriggerLinkedMap(fname,val,metadata.getFields(),dbDataMap,triggerLinkedMap);
+							}else {
+								MapHelper.setValue(value, fname, val);
+								MapHelper.setValue(dbDataMap, fname, val);
+								MapHelper.setValue(whenMap, fname, true);
+							}
+						}
+						
+						newUpdate = true;
+					}
+				}else {
+					next.add(trigger);
+				}
+			}
+			
+			triggers = next;
+		}
+		
+		///update triggerLinkedMap;
+		for(String k:triggerLinkedMap.keySet()){
+			Map<String,Map<String,Object>> vals = triggerLinkedMap.get(k);
+			if(Utils.isEmpty(vals))continue;
+			
+			for(Map<String,Object> val:vals.values()){
+				this.updateBySet(val,k);
+			}
+		}
+	}
+	
+	/**
+	 * String fieldName：触发更新的字段名（在数组中的字段名）
+	 * Object fieldVal：触发更新的字段值
+	 * Object arrayItemData：触发更新的数组的DB原始记录
+	 * String arrayName：数组的完整字段名
+	 * Map<String,Object> updateVal：完整的待更新对象
+	 * 
+	 * 例子：
+	 * 更新Order: {id:'123456',status:3}
+	 * 触发更新字段：info.items.detail.num，触发更新值：20
+	 * fieldName：detail.num
+	 * fieldVal: 20
+	 * arrayItemData
+	 * arrayName: info.items
+	 * updateVal: {id:'123456',status:3}
+	 * 
+	 * 运行结果：
+	 * updateVal: {id:'123456',status:3,info:{items:[{id:'654321',detail:{num:20}}]}}
+	 * 
+	 * ***/
+	private void doArrayInnerUpdate(String fieldName,Object fieldVal,Object arrayItemData,String arrayName,Map<String,Object> updateVal){
+		Map<String,Object> innerUpdateMap = newMap();
+		innerUpdateMap.put("id", MapHelper.readValue(arrayItemData, "id"));
+		MapHelper.setValue(innerUpdateMap, fieldName, fieldVal);
+		
+		Object arrayVal = MapHelper.readValue(updateVal, arrayName);
+		if(arrayVal instanceof Map){
+			Object old = arrayVal;
+			arrayVal = new ArrayList<Map<String,Object>>();
+			((List)arrayVal).add(old);
+		}else {
+			arrayVal = new ArrayList<Map<String,Object>>();
+		}
+		
+		((List)arrayVal).add(innerUpdateMap);
+		MapHelper.setValue(updateVal, arrayName, arrayVal);
+	}
+	
+	/**
+	 * triggerField: 触发的字段
+	 * fieldVal: 字段的值
+	 * fields: 这个触发器所在对象的ObjectMetadata
+	 * dbDataMap: 启动触发器的原始数据库记录
+	 * triggerLinkedMap: 关联对象被触发的更新集合
+	 * ****/
+	private void doTriggerLinkedMap(String triggerField,Object fieldVal,List<ObjectField> fields,Map<String,Object> dbDataMap,
+			Map<String,Map<String,Map<String,Object>>> triggerLinkedMap){
+		Map<String,Object> linkedMap = readTriggerLinkedMap(triggerField,fields,dbDataMap);
+		if(linkedMap == null)return;
+		
+		Map<String,Object> dbLinked = (Map<String,Object>)linkedMap.get("value");
+		if(dbLinked == null)return;
+		
+		String lid = (String)dbLinked.get("id");
+		String linkedCollName = (String)linkedMap.get("collName");
+		Map<String,Map<String,Object>> collMap = triggerLinkedMap.get(linkedCollName);
+		if(collMap == null){
+			collMap = new HashMap<String,Map<String,Object>>();
+			triggerLinkedMap.put(linkedCollName, collMap);
+		}
+		
+		Map<String,Object> updateLinked = collMap.get(lid);
+		if(updateLinked == null){
+			updateLinked = newMap();
+			updateLinked.put("id", lid);
+			
+			collMap.put(lid, updateLinked);
+		}
+		
+		String fieldName = (String)linkedMap.get("fieldName");
+		MapHelper.setValue(updateLinked, fieldName, fieldVal);
+	}
+	
+	private static boolean isArrayField(String fname,List<ObjectField> fields){
+		int idx = fname.indexOf(".");
+		if(idx < 0)idx = fname.length()-1;
+		String firstName = fname.substring(0,idx);
+		for(ObjectField of:fields){
+			if(of.getName().equals(firstName)){
+				if(FieldType.ARRAY.is(of.getType())){
+					return true;
+				}
+				
+				if(FieldType.INNER_COLLECTION.is(of.getType())){
+					String lastName = fname.substring(idx+1);
+					return isLinkedField(lastName,of.getFields());
+				}
+			}
+		}
+		return false;
+	}
+
+	private static boolean isLinkedField(String fname,List<ObjectField> fields){
+		int idx = fname.indexOf(".");
+		if(idx < 0)idx = fname.length()-1;
+		String firstName = fname.substring(0,idx);
+		for(ObjectField of:fields){
+			if(of.getName().equals(firstName)){
+				if(FieldType.LINK_COLLECTION.is(of.getType())){
+					return true;
+				}
+				
+				if(FieldType.INNER_COLLECTION.is(of.getType())
+						|| (FieldType.ARRAY.is(of.getType()) && FieldType.INNER_COLLECTION.is(of.getElementType()))){
+					String lastName = fname.substring(idx+1);
+					return isLinkedField(lastName,of.getFields());
+				}
+			}
+		}
+		return false;
+	}
+
+	private Map<String,Object> readTriggerLinkedMap(String fname,List<ObjectField> fields,Map<String,Object> dbValue){
+		int idx = fname.indexOf(".");
+		if(idx < 0)idx = fname.length()-1;
+		String firstName = fname.substring(0,idx);
+		String lastName = fname.substring(idx+1);
+		for(ObjectField of:fields){
+			if(of.getName().equals(firstName)){
+				Object val = MapHelper.readValue(dbValue, firstName);
+				
+				if(FieldType.LINK_COLLECTION.is(of.getType())){
+					if(val != null && !(val instanceof Map)){
+						val = this.getLinkedObject(val.toString(), of.getLinkedObject());
+					}
+					
+					Map<String,Object> returnMap = newMap();
+					returnMap.put("fieldName",lastName);
+					returnMap.put("value",val);
+					returnMap.put("collName",of.getLinkedObject());
+					return returnMap;
+				}
+				
+				if(FieldType.INNER_COLLECTION.is(of.getType())){
+					if(val != null && val instanceof Map){
+						return readTriggerLinkedMap(lastName,of.getFields(),(Map<String,Object>)val);
+					}
+				}
+				
+				//Array linked object
+//				if(FieldType.ARRAY.is(of.getType()) && FieldType.INNER_COLLECTION.is(of.getElementType())){
+//					String lastName = fname.substring(idx);
+//					return isLinkedField(lastName,of.getFields());
+//				}
+				
+				break;
+			}
+		}
+		
+		return null;
+	}
+	
+	private static Map<String,Object> toMap(Object o){
+		if(o instanceof Map){
+			return (Map<String,Object>)o;
+		}
+		return null;
+	}
+	
+	private static boolean isId(String key){
+		return "id".equals(key) || "_id".equals(key);
+	}
+	
+	private static Map<String,Object> newMap(){
+		return new HashMap<String,Object>();
+	}
+	
+	private static void triggerParams(Map<String,Object> whenMap,
+			Map<String,Object> dbDataMap,Map<String,Object> updateValue,int triggerMode){
+		boolean updateMode = triggerMode == Trigger.UPDATE;
+		for(String key:updateValue.keySet()){
+			if(isId(key)){
+				continue;
+			}
+			
+			Object val = updateValue.get(key);
+			if(val instanceof Map){
+				Object dbVal = dbDataMap.get(key);
+				if(!(dbVal instanceof Map)){
+					dbVal = val;
+				}
+
+				Map<String,Object> wm2 = newMap();
+				triggerParams(wm2,toMap(dbVal),toMap(val),triggerMode);
+				
+				whenMap.put(key,wm2);
+			}else if(Utils.isArray(val)){
+				whenMap.put(key,true);
+				for(Object vo : Utils.toArray(val)){
+					if(vo instanceof Map){
+						//待实现
+					}else {
+						if(updateMode){
+							dbDataMap.put(key, val);
+						}
+						
+						break;
+					}
+				}
+			}else if(val != null){
+				if(whenMap != null){
+					whenMap.put(key,true);
+				}
+				
+				if(dbDataMap != null && updateMode){
+					dbDataMap.put(key, val);
+				}
+			}
+		}
+	}
+	
+	
+
+	
+
 
 	private String getLinkedCollectionName(String linkedObjectId) {
 		ObjectMetadata linkMeta = this.metaDao.getByID(linkedObjectId);
@@ -378,395 +643,5 @@ public class CollectionDao extends BasicDao {
 		return null;
 	}
 
-	// private String getLinkedByName(String objName){
-	// ObjectMetadata linkMeta = this.metaDao.getByName(objName);
-	// if(linkMeta != null){
-	// return linkMeta.getName();
-	// }
-	// return null;
-	// }
-
-	/********************** Test ****************************/
-	public static void printList(List<Map<String, Object>> ps) {
-		for (Map<String, Object> md : ps) {
-			for (Map.Entry<String, Object> me : md.entrySet()) {
-				if (me.getValue() instanceof Date) {
-					me.setValue(new TMDate((Date) me.getValue()));
-				}
-			}
-			md.remove("id");
-
-			System.out.println(md);
-		}
-	}
-
-	static String collName = "TBrand";
-	static CollectionDao dao = new CollectionDao();
-
-	public static void testUpdate() {
-		Map m = new HashMap();
-		m.put("name", "pola");
-		m.put("id", "5582390ffc7770b40ef01787");
-		m.put("modified_date", new Date());
-
-		// dao.update(m, collName);
-	}
-
-	private void testSet() {
-		DBCollection db = this.getDBCollection("TOrder");
-
-		BasicDBObject query = new BasicDBObject();
-		query.put("array1.name", "POLA BA夏之晨光化妆水120ML_array10");
-
-		BasicDBObject vb = new BasicDBObject();
-		vb.put("array1.$.name", "POLA BA赋颜晨光按摩膏120克");
-		vb.put("array1.$.description",
-				"POLA B.A碧艾按摩膏特含媲美脸部整形级别的新「塑颜」精华成分，不仅让局部肌肤更加美丽，更着力于整个面部肌肤轮廓的塑造，仅使用一次，即刻排出老废物质和多余脂肪，整个脸部更加紧致，轮廓更加清晰。");
-
-		BasicDBObject dbo = new BasicDBObject("$set", vb);
-		// BasicDBObject dbo = new BasicDBObject("$set",vb);
-		// dbo.put("$currentDate", new BasicDBObject("lastModified",true));
-
-		db.update(query, dbo);
-	}
-
-	private static void testUpdateOperator() {
-		/**
-		 * Outer { name:'', price:45.0, age:34, create_date:, modified_date:,
-		 * description:, status:1,
-		 * 
-		 * inner1:{ name:'', price:45.0, age:34, create_date:, modified_date:,
-		 * description:, status:1,
-		 * 
-		 * inner11:{ name:'', price:45.0, age:34, create_date:, modified_date:,
-		 * description:, status:1,
-		 * 
-		 * inner111:{ name:'', price:45.0, age:34, create_date:, modified_date:,
-		 * description:, status:1 } } } }
-		 * 
-		 * **/
-
-		Map temp = new HashMap();
-		temp.put("name", "POLA BA夏之晨光化妆水120ML");
-		temp.put("price", 750.00);
-		temp.put("age", 34);
-		temp.put("description",
-				"纳米渗透技术，感受如雾般的迅速吸收，达到深层滋润。抵御肌肤夏乏，塑造水润弹性，清透白皙，充满光泽的肌肤。");
-		temp.put("status", 1);
-		// temp.put("create_date", new Date());
-		// temp.put("modified_date", new Date());
-
-		Map outer = tempMap(temp, null);
-		Map inner1 = tempMap(temp, "inner1");
-		Map inner11 = tempMap(temp, "inner11");
-		Map inner111 = tempMap(temp, "inner111");
-
-		List array1 = new ArrayList();
-		array1.add(tempMap(temp, "array10"));
-		array1.add(tempMap(temp, "array11"));
-		array1.add(tempMap(temp, "array12"));
-
-		outer.put("inner1", inner1);
-		outer.put("array1", array1);
-		inner1.put("inner11", inner11);
-		inner11.put("inner111", inner111);
-
-		// dao.save(outer, "TOrder");
-		dao.testSet();
-
-		System.out.println(stringMap(outer, null));
-
-		List<Map<String, Object>> ps = dao.find(null, "TOrder");
-		String mapStr = "";
-		for (Map<String, Object> map : ps) {
-			mapStr += "--------------\n";
-			mapStr += stringMap(map, null);
-		}
-		System.out.println(mapStr);
-
-		// outer = new HashMap();
-		// inner1 = new HashMap();
-		// inner11 = new HashMap();
-		// inner111 = new HashMap();
-		// outer.put("id", "55839567fc77dbb7e3ab9ed9");
-		// inner111.put("name","POLA极光幻彩精华50克");
-		//
-		// outer.put("inner1",inner1);
-		// inner1.put("inner11",inner11);
-		// inner11.put("inner111",inner111);
-		// dao.update(outer, "TOrder");
-		//
-		// ps = dao.find(null,"TOrder");
-		// mapStr = "";
-		// for(Map<String,Object> map : ps){
-		// mapStr += "\n--------------\n";
-		// mapStr += stringMap(map,null);
-		// }
-		// System.out.println(mapStr);
-	}
-
-	private static String stringMap(Map<String, Object> map, String prefix) {
-		String singleIndentation = "    ";
-		if (prefix == null)
-			prefix = "";
-		String subFix = singleIndentation + prefix;
-
-		StringBuffer sbf = new StringBuffer();
-		sbf.append("{\n");
-		for (Map.Entry entry : map.entrySet()) {
-			String vlStr = entry.getValue().toString();
-			if (entry.getValue() instanceof Map) {
-				vlStr = stringMap((Map) entry.getValue(), subFix);
-			}
-			if (entry.getValue() instanceof List) {
-				vlStr = "[";
-				int i = 0;
-				for (Object m : (List<Map>) entry.getValue()) {
-					if (m instanceof Map) {
-						vlStr += stringMap((Map) m, subFix);
-					} else {
-						vlStr += ((i++ > 0) ? "," : "") + m.toString();
-					}
-				}
-				vlStr += "]\n";
-			}
-			sbf.append(subFix).append(entry.getKey()).append(":").append(vlStr)
-					.append("\n");
-		}
-		sbf.append(prefix).append("}\n");
-
-		return sbf.toString();
-	}
-
-	private static Map tempMap(Map temp, String suffix) {
-		Map map = new HashMap();
-		map.putAll(temp);
-		map.put("name", map.get("name") + (suffix == null ? "" : "_" + suffix));
-
-		return map;
-	}
-
-	private static void mapQuery() {
-		String query = "[{$project:{name:1,_id:0,totalPay:{$add:['$age','$price']}}},"
-				+ "{$group:{_id:'$name',sumTotalPay:{$sum:'$totalPay'}}}]";
-		List<Map<String, Object>> list = (List<Map<String, Object>>) ArithmeticExpression
-				.execute(query, null);
-
-		List<Map<String, Object>> results = dao.aggregateByMap(list, "TOrder");
-		System.out.println(results);
-	}
-
-	public static void initTBrand() {
-		String[] bs = { "雪花秀", "科丽妍", "Oshadhi", "ACCA KAPPA", "ACCA KAPPA",
-				"L'occitane", "Jason Natural", "La colline", "Sisley",
-				"Albion", "Anius", "Avalon organics", "Biologique Recherche",
-				"Caudalie" };
-
-		int i = 0;
-		String collName = "TBrand";
-		CollectionDao dao = new CollectionDao();
-		dao.removeAll(collName);
-		for (String s : bs) {
-			Map m = new HashMap();
-			m.put("name", s);
-
-			long time = System.currentTimeMillis() + (i++) * 1000;
-			m.put("create_date", new Date(time));
-			m.put("modified_date", new Date(time));
-
-			dao.save(m, collName);
-		}
-	}
-
-	public static void testUpdateBySet() {
-		// String str = "{account:{account:'zhanghui',password:'123456',"
-		// + "personal_profile:{real_name:'张惠',email:'zh@tm.com',age:100,"
-		// +
-		// "address:[{province:'江苏省',city:'南京市',zone:'鼓楼区'},{province:'浙江省',city:'湖州市',zone:'安吉县'}]}}}";
-		//
-
-		System.out.println("============== before update =================");
-		printTest("56e0e4fb8f778c15692b9eaf", "Test");
-
-		// ObjectMetadataDao omDao = new ObjectMetadataDao();
-		// CollectionDao collDao = new CollectionDao();
-		// BasicDBObject query = new BasicDBObject("_id",new
-		// ObjectId("56e0e4fb8f778c15692b9eaf"));
-		//
-		// String str =
-		// "{F3:{F31:[{F311:{F3114:[{F31141:'F31141_1'}]},id:'56e0e4fb8f778c15692b9ead'}]}}";
-		String str = "db.Test.save({id:'56e0e4fb8f778c15692b9eaf',F3:{F31:[{F312:'F312_2',F313:'F313_2'},{F311:{F3114:[{F31142:'F31142_1',id:'56e0fbe28f77546a3d590d58'}]}}]}})";
-		str = "db.Test.save({id:'56e0e4fb8f778c15692b9eaf',F3:{F31:[{id:'56e0e4fb8f778c15692b9ead',F311:{F3113 : 'F3113_12_1',F3111 : 'F3111_12_1',F3112 : 'F3112_12_1'}}]}})";
-
-		// str =
-		// "db.Test.innerObjectById({F3:{F31:{id:'56e0e4fb8f778c15692b9ead'}}})";
-		// str = "{id:'56e0e4fb8f778c15692b9eaf'}";
-		Map<String, Object> params = (Map<String, Object>) ArithmeticExpression
-				.execute(str, null);
-		System.out.println("params : " + params);
-
-		System.out.println("============== after update =================");
-		printTest("56e0e4fb8f778c15692b9eaf", "Test");
-
-		// CollectionDao collDao = new CollectionDao();
-		// DBCollection db = collDao.getDBCollection("Test");
-		// db.find();
-		//
-		// Object f311 = collDao.innerObjectById(params,"Test");
-		// System.out.println("F311 : " + f311);
-
-		// System.out.println("TEST : " + params);
-
-		// ObjectMetadata meta = omDao.getByName("Test");
-		// List<Map<String,BasicDBObject>> updates = new
-		// ArrayList<Map<String,BasicDBObject>>();
-		// Map<String,Object> daoMap =
-		// buildUpdates(meta.getFields(),params,null,updates,query);
-		//
-		// if(daoMap != null && daoMap.size() > 0){
-		// Map<String,BasicDBObject> bdbMap = new
-		// HashMap<String,BasicDBObject>();
-		// bdbMap.put("query", query);
-		// bdbMap.put("update", new BasicDBObject("$set",daoMap));
-		// updates.add(bdbMap);
-		// }
-		//
-		// for(Map<String,BasicDBObject> um : updates){
-		// System.out.println(um);
-		//
-		// //WriteResult daoResult =
-		// dao.getDBCollection("Test").update(um.get("query"),
-		// um.get("update"));
-		// //System.out.println("daoResult : " + daoResult);
-		// }
-
-		// daoMap = new HashMap<String,Object>();
-		// daoMap.put("F3.F31.$.F311.F3114.$1.F31143","F31143_1");
-		//
-		// WriteResult daoResult = dao.getDBCollection("Test").update(
-		// new BasicDBObject("F3.F31.F311.F3114._id",new
-		// ObjectId("56e0fbe28f77546a3d590d58")),
-		// new BasicDBObject("$set",daoMap));
-		// System.out.println("daoResult : " + daoResult);
-
-		// System.out.println("");
-		// System.out.println("============== after update =================");
-		// printTest("56e0e4fb8f778c15692b9eaf");
-		// System.out.println(updates);
-
-		// DBCursor cursor = collDao.getDBCollection("Test").find(new
-		// BasicDBObject("F3.F31.F311.F3114._id",new
-		// ObjectId("56e0fbe28f77546a3d590d58")));
-		//
-		// while(cursor.hasNext()){
-		// BasicDBObject doc = (BasicDBObject)cursor.next();
-		//
-		// System.out.println(doc);
-		// }
-
-		// System.out.println("daoMap : " + daoMap);
-
-		// ObjectMetadata meta = omDao.getByName("Test");
-		// List<String> updates = new ArrayList<String>();
-		// Map<String,Object> daoMap =
-		// encodeInner(meta.getFields(),params,null,updates);
-
-		// System.out.println("daoMap : " + daoMap);
-		// testEncode();
-
-		// String str =
-		// "{F3:{F31:[{F311:{F3114:[{F31141:'F31141_1'}]},id:'56e0e4fb8f778c15692b9ead'}]}}";
-		str = "db.Test.save({id:'56e0e4fb8f778c15692b9eaf',F3:{F31:[{F312:'F312_2',F313:'F313_2'},{F311:{F3114:[{F31142:'F31142_1',id:'56e0fbe28f77546a3d590d58'}]}}]}})";
-		str = "db.Test.save({id:'56e0e4fb8f778c15692b9eaf',F3:{F31:[{id:'56e0e4fb8f778c15692b9ead',F311:{F3113 : 'F3113_12_111aaa',F3111 : 'F3111_12_111aaa',F3112 : 'F3112_12_111aaa'}}]}})";
-
-		// str =
-		// "db.Test.innerObjectById({F3:{F31:{id:'56e0e4fb8f778c15692b9ead'}}})";
-		// str = "{id:'56e0e4fb8f778c15692b9eaf'}";
-
-		// str =
-		// "each(['浙江','江苏','安徽','江西','湖南','湖北','福建','广东','广西','山西','陕西','上海','北京','天津','重庆','四川']){db.Region.save({province:{name:this}})}";
-		str = "db.Region.get('56f0e61b8f772c9814bdedb7')";
-		str = "db.Region.remove({province:null})";
-		str = "db.Region.save({id:'56f0e61b8f772c9814bdedb7',province:{id:'56f0e61b8f772c9814bdedb6',cities:each(['绍兴','台州']){{name:this}}}})";
-		str = "db.Region.save({id:'56f0e61b8f772c9814bdedb7',province:{cities:{id:'56f0f0ef8f77e0edd2b5a12f',districts:['西湖','拱墅','江干','下城','上城','滨江','萧山','余杭']}}})";
-		// str = "db.Region.query({province.name:'浙江'})";
-		// districts
-
-		// str =
-		// "db.Region.aggregate([{$project:{province.cities:1}},{$match:{province.name:'浙江'}}])";
-		// Object val = ArithmeticExpression.execute(str,null);
-		// System.out.println("params : " + val);
-
-		str = "db.Region.aggregate([{$project:{province.name:1,city:'$province.cities.name',_id:0}},{$match:{province.name:'浙江'}}])";
-		// str =
-		// "db.Region.aggregate([{$match:{province.name:'浙江'}},{$group:{_id:'$province.cities.name'}}])";
-		str = "db.Region.aggregateOne([{$match:{province.name:'浙江'}},{ $unwind :'$province.cities'},"
-				+ "{$group:{_id:{$cond:{if:{$eq:['$province.cities.name','绍兴']},then:{ $ifNull:[ '$province.cities.districts',[]]},else:[]}}}},"
-				+ "{$redact:{$cond:{if:{$gt:[{$size:'$_id'},0]},then:'$$DESCEND',else:'$$PRUNE'}}}])";
-
-		// str =
-		// "db.Region.save({id:'56f0e61b8f772c9814bdedb7',province:{cities:{id:'56f0f0ef8f77e0edd2b5a12f',districts:['西湖','拱墅','江干','下城','上城','滨江','萧山','余杭']}}})";
-
-		// printTest("56dd3903e45701ce0113bdda","Account");
-
-		CollectionDao dao = new CollectionDao();
-
-		BasicDBObject query = dao
-				.executeDBObject("{id:'56dd3903e45701ce0113bdda',personal_profile:{address:{default:2}}}");
-		BasicDBObject set = dao
-				.executeDBObject("{$set:{personal_profile:{address:[{province:'江苏省',city:'南京市',zone:'鼓楼区'} , {province:'浙江省',city:'湖州市',zone:'安吉县'}]}}}");
-		set = dao
-				.executeDBObject("{$set:{personal_profile:{address.$:{default:0}}}}");
-		// WriteResult result = dao.getDBCollection("Account").update(query,
-		// set);
-		// System.out.println("result : " + result);
-
-		str = "{$group:{_id:{$cond:{if:{$eq:['$province.cities.name','绍兴']},then:{ $ifNull:[ '$province.cities.districts',[]]},else:[]}}}}";
-		// +
-		// "{$redact:{$cond:{if:{$gt:[{$size:'$_id'},0]},then:'$$DESCEND',else:'$$PRUNE'}}}";
-		set = dao.executeDBObject(str);
-		// System.out.println("set : " + set);
-		// set = dao.executeDBObject("{personal_profile.address.$.default:3}");
-
-		query = dao
-				.executeDBObject("{id:'56dd3903e45701ce0113bdda',personal_profile:{address:{province:'浙江省'}}}");
-		// query =
-		// dao.executeDBObject("{id:'56dd3903e45701ce0113bdda',personal_profile.address.city:'湖州市'}");
-		set = dao
-				.executeDBObject("{$set:{personal_profile:{address:{province:'浙江省'}}}}");
-		// set =
-		// dao.executeDBObject("{$set:{personal_profile.address.$.province:'浙江省'}}");
-		// dao.dbSet(query, set, "Account",true);
-
-		// System.out.println("query : " + set);
-		// set = dao.executeDBObject("{personal_profile.address.$:1,_id:0}");
-		// DBCursor c = dao.getDBCollection("Account").find(query, set);
-		// while(c.hasNext()){
-		// System.out.println(c.next());
-		// }
-
-		str = "db.Account.set([{id:'56dd3903e45701ce0113bdda',personal_profile:{address:{default:1}}},{personal_profile.address.$.default:8}])";
-
-		str = "db.Account.get('56dfa951ba59a3035d169d79')";
-		str = "db.Cart.get('570da7958f77400ffbc705e2')";
-		str = "db.Cart.search()";
-
-		str = "db.Product.removeAll()";
-		Object val = ArithmeticExpression.execute(str, null);
-		System.out.println("val : " + val);
-
-		// printTest("56dd3903e45701ce0113bdda","Account");
-	}
-
-	static class TMDate {
-		private Date date;
-
-		public TMDate(Date date) {
-			this.date = date;
-		}
-
-		public String toString() {
-			return DateCalculator.dateFormat.format(this.date);
-		}
-	}
+	
 }

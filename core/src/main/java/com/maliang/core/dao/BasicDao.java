@@ -2,6 +2,7 @@ package com.maliang.core.dao;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -11,17 +12,18 @@ import com.maliang.core.arithmetic.AE;
 import com.maliang.core.model.FieldType;
 import com.maliang.core.model.ObjectField;
 import com.maliang.core.model.ObjectMetadata;
+import com.maliang.core.model.Project;
 import com.maliang.core.model.UCType;
 import com.maliang.core.model.UCValue;
 import com.maliang.core.service.MapHelper;
 import com.maliang.core.util.StringUtil;
 import com.maliang.core.util.Utils;
+import com.mongodb.AggregationOutput;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
 
 public class BasicDao extends AbstractDao{
-	private static String OBJECT_METADATA_KEY = "_object_metadata_";
 	private static String META_KEY = ".meta";
 	
 	protected ObjectMetadataDao metaDao = new ObjectMetadataDao();
@@ -46,9 +48,31 @@ public class BasicDao extends AbstractDao{
 		this.getDBCollection(collName).save(doc);
 	}
 	
+	
+	public Map<String,Object> getInnerObject(String collName,String innerName,String oid){
+		List<DBObject> pipe = new ArrayList<DBObject>();
+		
+		BasicDBObject query = new BasicDBObject(innerName+"._id",new ObjectId(oid));
+		
+		pipe.add(new BasicDBObject("$match",query));
+		pipe.add(new BasicDBObject("$unwind","$"+innerName));
+		pipe.add(new BasicDBObject("$match",query));
+		pipe.add(new BasicDBObject("$project",new BasicDBObject().append(innerName,1).append("_id",0)));
+		
+		AggregationOutput aout = this.getDBCollection(collName).aggregate(pipe);
+		Iterator<DBObject> ie = aout.results().iterator();
+		while(ie.hasNext()){
+			return this.toMap((BasicDBObject)ie.next().get(innerName), collName,innerName);
+		}
+		
+		return null;
+	}
+	
 	public Map<String,Object> innerObjectById(Map<String,Object> query,String collName){
 		Map<String,Object> dbQuery = buildDBQueryMap(query,null);
+		
 		List<Map<String,Object>> results = this.findByMap(dbQuery, collName);
+		
 		if(results != null && results.size() > 0){
 			Map<String,Object> returnObject = findInnerById(results.get(0),dbQuery);
 			if(returnObject != null){
@@ -61,7 +85,17 @@ public class BasicDao extends AbstractDao{
 	public List<Map<String,Object>> findByMap(Map<String,Object> query,String collName){
 		BasicDBObject bq = build(query);
 		
-		System.out.println("**************  b query : " + bq);
+		if(this.isSystemCollection(collName)){
+			Project project = getSessionProject();
+			if(project != null){
+				if(bq == null){
+					bq = new BasicDBObject();
+				}
+				
+				bq.append("project", project.getId().toString());
+			}
+		}
+		
 		return this.find(bq, collName);
 	}
 	
@@ -217,6 +251,8 @@ public class BasicDao extends AbstractDao{
 	
 	protected static void buildInnerUpdates(Map<String,Object> valMap,ObjectField innerField,String fieldKey,
 			List<Map<String,BasicDBObject>> updates,BasicDBObject updateQuery){
+		if(valMap == null)return;
+		
 		Map<String,Object> updateMap = new HashMap<String,Object>();
 		updateMap.putAll(valMap);
 		
@@ -395,6 +431,10 @@ public class BasicDao extends AbstractDao{
 			newMap.put("_id",dataMap.get("_id"));
 		}
 		
+		if(!newMap.containsKey("id") || !newMap.containsKey("_id")){
+			//newMap.put("_id",new ObjectId());
+		}
+		
 		for(ObjectField of : fields){
 			String fieldName = of.getName();
 			Object fieldValue = dataMap.get(fieldName);
@@ -416,8 +456,8 @@ public class BasicDao extends AbstractDao{
 				fieldValue = readObjectIdToString((Map)fieldValue);
 			}
 			
-			if(!(fieldValue instanceof String)){
-				fieldValue = null;
+			if(fieldValue != null && !(fieldValue instanceof String)){
+				fieldValue = fieldValue.toString();
 			}
 		}
 		
@@ -534,32 +574,34 @@ public class BasicDao extends AbstractDao{
 		if(FieldType.ARRAY.is(of.getType())){
 			of.setType(of.getElementType());
 			
+			Object result = null;
 			if(fieldValue instanceof List){
-				List<Object> result = new ArrayList<Object>();
+				List<Object> list = new ArrayList<Object>();
 				for(Object o : (List<Object>)fieldValue){
-					result.add(correctFieldValue(of,o,dealWithId,isDeep));
+					list.add(correctFieldValue(of,o,dealWithId,isDeep));
 				}
-				
-				of.setType(FieldType.ARRAY.getCode());
-				return result;
+				result = list;
 			}else if(fieldValue instanceof Map){
-				List<Object> result = new ArrayList<Object>();
-				result.add(correctFieldValue(of,fieldValue,dealWithId,isDeep));
-				
-				of.setType(FieldType.ARRAY.getCode());
-				return result;
-			}else {
-				of.setType(FieldType.ARRAY.getCode());
-				return null;
+				List<Object> list = new ArrayList<Object>();
+				list.add(correctFieldValue(of,fieldValue,dealWithId,isDeep));
+				result = list;
 			}
+			
+			of.setType(FieldType.ARRAY.getCode());
+			return result;
 		}
 		
 		if(FieldType.INNER_COLLECTION.is(of.getType())){
 			if(fieldValue instanceof Map){
 				if(dealWithId){
-					if(((Map) fieldValue).get("id") == null){
-						((Map) fieldValue).put("id",new ObjectId().toString());
+					Object id = ((Map) fieldValue).get("id");
+					try {
+						id = new ObjectId(id.toString()).toString();
+					}catch(Exception e){
+						id = new ObjectId().toString();
 					}
+					
+					((Map) fieldValue).put("id",id);
 				}
 				
 				return correctData((Map<String,Object>)fieldValue,of.getFields(),dealWithId,isDeep);
@@ -600,8 +642,7 @@ public class BasicDao extends AbstractDao{
 				String[] colls = coll.split("\\.");
 				String collName = colls[0];
 				if(colls.length > 1){
-					Map query = this.buildInnerGetMap(coll, oid);
-					return this.innerObjectById(query, collName);
+					return this.getInnerObject(colls[0], colls[1], oid);
 				}else {
 					return this.getByID(oid, collName);
 				}
@@ -630,6 +671,26 @@ public class BasicDao extends AbstractDao{
 		Map<String,Object> dataMap = doc.toMap();
 		mergeLinkedObject(dataMap,collName);
 		return dataMap;
+	}
+	
+	protected Map<String,Object> toMap(DBObject doc,String collName,String innerName){
+		ObjectMetadata metedata = this.metaDao.getByName(collName);
+		if(metedata == null){
+			return null;
+		}
+		
+		for(ObjectField f : metedata.getFields()){
+			if(f.getName().equals(innerName)){
+				if(FieldType.ARRAY.is(f.getType()) && FieldType.INNER_COLLECTION.is(f.getElementType())){
+					Map<String,Object> dataMap = doc.toMap();
+
+					correctField(dataMap,f.getFields(),rootMeta(collName+"."+innerName));
+					return dataMap;
+				}
+			}
+		}
+
+		return null;
 	}
 	
 	protected void mergeLinkedObject(Map<String,Object> dataMap,String collName){

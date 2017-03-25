@@ -168,6 +168,10 @@ public class Function {
 			//return null;
 		}
 		
+		if("contains".equalsIgnoreCase(key)){
+			return ListFunction.contains(this, params);
+		}
+		
 		if("sum".equalsIgnoreCase(key)){
 			return Sum.execute(this, params);
 		}
@@ -190,6 +194,10 @@ public class Function {
 		
 		if("string".equalsIgnoreCase(key)){
 			return TypeFunction.stringExecute(this, params);
+		}
+		
+		if("toCode".equals(key)){
+			return TypeFunction.codeExecute(this, params);
 		}
 		
 		if("each".equals(key)){
@@ -221,15 +229,15 @@ public class Function {
 		}
 		
 		if("notNull".equals(key)){
-			return NotNull.execute(this, params);
+			return Check.notNull(this, params);
 		}
 		
 		if("isNull".equals(key)){
-			return IsNull.execute(this, params);
+			return Check.isNull(this, params);
 		}
 		
 		if("not".equals(key)){
-			return Not.execute(this, params);
+			return Check.not(this, params);
 		}
 		
 		if("check".equals(key)){
@@ -237,7 +245,15 @@ public class Function {
 		}
 		
 		if("query".equals(key)){
-			return QueryFunction.execute(this, params);
+			return QueryFunction.find(this, params);
+		}
+		
+		if("find".equals(key)){
+			return QueryFunction.find(this, params);
+		}
+		
+		if("findOne".equals(key)){
+			return QueryFunction.findOne(this, params);
 		}
 		
 		if("remove".equals(key)){

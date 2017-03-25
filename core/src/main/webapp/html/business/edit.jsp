@@ -43,6 +43,7 @@
 			initBasic();
 			initWorkflows();
 			initBlocks();
+			initHtmlTemplates();
 		}
 		
 		function save(formId){
@@ -63,12 +64,13 @@
 			$("#idLabel").text(business.id);
 			$("#nameLabel").text(business.name);
 			$("#uniqueCodeLabel").text(business.uniqueCode);
+			$("#projectLabel").text(business.project && business.project.name);
 			
 			$("#name").val(business.name);
 			$("#uniqueCode").val(business.uniqueCode);
 			
 			//预览
-			$("#previewLink").attr("href","/business/business.htm?bid="+business.id);
+			$("#previewLink").attr("href","/flows/flow.htm?bid="+business.id);
 
 			basicEditerDialog = $("#basicEditerDialog").dialog({
 				autoOpen: false,
@@ -126,12 +128,39 @@
 			$("#blockTab").tabs();
 		}
 		
+		function initHtmlTemplates(){
+			if(business && business.htmlTemplates){
+				$("#htmlTemplateDiv").empty();
+
+				$.each(business.htmlTemplates,function(){
+					var bnt = $("<input type='button' />");
+					bnt.val(this.name);
+					
+					bnt.on("click",{"id":this.id},function(event){
+						htmlTemplate(event.data.id);
+					});
+					
+					$("#htmlTemplateDiv").append(bnt);
+				});
+			}
+		}
+		
 		function showBlockEditer(block){
 			if(!block)block = {};
 			
 			$("#blockId").val(block.id);
 			$("#blockName").val(block.name);
 			$("#blockCode").val(block.code);
+
+			$.each($("input[name='business.blocks.type']"),function(){
+				if(this.value == 1){
+					this.checked = true;
+				}
+				
+				if(this.value == block.type){
+					this.checked = true;
+				}
+			});
 			
 			blockEditerDialog.dialog("open");
 		}
@@ -199,7 +228,7 @@
 			$("#javaScript").val(flow.javaScript);
 			$("#ajax").val(flow.ajax);
 			
-			$("#previewFlowLink").prop("href","/business/business.htm?bid="+business.id+"&fid="+flow.step);
+			$("#previewFlowLink").prop("href","/flows/flow.htm?bid="+business.id+"&fid="+flow.step);
 		}
 		
 		function deleteBusiness(){
@@ -207,9 +236,22 @@
 				$("#refreshMainLink").simulate("click");
 			});
 		}
+		
+		function htmlTemplate(id){
+			defaultAjaxEdit({
+				edit:'/business/htmlTemplate.htm?id='+id,
+				save:'/business/save.htm',
+				data:function(formDatas){
+					formDatas['business.id'] = business.id;
+					return formDatas;
+				},
+				done:function(result,status){
+					refresh(result);
+				}
+			});
+		}
 		</script>
-		<div style="margin:20px;"><a href="list.htm">列表</a>&nbsp;&nbsp;&nbsp;&nbsp;<a href="edit.htm">新增</a></div>
-    	
+
 		<div class="title">
 			<label>Basic</label>
 			<input type="button" value="编辑" onclick="showBasicEditer();" />
@@ -220,7 +262,8 @@
 		<div id="basicDiv">
 			<div>ID:<label id="idLabel"></label></div>
 			<div>名称:<label id="nameLabel"></label></div>
-			<div>唯一代码:<label id="uniqueCodeLabel">ProductMG</label></div>
+			<div>唯一代码:<label id="uniqueCodeLabel"></label></div>
+			<div>所属项目:<label id="projectLabel"></label></div>
 		</div>
 		
 		<div class="title">
@@ -228,6 +271,12 @@
 			<input type="button" value="新增" onclick="showBlockEditer({});" />
 		</div>
 		<div id="blockDiv"></div>
+		
+		<div class="title">
+			<label>HtmlTemplate</label>
+			<input type="button" value="新增" onclick="htmlTemplate(null);" />
+		</div>
+		<div id="htmlTemplateDiv"></div>
 		
 		<div class="title">
 			<label>Workflow</label>
@@ -283,13 +332,20 @@
 		}
 		
 		#workflowDiv,
-		#blockDiv {
+		#blockDiv,
+		#htmlTemplateDiv {
 			padding:15px;
 		}
 		
 		#workflowDiv input[type='button'],
-		#blockDiv input[type='button'] {
+		#blockDiv input[type='button'],
+		#htmlTemplateDiv input[type='button'] {
 			margin:5px;
+		}
+		
+		#formDialog textarea {
+			width:900px;
+			height:600px;
 		}
 		</style>
 		
@@ -305,7 +361,7 @@
 				</div>
 			</form>
 		<div>
-		
+
 		<div id="blockEditerDialog" title="Block Editer">
 			<form id="blockEditForm">
 				<div id="blockTab">
@@ -318,6 +374,11 @@
 						<div>
 							<label>名称:</label>
 							<input type="text" name="business.blocks.name" id="blockName" value="" />
+						</div>
+						<div>
+							<label>类型:</label>
+							<input type="radio" name="business.blocks.type" value="1" />code
+							<input type="radio" name="business.blocks.type" value="2" />html
 						</div>
 					</div>
 					<div id="blockCodeDiv">
@@ -371,4 +432,66 @@
 			</form>
 		<div>
 	</body>
+	
+	<script>
+		function initFormDialog(){
+			if($("#formDialog").size() == 0){
+				var dialog = $('<div id="formDialog" title="编辑"><div id="formDialogContent" /></div>');
+				$("body").append(dialog);
+				
+				dialog.dialog({
+					resizable: false,
+					height:800,
+					width:1000,
+					autoOpen: false});
+			}
+		}
+
+		function showInFormDialog(json,saveFun){
+			initFormDialog();
+			
+			var element = build(json);
+			
+			$("#formDialogContent").empty();
+			$("#formDialogContent").append(element);
+			 
+			$("#formDialog").dialog("option","buttons",{
+					"Save": saveFun,
+					Cancel: function() {
+					  $(this).dialog( "close" );
+					}
+			});
+			$("#formDialog").dialog("open");
+		}
+		
+		function ajaxJSONData(url,doneFun) {
+			$.ajax(url, {
+				dataType : 'json',
+				type : 'POST',
+				async : false
+			}).done(doneFun);
+		}
+		
+		function defaultAjaxEdit(options){
+			ajaxJSONData(options.edit,function(result,status){
+				showInFormDialog(result.json, function() {
+					var dialog = $(this);
+					
+					var reqDatas = readFormDatas(dialog.find("form"));
+					if(options.data){
+						reqDatas = $.isFunction(options.data)?options.data(reqDatas):reqDatas;
+					}
+					
+					$.ajax(options.save, {
+						data : reqDatas,
+						dataType : 'json',
+						type : 'POST',
+						async : false
+					}).done(options.done?options.done:function(){});
+					
+					dialog.dialog("close");
+				});
+			});
+		}
+	</script>
 </html>

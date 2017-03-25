@@ -26,8 +26,11 @@
 		<script src="../js/tianma/html.js"></script>
 		<script src="../js/tianma/util.js"></script>
 		<script src="../js/tianma/bind.js"></script>
+		<script src="../js/tianma/build.js"></script>
 		<!-- tianma business end -->
 		
+		<script src="../../html/metadata/gojs/js/tree.js"></script>
+		<script src="../../html/metadata/gojs/js/metadata.js"></script>
 		<script src="../../html/metadata/gojs/js/main.js"></script>
 		
 		<script src="../../html/business/tianma.js"></script>
@@ -61,7 +64,9 @@
 		</div>
 		
 		<div id="addObjectMetadataDialog" title="新增对象模型" />
-		<div id="dialog" title="新增对象模型" /><div id="dialogContent" /></div>
+		<div id="uctypedialog" title="新增对象模型" /><div id="dialogContent" /></div>
+		<div id="dialog" title="新增对象模型" /><div id="dialogPanel" /></div>
+		<div id="formDialog" title="编辑" /><div id="formDialogContent" /></div>
 		<script type="text/javascript">
 		var json = ${resultJson};
 		var objectPanelTab = null;
@@ -74,14 +79,24 @@
 			initEditPanel();
 			initAddObjectMetadataDialog();
 			
-			$("#dialog").dialog({
-				resizable: false,
-				height:400,
-				width:500,
-				autoOpen: false});
+			initDefaultOptionsDialog("dialog");
+			initDefaultOptionsDialog("formDialog");
 			
-			$("body").layout({ applyDemoStyles: true });
+			$("body").layout({ 
+				applyDemoStyles: true,
+				west:{
+					size:350
+				}
+			});
 		});
+		
+		function initDefaultOptionsDialog(dialogId){
+			$("#"+dialogId).dialog({
+				resizable: false,
+				height:600,
+				width:800,
+				autoOpen: false});
+		}
 		
 		function addObjectMetadata(){
 			var json = ['form','metadata',
@@ -113,27 +128,47 @@
 			            	 ['$key','key','','[n]'],
 			            	 ['$units','单位','','',{change:factors},'[n]'],
 			            	 ['$factor','单位换算','label','[n]']]];
-			 var form = build(json);
+			
+			showInDialog(json,function(){
+				var form = $("#dialogContent").find("form");
+				var reqDatas = readFormDatas(form);
+				
+				ajaxSaveUCType(reqDatas,function(){
+					metadataModel.removeData('fieldTypes');
+				});
+				
+				$(this).dialog("close");
+			});
+		}
+		
+		function showInFormDialog(json,saveFun){
+			var element = build(json);
 
-			 $("#dialogContent").empty();
-			 $("#dialogContent").append(form);
+			 $("#formDialogContent").empty();
+			 $("#formDialogContent").append(element);
 			 
-			 $("#dialog").dialog("option","buttons",{
-					"Save": function(){
-						var form = $(this).find("form");
-						var reqDatas = readFormDatas(form);
-						
-						ajaxSaveUCType(reqDatas,function(){
-							metadataModel.removeData('fieldTypes');
-						});
-						
-						$(this).dialog("close");
-					},
+			 $("#formDialog").dialog("option","buttons",{
+					"Save": saveFun,
 					Cancel: function() {
 					  $(this).dialog( "close" );
 					}
 			});
-			 $("#dialog").dialog("open");
+			 $("#formDialog").dialog("open");
+		}
+		
+		function showInDialog(json,saveFun){
+			var element = build(json);
+
+			 $("#dialogContent").empty();
+			 $("#dialogContent").append(element);
+			 
+			 $("#uctypedialog").dialog("option","buttons",{
+					"Save": saveFun,
+					Cancel: function() {
+					  $(this).dialog( "close" );
+					}
+			});
+			 $("#uctypedialog").dialog("open");
 		}
 		
 		function factors(){
@@ -193,25 +228,6 @@
 						
 						var metadata = metadataModel.readRequestObject(obj);
 						saveNewMetadata(metadata);
-						
-						/*
-						var newNode = metadataModel.newTreeNode(metadata);
-						$.ajax("save2.htm",{
-							data:{metadata:JSON.stringify(metadata)},
-							dataType:'json',
-							type:'POST',
-							success:function(result,textStatus){
-								var omId = result.metadata.id.value;
-								metadataModel.syncPool(omId,result.metadata);
-
-								//重新解析metadata数据，并刷新diagram
-								metadataModel.refreshMetadataDiagram(omId);
-								
-								newNode.id = omId;
-							}
-						});
-						diagram.model.addNodeData(newNode);
-						*/
 						
 						$(this).dialog("close");
 					},
@@ -440,6 +456,120 @@
 }
 
 #objectPanel li .ui-icon-close { float: left; margin: 0.4em 0.2em 0 0; cursor: pointer; }
+
+
+/**************
+ * Copy from business.jsp 
+ *
+*************************/
+		form table td {
+			padding:3px 10px;
+			border-bottom:1px dashed #ccc;
+		}
+		
+		form table .label {
+			text-align:right;
+		}
+		
+		form table .hidden {
+			display:none;
+		}
+		
+		form table td div {
+			margin:5px;
+		}
+		
+		form table td label {
+			margin-left:3px;
+			margin-right:10px;
+		}
+		
+		.tableBlock {
+			min-width:400px;
+		}
+		
+		.tableBlock td {
+			padding:8px 10px;
+			border-bottom:1px dashed #ccc;
+			max-width:700px;
+		}
+		
+		.tableBlock .label {
+			text-align:right;
+			font-weight:bold;
+			vertical-align:top;
+		}
+		
+		.tableBlock img {
+			max-width:200px;
+			max-height:200px;
+		}
+		
+		.tableList {
+			background-color:#ccc;
+		}
+		
+		.tableList td,.tableList th{
+			padding:8px 10px;
+			background-color:#fff;
+			min-width:150px;
+			border:0px;
+		}
+		
+		.tableList a{
+			margin-left:10px;
+		}
+		
+		.tableList input{
+			max-width:80px;
+		}
+		
+		#title {
+			border-bottom:2px solid #AFE2E4;
+			width:600px;
+			padding-left:15px;
+			padding-bottom:10px;
+		}
+		
+		#main {
+			margin:30px;
+		}
+		
+		.menu a {
+			margin:10px;
+		}
+		
+		.error {
+			border:0px solid red;
+			margin-top:30px;
+			margin-left:200px;
+			font-size:20px;
+			font-weight:bold;
+			color:red;
+		}
+		
+		.horizontal li {
+			float:left;
+		}
+		
+		.vertical li {
+			float:none;
+		}
+		
+		.ul-checkbox,
+		.ul-radio {
+			margin:0px;
+			padding:0px;
+		}
+		
+		.ul-checkbox li,
+		.ul-radio li {
+			border:0px;
+			margin:0px;
+			padding:0px;
+			list-style:none;
+			padding-top:5px;
+		}
 </style>
 	</body>
 </html>

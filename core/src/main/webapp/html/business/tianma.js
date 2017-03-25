@@ -49,14 +49,15 @@ function HtmlBuilder(){
 	this.newSelect = function(data){
 		var selObj = $("<select />");
 		selObj.attr("name",builder.addPrefix(data.prefix)+data.name);
-		selObj.append(builder.buildOptions(data.options,data.value));
 		
-		/*
+		var options = builder.formalizeSelectOptions(data.options);
+		selObj.append(builder.buildOptions(options,data.value));
+		
 		if($.isPlainObject(data.events)){
-			for(x in data.events){
-				selObj.on(x,eval(data.events[x]));
-			}
-		}*/
+			$.each(data.events,function(k,v){
+				selObj.on(k,eval(v));
+			});
+		}
 		
 		return selObj;
 	};
@@ -101,60 +102,83 @@ function HtmlBuilder(){
 	};
 	
 	this.newRadio = function(data){
-		var radioSpan = $("<span />");
+		var ul = builder.newBoxUL(data)
+					.addClass('ul-radio');
 		
-		$.each(data.options,function(){
-			builder.newInput(data).prop("type","radio").val(this.key)
-				.prop("checked",this.key == data.value)
-				.appendTo(radioSpan);
-		
-			if(utils.isString(this.label)){
-				$("<label />").text(this.label).appendTo(radioSpan);
-			}else {
-				var label = $("<span />").appendTo(radioSpan);
-				$.each(this.label,function(k,v){
-					if(k == 'html'){
-						label.html(v);
-					}else if(k == 'text'){
-						label.text(v);
-					}else {
-						label.prop(k,v);
-					}
-				});
-			}
+		var options = builder.formalizeSelectOptions(data.options);
+		$.each(options,function(){
+			var li = $("<li />").appendTo(ul);
+			var val = $.trim(this.key);
+			builder.newInput(data)
+				.prop("type","radio")
+				.val(val)
+				.prop("checked",val == $.trim(data.value))
+				.appendTo(li);
+
+			builder.newLabel2(this.label).appendTo(li);
 			
 		});
 		
-		return radioSpan;
+		return ul;
 	};
 	
 	this.newCheckbox = function(data){
-		var span = $("<span />");
+		var ul = builder.newBoxUL(data)
+					.addClass('ul-checkbox');
 		
-		$.each(data.options,function(){
-			builder.newInput(data).val(this.key)
-				.prop("type","checkbox")
-				.prop("checked",this.key == data.value)
-				.appendTo(span);
-		
-			//$("<label />").text(this.label).appendTo(span);
-			if(utils.isString(this.label)){
-				$("<label />").text(this.label).appendTo(span);
-			}else {
-				var label = $("<span />").appendTo(span);
-				$.each(this.label,function(k,v){
-					if(k == 'html'){
-						label.html(v);
-					}else if(k == 'text'){
-						label.text(v);
-					}else {
-						label.prop(k,v);
-					}
-				});
+		var options = builder.formalizeSelectOptions(data.options);
+		$.each(options,function(){
+			var li = $("<li />").appendTo(ul);
+			var val = $.trim(this.key);
+			var box = builder.newInput(data)
+						.val(val)
+						.prop("type","checkbox")
+						.appendTo(li);
+			
+			if(utils.isString(data.value)){
+				box.prop("checked",val == $.trim(data.value));
+			}else if($.isArray(data.value)){
+				box.prop("checked",$.inArray(val,data.value) >= 0);
 			}
+		
+			builder.newLabel2(this.label).appendTo(li);
 		});
 		
-		return span;
+		return ul;
+	};
+	
+	this.formalizeSelectOptions = function(options){
+		if($.isPlainObject(options)){
+			var temp = [];
+			$.each(options,function(k,v){
+				temp.push({
+					key:k,
+					label:v
+				});
+			});
+			return temp;
+		}
+		return options;
+	};
+	
+	this.newBoxUL = function(data){
+		var ul = $("<ul />");
+		if(data.layout && $.trim(data.layout) == 'vertical'){
+			ul.addClass("vertical");
+		}else {
+			ul.addClass("horizontal");
+		}
+		return ul;
+	}
+	
+	this.newLabel2 = function(options){
+		var label = {tag:'label'};
+		if(utils.isString(options)){
+			label.text = options;
+		}else if($.isPlainObject(options)) {
+			utils.copy(options,label,null);
+		}
+		return buildHtmlElement(label);
 	};
 	
 	this.newInput = function(data){
@@ -163,6 +187,10 @@ function HtmlBuilder(){
 			input.prop("value",data.value)
 				.prop("type",data.type)
 				.prop("name",builder.readName(data));
+			
+			if(data && data.class){
+				input.addClass(data.class);
+			}
 			
 			if($.isPlainObject(data.events)){
 				for(x in data.events){
@@ -548,200 +576,6 @@ function UIListBuilder(){
 }
 
 
-/***
- * 构建以<table>排版的form表单
- * ***/
-function FormTable(){
-	var _ = this;
-	var table;
-	var hiddenTd;
-	var form;
-	
-	this.init = function(options){
-		_.form = $('<form action="/business/business.htm" method="post" />');
-		_.form.attr("id",options.id);
-		
-		_.newTable();
-		_.addInputs(options.inputs);
-		
-		_.form.append(_.table);
-		return _.form;
-	};
-	
-	this.addInputs = function(inputs){
-		var lastTd = null;
-		$.each(inputs,function(){
-			if(_.isHidden(this)){
-				_.addHidden(this);
-				return;
-			}else if(_.isNewLine(this) || !(lastTd)){
-				lastTd = _.newLine(this);
-				return;
-			}else {
-				_.append(lastTd,this);
-			}
-		});
-	};
-	
-	this.newLine = function(opts){
-		var tr = $("<tr />");
-		var ltd = $("<td class='label' />");
-		var etd = $("<td />");
-		_.table.append(tr.append(ltd).append(etd));
-		
-		ltd.text(_.readLabel(opts));
-		if(_.isGroup(opts)){
-			_.append(etd,opts);
-		}else if(_.isList(opts)){
-			var listTable = $("<table class='tableList' cellpadding='0' cellspacing='1' />").appendTo(etd);
-			var tr = $("<tr />").appendTo(listTable);
-			
-			if($.isArray(opts.type.header)){
-				$.each(opts.type.header,function(){
-					$("<th class='header' />").text(this).appendTo(tr);
-				});
-			}
-			
-			$.each(opts.type.inputs,function(){
-				tr = $("<tr />").appendTo(listTable);
-				$.each(this,function(){
-					_.append($("<td />").appendTo(tr),this);
-				});
-			});
-		}else {
-			_.appendInput(etd,opts);
-		}
-		
-		return etd;
-	};
-	
-	/**
-	将opts解析出来的元素[label,input]添加到参数td中
-	***/
-	this.append = function(td,opts){
-		if(_.isGroup(opts)){
-			var groupInps = opts.type && opts.type.inputs;
-			_.append(td,groupInps);
-		}else if($.isArray(opts)){
-			var lastLine = $("<div />").appendTo(td);
-			$.each(opts,function(){
-				if(_.isNewLine(this)){
-					lastLine = $("<div />").appendTo(td);
-				}
-				_.append(lastLine,this);
-			});
-		}else {
-			if(_.isPreLabel(opts)){
-				_.appendLabel(td,opts);
-			}
-			_.appendInput(td,opts);
-			
-			if(_.isPostLabel(opts)){
-				_.appendLabel(td,opts);
-			}
-		}
-
-		return td;
-	};
-	
-	this.isPreLabel = function(opts){
-		if(opts && opts.label && utils.isString(opts.label)){
-			var start = opts.label.slice(0,1);
-			return !(start === '?');
-		}
-		return false;
-	};
-	
-	this.isPostLabel = function(opts){
-		if(opts.label && utils.isString(opts.label)){
-			var start = opts.label.slice(0,1);
-			if(start === '?'){
-				opts.label = opts.label.slice(1);
-				return true;
-			}
-		}
-		return false;
-	};
-	
-	this.appendLabel = function(td,opts){
-		var label = $("<label />");
-		label.text(_.readLabel(opts));
-		td.append(label);
-		return td;
-	};
-	
-	this.appendInput = function(td,opts){
-		if(_.canSelect(opts)){
-			var selOpts = opts.type;
-			if($.isPlainObject(selOpts)){
-				opts.type = selOpts.name;
-				utils.copy(selOpts,opts,['name']);
-			}
-		}
-		td.append(_.input(opts));
-		return td;
-	};
-	
-	this.isHidden = function(opts){
-		return opts && opts.type === 'hidden';
-	};
-	
-	this.isNewLine = function(opts){
-		return opts && (opts.newLine === true || opts.newLine === LINE_BREAK);
-	};
-	
-	this.isGroup = function(opts){
-		return _.isType(opts,'group');
-	};
-	
-	this.isList = function(opts){
-		return _.isType(opts,'list');
-	};
-	
-	this.canSelect = function(opts){
-		return _.isType(opts,'select') || _.isType(opts,'radio') || _.isType(opts,'checkbox');
-	};
-	
-	this.isType = function(opts,tname){
-		if(opts && opts.type){
-			if($.isPlainObject(opts.type)){
-				return opts.type.name === tname;
-			}
-			
-			return opts.type === tname;
-		}
-		return false;
-	};
-	
-	this.newTable = function(){
-		_.table =  $("<table cellspacing='0' />");
-		var htr = $("<tr class='hidden' />");
-		_.hiddenTd = $("<td />");
-		htr.append(_.hiddenTd);
-		
-		_.table.append(htr);
-	};
-	
-	this.addHidden = function(opts){
-		_.hiddenTd.append(_.input(opts));
-	};
-	
-	this.input = function(opts){
-		return TM_formBuilder.newInputElement(_.readInputOptions(opts));
-	};
-	
-	
-	this.readLabel = function(opts){
-		return (opts && opts.label)?opts.label:'';
-	};
-	
-	this.readInputOptions = function(opts){
-		var inpOpts = {};
-		utils.copy(opts,inpOpts,['newLine','label']);
-		
-		return inpOpts;
-	};
-}
 
 
 

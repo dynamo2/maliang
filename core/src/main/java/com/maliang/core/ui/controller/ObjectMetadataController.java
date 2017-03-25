@@ -12,7 +12,6 @@ import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
 
-import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 
 import org.bson.types.ObjectId;
@@ -22,13 +21,19 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 
+import com.maliang.core.arithmetic.AE;
 import com.maliang.core.arithmetic.ArithmeticExpression;
 import com.maliang.core.dao.ObjectMetadataDao;
 import com.maliang.core.model.FieldType;
+import com.maliang.core.model.MongodbModel;
 import com.maliang.core.model.ObjectField;
 import com.maliang.core.model.ObjectMetadata;
+import com.maliang.core.model.Project;
+import com.maliang.core.model.Trigger;
+import com.maliang.core.model.TriggerAction;
 import com.maliang.core.model.UCType;
 import com.maliang.core.util.Utils;
+import com.mongodb.util.Util;
 
 @Controller
 @RequestMapping(value = "metadata")
@@ -106,7 +111,7 @@ public class ObjectMetadataController extends BasicController {
 					+ "id:this.id+''"
 				+ "}}";
 	}
-	
+
 	@RequestMapping(value = "main.htm")
 	public String list2(Model model) {
 		List<ObjectMetadata> metadataList = metadataDao.list();
@@ -129,6 +134,144 @@ public class ObjectMetadataController extends BasicController {
 		return "/metadata/gojs/main";
 	}
 	
+	@RequestMapping(value = "edit3.htm")
+	@ResponseBody
+	public String edit3(String id,String pid) {
+		ObjectMetadata metadata = metadataDao.getByID(id);
+		if(metadata == null){
+			metadata = new ObjectMetadata();
+			metadata.setProject(this.projectDao.getByID(pid));
+		}
+		List<Project> projects = this.projectDao.list();
+		Map<String,Object> params = newMap("metadata",metadata);
+		params.put("projects", projects);
+		
+		String s = "{json:['form','metadata',"
+				+ "[['$id','','hidden',metadata.id,'[n]'],"
+					+ "['$project.id','项目',['select',each(projects){{key:this.id,label:this.name}}],metadata.project.id,'[n]'],"
+					+ "['$name','名称','text',metadata.name,'[n]'],"
+					+ "['$label','标签','text',metadata.label,'[n]']]]}";
+		
+		Object val = AE.execute(s,params);
+
+		return this.json(val);
+	}
+	
+	@RequestMapping(value = "triggers.htm")
+	@ResponseBody
+	public String triggerList(String id) {
+		ObjectMetadata metadata = metadataDao.getByID(id);
+		Map<String,Object> params = newMap("metadata",metadata);
+		
+		String s = "{json:['dialog',[['button','新增','editTrigger(\"\",\"'+metadata.id+'\")'],"
+				+ "['tableList',['名称','条件','行为','操作'],"
+					+ "each(metadata.triggers){[this.name,this.when,"
+						+ "['tableBlock',each(this.actions){[this.field,this.code]}],"
+						+ "[['button','编辑','editTrigger(\"'+this.id+'\",\"'+metadata.id+'\")'],['button','删除','']]]}]],"
+			+ "{title:'触发器列表',width:1000,height:700}]"
+		+ "}";
+		
+		Object val = AE.execute(s,params);
+
+		System.out.println("triggerList json : " + val);
+		return this.json(val);
+	}
+	
+	@RequestMapping(value = "trigger.htm")
+	@ResponseBody
+	public String trigger(String id,String omId) {
+		Trigger trigger = this.metadataDao.getTriggerById(id);
+		if(trigger == null){
+			trigger = new Trigger();
+			trigger.setMode(2);
+		}
+		
+		if(Utils.isEmpty(trigger.getActions())){
+			TriggerAction ta = new TriggerAction();
+			List<TriggerAction> as = new ArrayList<TriggerAction>();
+			as.add(ta);
+			trigger.setActions(as);
+		}
+		
+		Map<String,Object> params = newMap("trigger",trigger);
+		params.put("omId", omId);
+		
+		String s = "{json:['form','',["
+					+ "['id','','hidden',omId,'[n]'],"
+					+ "['trigger.id','','hidden',trigger.id,'[n]'],"
+					+ "['trigger.mode','类型',['radio',{1:'insert',2:'update'}],trigger.mode,'[n]'],"
+					+ "['trigger.name','名称','text',trigger.name,'[n]'],"
+					+ "['trigger.when','条件','text',trigger.when,'[n]'],"
+					+ "['trigger.actions','行为',"
+						+ "['list',['字段','执行代码'],"
+							+ "each(trigger.actions){["
+								+ "['field','','text',this.field],"
+								+ "['code','','text',this.code]"
+						+ "]}],"
+					+ "'','[n]']"
+			+ "]]}";
+		
+		Object val = AE.execute(s,params);
+
+		System.out.println("trigger form : " + val);
+		return this.json(val);
+	}
+	
+	@RequestMapping(value = "saveTrigger.htm", method = RequestMethod.POST)
+	@ResponseBody
+	public String saveTrigger(HttpServletRequest request) {
+		Trigger trigger = readMongodbModel(request,"trigger",Trigger.class);
+		String omid = request.getParameter("metaId");
+		
+		this.metadataDao.saveTrigger(omid, trigger);
+		
+		return "";
+	}
+
+	@RequestMapping(value = "saveMove.htm")
+	@ResponseBody
+	public String saveMove(String id,String pid) {
+		ObjectMetadata metadata = this.metadataDao.getByID(id);
+		Project project = this.projectDao.getByID(pid);
+		
+		if(!isSameProject(project,metadata)){
+			String oldCollName = metadata.getName();
+			if(metadata.getProject() != null){
+				oldCollName = metadata.getProject().getKey()+"_"+oldCollName;
+			}
+			
+			String newCollName = project.getKey()+"_"+metadata.getName();
+			this.metadataDao.renameCollection(oldCollName, newCollName);
+			
+			metadata.setProject(project);
+			this.metadataDao.save(metadata);
+		}
+
+		return "{}";
+	}
+	
+	private boolean isSameProject(Project project,ObjectMetadata metadata){
+		return metadata != null 
+				&& project != null
+				&& project.getId() != null
+				&& metadata.getProject() != null 
+				&& project.getId().equals(metadata.getProject().getId());
+	}
+	
+	@RequestMapping(value = "saveCopy.htm")
+	@ResponseBody
+	public String saveCopy(String id,String pid) {
+		ObjectMetadata metadata = this.metadataDao.getByID(id);
+		Project project = this.projectDao.getByID(pid);
+		if(!isSameProject(project,metadata)){
+			metadata.setId(null);
+			metadata.setProject(project);
+			this.metadataDao.save(metadata);
+		}
+
+		return "{}";
+	}
+	
 	@RequestMapping(value = "edit2.htm", method = RequestMethod.POST)
 	@ResponseBody
 	public String edit2(String id) {
@@ -140,11 +283,9 @@ public class ObjectMetadataController extends BasicController {
 	@RequestMapping(value = "save2.htm", method = RequestMethod.POST)
 	@ResponseBody
 	public String save2(HttpServletRequest request, Model model) {
-		ObjectMetadata reqMetadata = readMetadataFromRequest(request);
+		ObjectMetadata reqMetadata = readMongodbModel(request,"metadata",ObjectMetadata.class);
 		
-		System.out.println("save id : " + reqMetadata.getId());
-		
-		System.out.println("reqMetadata  : " + reqMetadata);
+		System.out.println("********* save reqMetadata  : " + reqMetadata);
 		metadataDao.save(reqMetadata);
 		
 		return jsonEditCode2(reqMetadata);
@@ -219,23 +360,16 @@ public class ObjectMetadataController extends BasicController {
 		return fts;
 	}
 	
-	private ObjectMetadata readMetadataFromRequest(HttpServletRequest request){
-		JSONObject json = JSONObject.fromObject(request.getParameterMap());
-		JSONArray ja = (JSONArray)json.get("metadata");
-
-		Map cm = new HashMap();
-		cm.put("fields",ObjectField.class);
-		
-		ObjectMetadata metadata = (ObjectMetadata)JSONObject.toBean(ja.getJSONObject(0), ObjectMetadata.class,cm);
-		
-		JSONArray jid = (JSONArray)json.get("id");
-		if(jid != null && jid.size() > 0){
-			metadata.setId((String)jid.get(0));
-		}
-		
-		return metadata;
-	}
-
+//	private ObjectMetadata readMetadataFromRequest(HttpServletRequest request){
+//		JSONObject json = JSONObject.fromObject(request.getParameterMap());
+//		JSONArray ja = (JSONArray)json.get("metadata");
+//
+//		ObjectMetadata metadata = (ObjectMetadata)JSONObject.toBean(ja.getJSONObject(0), 
+//				ObjectMetadata.class,newMap("fields",ObjectField.class));
+//		
+//		return metadata;
+//	}
+	
 	private Object order(String id){
 		String str = "{"
 				+ "name:{value:'Order'},"
@@ -428,7 +562,11 @@ public class ObjectMetadataController extends BasicController {
 		params = (Map<String,Object>)ArithmeticExpression.execute(account, params);
 		
 		account = "ads";
-		System.out.println(ArithmeticExpression.execute(account, params));
+		//System.out.println(ArithmeticExpression.execute(account, params));
+		
+		Class pc = Project.class;
+		System.out.println(MongodbModel.class.isAssignableFrom(Project.class));
+		
 		
 		/*
 		String str = "db.Account.";

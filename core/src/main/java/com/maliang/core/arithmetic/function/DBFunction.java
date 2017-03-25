@@ -4,6 +4,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
+
+import org.bson.types.ObjectId;
 
 import com.maliang.core.arithmetic.AE;
 import com.maliang.core.service.CollectionService;
@@ -29,8 +32,16 @@ public class DBFunction {
 				return in(function,params);
 			}
 			
+			if("nin".equals(method)){
+				return nin(function,params);
+			}
+			
 			if("eq".equals(method)){
 				return eq(function,params);
+			}
+			
+			if("like".equals(method)){
+				return like(function,params);
 			}
 			
 			if("and".equals(method)){
@@ -41,10 +52,26 @@ public class DBFunction {
 				return or(function,params);
 			}
 			
+			if("match".equals(method)){
+				return match(function,params);
+			}
+			
+			if("aggregate".equals(method)){
+				return aggregate(function,params);
+			}
+			
 			return null;
 		}
 		
 		String collection = key.substring(start+1,end);
+//		Object business = Utils.getSessionValue("SYS_BUSINESS");
+//		if(business instanceof Business && business != null && ((Business)business).getProject() != null){
+//			String pname = ((Business)business).getProject().getKey();
+//			collection = pname+"_"+collection;
+//		}
+//		System.out.println("------- db fun collection : " + collection);
+		
+		
 		String method = key.substring(end+1);
 		
 		Object value = function.executeExpression(params);
@@ -64,11 +91,31 @@ public class DBFunction {
 		for(Object v : vals){
 			if(v == null)continue;
 			
-			orList.add(queryMap(key,queryMap("$eq",v)));
+			orList.add(comparisonMap(key,v,"$eq"));
 		}
 		
 		if(orList.size() == 0)return null;
 		return queryMap("$or",orList);
+	}
+	
+	private static Map nin(Function function,Map<String,Object> params){
+		Map map = readMapValue(function,params);
+		if(map.isEmpty())return null;
+		
+		String key = map.keySet().iterator().next().toString();
+		Object value = map.get(key);
+		Object[] vals = Utils.toArray(value);
+		if(Utils.isEmpty(vals))return null;
+		
+		List orList = new ArrayList();
+		for(Object v : vals){
+			if(v == null)continue;
+			
+			orList.add(comparisonMap(key,v,"$ne"));
+		}
+		
+		if(orList.size() == 0)return null;
+		return queryMap("$and",orList);
 	}
 	
 	private static Map eq(Function function,Map<String,Object> params){
@@ -79,7 +126,38 @@ public class DBFunction {
 		Object value = map.get(key);
 		if(Utils.isEmpty(value))return null;
 		
-		return queryMap(key,queryMap("$eq",value));
+		return comparisonMap(key,value,"$eq");
+	}
+	
+	/***
+	 * 生成“比较”操作命令的条件Map
+	 * **/
+	private static Map<String,Object> comparisonMap(String key,Object val,String cmd){
+		if("id".equals(key)){
+			key = "_id";
+			if(val == null || !(val instanceof ObjectId)){
+				try {
+					val = new ObjectId(val.toString());
+				}catch(Exception e){
+					val = new ObjectId();
+				}
+			}
+		}
+		
+		return queryMap(key,queryMap(cmd,val));
+	}
+	
+	private static Map like(Function function,Map<String,Object> params){
+		Map map = readMapValue(function,params);
+		if(map.isEmpty())return null;
+		
+		String key = map.keySet().iterator().next().toString();
+		Object value = map.get(key);
+		if(Utils.isEmpty(value))return null;
+		
+		Pattern pattern = Pattern.compile("^.*" + value+ ".*$", Pattern.CASE_INSENSITIVE); 
+		
+		return queryMap(key,pattern);
 	}
 	
 	private static Map and(Function fun,Map<String,Object> p){
@@ -94,6 +172,20 @@ public class DBFunction {
 		if(Utils.isEmpty(ors))return null;
 		
 		return queryMap("$or",ors);
+	}
+	
+	private static Map match(Function fun,Map<String,Object> params){
+		Object value = fun.executeExpression(params);
+		if(Utils.isEmpty(value))return null;
+		
+		return queryMap("$match",value);
+	}
+	
+	private static List<Object> aggregate(Function fun,Map<String,Object> params){
+		List<Object> aggs = readListValue(fun,params);
+		if(Utils.isEmpty(aggs))return null;
+		
+		return aggs;
 	}
 	
 	private static Map<String,Object> queryMap(String k,Object v){

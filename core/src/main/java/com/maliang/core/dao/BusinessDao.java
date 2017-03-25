@@ -9,16 +9,18 @@ import org.bson.types.ObjectId;
 
 import com.maliang.core.model.Block;
 import com.maliang.core.model.Business;
+import com.maliang.core.model.MongodbModel;
 import com.maliang.core.model.Workflow;
+import com.maliang.core.util.StringUtil;
 import com.mongodb.AggregationOutput;
 import com.mongodb.BasicDBObject;
-import com.mongodb.DBCollection;
 import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
 
 public class BusinessDao extends ModelDao<Business> {
 	protected static String COLLECTION_NAME = "Business";
 	protected CollectionDao collectionDao = new CollectionDao();
+	protected ProjectDao projectDao = new ProjectDao();
 	
 	static {
 		INNER_TYPE.put("Business.workflows",Workflow.class);
@@ -71,6 +73,10 @@ public class BusinessDao extends ModelDao<Business> {
 	}
 	
 	public Map<String,Object> save(Map<String,Object> values){
+//		Business bs = this.decode(new BasicDBObject(values),Business.class);
+//		
+//		System.out.println(" ---- dao save Business : "+ bs);
+//		return null;
 		return this.collectionDao.save(values, COLLECTION_NAME);
 	}
 	
@@ -83,7 +89,26 @@ public class BusinessDao extends ModelDao<Business> {
 		return null;
 	}
 
-	
+	protected MongodbModel loadVariableLinkedObject(String val){
+		if(StringUtil.isEmpty(val))return null;
+		if(!val.contains(",")){
+			return this.projectDao.getByID(val);
+		}
+		
+		String[] vs = val.split(",");
+		String clsName = vs[0];
+		String vid = vs[1];
+		
+		if("Project".equals(clsName)){
+			return this.projectDao.getByID(vid);
+		}
+		
+		if("Subproject".equals(clsName)){
+			return this.projectDao.getSubprojectById(vid);
+		}
+
+		return null;
+	}
 	
 	public static void main(String[] args) {
 		BusinessDao dao = new BusinessDao();
