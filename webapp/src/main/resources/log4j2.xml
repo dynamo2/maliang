@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN" monitorInterval="30">
+	<Appenders>
+		<Console name="Console" target="SYSTEM_OUT">
+			<PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n" />
+		</Console>
+		<File name="WebappFile" fileName="/home/fwang/workspace/logs/webapp.log">
+			<PatternLayout>
+				<Pattern>%d %p %c{1.} [%t] %m%n</Pattern>
+			</PatternLayout>
+		</File>
+		<File name="WebappFile_spring" fileName="/home/fwang/workspace/logs/webapp_spring.log">
+			<PatternLayout>
+				<Pattern>%d %p %c{1.} [%t] %m%n</Pattern>
+			</PatternLayout>
+		</File>
+		<Async name="Async">
+			<AppenderRef ref="WebappFile" />
+			<AppenderRef ref="Console" />
+		</Async>
+	</Appenders>
+	<Loggers>
+		<Logger name="org.springframework" level="DEBUG" additivity="false">
+			<AppenderRef ref="WebappFile_spring" />
+		</Logger>
+		<Logger name="com.maliang" level="DEBUG" />
+		<Root level="INFO">
+			<AppenderRef ref="Async" />
+		</Root>
+	</Loggers>
+</Configuration>
