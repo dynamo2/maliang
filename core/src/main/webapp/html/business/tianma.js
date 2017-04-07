@@ -53,11 +53,8 @@ function HtmlBuilder(){
 		var options = builder.formalizeSelectOptions(data.options);
 		selObj.append(builder.buildOptions(options,data.value));
 		
-		if($.isPlainObject(data.events)){
-			$.each(data.events,function(k,v){
-				selObj.on(k,eval(v));
-			});
-		}
+		var newProps = utils.copy(data,{},['name','type','options']);
+		this.props(selObj,newProps);
 		
 		return selObj;
 	};
@@ -190,6 +187,24 @@ function HtmlBuilder(){
 		return this.props($("<button />"),options);
 	};
 	
+	this.newSubmit = function(data){
+		if(!(data && data.type == "submit")){
+			return null;
+		}
+	
+		var options = utils.copy(data,null,["type"]);
+		return this.props($("<button type='submit' />"),options);
+	};
+	
+	this.newReset = function(data){
+		if(!(data && data.type == "reset")){
+			return null;
+		}
+	
+		var options = utils.copy(data,null,["type"]);
+		return this.props($("<button type='reset' />"),options);
+	};
+	
 	this.props = function(ele,options){
 		if(!options){
 			return ele;
@@ -208,10 +223,9 @@ function HtmlBuilder(){
 		}
 		
 		if($.isPlainObject(options.events)){
-			for(x in options.events){
-				var fun = options.events[x];
-				ele.on(x,eval(fun));
-			}
+			$.each(options.events,function(k,v){
+				ele.on(k,eval(v));
+			});
 		}
 		
 		options = utils.copy(options,null,["text","html","class","events"]);
@@ -379,6 +393,10 @@ function FormBuilder(){
 			return TM_htmlBuilder.newTextarea(inputData);
 		}else if(inputData.type == "button"){
 			return TM_htmlBuilder.newButton(inputData);
+		}else if(inputData.type == "submit"){
+			return TM_htmlBuilder.newSubmit(inputData);
+		}else if(inputData.type == "reset"){
+			return TM_htmlBuilder.newReset(inputData);
 		}else if(inputData.type == "label"){
 			return builder.newLabel(inputData);
 		}else if(inputData.type == "between"){
@@ -392,7 +410,7 @@ function FormBuilder(){
 			return spanObj;
 		}else if(inputData.type == "list"){
 			return TM_ulListBuilder.newInputs(inputData);
-		}else if(inputData.type == "html"){
+		}else if(inputData.type == "htmlEditor"){
 			return builder.newHtmlEditor(inputData);
 		}else {
 			return TM_htmlBuilder.newInput(inputData);

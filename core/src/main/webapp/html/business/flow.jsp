@@ -66,11 +66,19 @@
 		
 		if(jsUrl){
 			$.getScript(jsUrl,function(){
-				newInit();
+				if(result.generator){
+					newInit();
+				}else {
+					init();
+				}
 			});
 		}else {
 			$(function(){
-				newInit();
+				if(result.generator){
+					newInit();
+				}else {
+					init();
+				}
 			});
 		}
 		
@@ -80,6 +88,7 @@
 			if(ele){
 				$("body").append(ele);
 			}
+			//productValidation();
 		}
 		
 		function init(){

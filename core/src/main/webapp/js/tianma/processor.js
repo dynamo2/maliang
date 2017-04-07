@@ -59,17 +59,32 @@ return Class;
 })();
 
 var HTMLGenerator = Class.extend({
-	inputTypes:["text","between","radio","date","select","checkbox","button","submit"],
+	inputTypes:["text","htmlEditor","hidden","between","radio","date","select","checkbox","button","submit","reset"],
 	
 	isInput:function(tn){
 		return utils.hasName(this.inputTypes,tn);
 	},
 	
 	isButton:function(type){
-    	return utils.hasName(['button','submit'],type);
+    	return utils.hasName(['button','submit','reset'],type);
     },
 	
 	build:function(opts){
+		var curr = this;
+		
+		if($.isArray(opts)){
+			var els = [];
+			$.each(opts,function(){
+				var ce = curr.build(this);
+				if($.isArray(ce)){
+					els = els.concat(ce);
+				}else {
+					els.push(ce);
+				}
+			});
+			return els;
+		}
+		
 		var type = opts && opts.type;
 		
 		if(opts && opts.css){
@@ -92,10 +107,15 @@ var HTMLGenerator = Class.extend({
 			return this.htmlTemplate(opts);
 		}
 		
+		if(type === "a"){
+			opts.tag = "a";
+			opts.type = undefined;
+		}
+		
 		if(type === "html"){
 			return this.html(opts);
 		}
-		
+
 		return buildHtmlElement(opts);
 	},
 	
@@ -203,21 +223,6 @@ var HTMLGenerator = Class.extend({
 
 var MGenerator = HTMLGenerator.extend({
 	build:function(opts){
-		var curr = this;
-		
-		if($.isArray(opts)){
-			var els = [];
-			$.each(opts,function(){
-				var ce = curr.build(this);
-				if($.isArray(ce)){
-					els = els.concat(ce);
-				}else {
-					els.push(ce);
-				}
-			});
-			return els;
-		}
-		
 		var et = opts && opts.type;
 		
 		if(et === 'ScrollableTable'){
@@ -240,6 +245,14 @@ var MGenerator = HTMLGenerator.extend({
 			return this.portlet(opts);
 		}
 		
+		if(et === "formBody"){
+			return this.formBody(opts);
+		}
+		
+		if(et === "form"){
+			return this.form(opts);
+		}
+
 		return this._super(opts);
 	},
 	
@@ -343,8 +356,25 @@ var MGenerator = HTMLGenerator.extend({
 	 *}
 	 * **/
 	dropdownMenu:function(opts){
-		var div = $('<div class="btn-group pull-right" />');
-		var bnt = $('<button type="button" class="btn btn-fit-height grey-salt dropdown-toggle" data-toggle="dropdown" data-hover="dropdown" data-delay="1000" data-close-others="true">'+opts.text+'<i class="fa fa-angle-down"></i></button>');
+		var div = $('<div class="btn-group" />');
+		
+		
+		var bnt = null;
+		if(opts && opts.bntType && opts.bntType === 'link'){
+			bnt = $('<a class="btn default yellow-stripe dropdown-toggle" href="javascript:;" data-toggle="dropdown"><span class="hidden-480">'+opts.text+' </span><i class="fa fa-angle-down"></i>')
+		}else {
+			bnt = $('<button type="button" class="btn btn-fit-height grey-salt dropdown-toggle" data-toggle="dropdown" data-hover="dropdown" data-delay="1000" data-close-others="true">'+opts.text+'<i class="fa fa-angle-down"></i></button>');
+		}
+		
+		if(opts && opts.css){
+			bnt.addClass(opts.css);
+		}
+		
+		if(opts && opts.icon){
+			var icon = $("<i class='fa fa-"+opts.icon+"' />");
+			bnt.prepend(icon);
+		}
+		
 		var downMenu = this.ul_menus(opts.menus);
 		downMenu.attr({
 			"class":"dropdown-menu pull-right",
@@ -352,6 +382,253 @@ var MGenerator = HTMLGenerator.extend({
 		});
 		
 		return div.append(bnt).append(downMenu);
+	},
+	
+	form:function(options){
+		var curr = this;
+		
+		var action = "/flow/flow.jsp";
+		if(options && options.action){
+			action = options.action;
+		}
+		var form = this.build(utils.copy(options,{tag:"form",action:action},['type','body']));
+		if(options && options.body){
+			form.append(this.build(options.body));
+		}
+		
+		return form;
+	},
+	
+	/*
+	 * productEditForm:{
+		  type:'form',
+		  css:'form-horizontal',
+		  id:'productEditForm',
+		  body:{
+		      type:'formBody',
+		      groups:[
+		        {
+		            section:'Basic Info',
+		            group-cols:[3,9],
+		            rows:[
+		                {type:'text',name:'product.name',label:'名称',value:product.name},
+		                {type:'text',name:'product.price',label:'价格',value:product.price}
+		            ]
+		        },
+		        {
+		            section:'postage Info',
+		            group-cols:[3,9],
+		            row-col:6,
+		            rows:[
+		                [
+		                    {type:'select',css:'input-medium',name:'product.postage',label:'邮递策略',
+		                            value:product.postage,options:[{key:'',label:'默认'}]+each(posts){{key:this.id,label:this.name}}},
+		                    {type:'text',name:'product.stock',label:'库存',value:product.stock}
+		                ],
+		                [
+		                    {type:'text',name:'product.orderStock',label:'订单库存',value:product.orderStock}
+		                ]
+		            ]
+		        }
+		      ]
+		}
+	 * **/
+	formBody:function(options){
+		var curr = this;
+		var fbody = $('<div class="form-body" />');
+		var hiddenDiv = $("<div style='display:none;' />").appendTo(fbody);
+		var bodyOptions = options;
+		
+		this.isColumnsLayout = function(){
+			return bodyOptions && bodyOptions.layout && bodyOptions.layout === 'columns'; 
+		};
+		
+		/**
+		 * {
+		 * 		type:'text',
+		 * 		name:'product.orderStock',
+		 * 		cols:[3,9],
+		 * 		label:'订单库存',
+		 * 		value:product.orderStock
+		 * }
+		 * **/
+		this.formGroup = function(options){
+			if(options.type === 'hidden'){
+				var opts = utils.copy(options,{},['label']);
+				var input = curr.build(opts);
+				hiddenDiv.append(input);
+				return null;
+			}
+			
+			var fg = $('<div class="form-group" />');
+			var labelCol = "col-md-2";
+			var inputCol = "col-md-10";
+			if($.isArray(options && options.cols)){
+				if(options.cols.length > 0){
+					labelCol = options.cols[0];
+				}
+				
+				if(options.cols.length > 1){
+					inputCol = options.cols[1];
+				}
+			}
+			if($.isNumeric(labelCol)){
+				labelCol = "col-md-"+labelCol;
+			}
+			if($.isNumeric(inputCol)){
+				inputCol = "col-md-"+inputCol;
+			}
+
+			var label = $('<label class="control-label">'+options.label+'</label>');
+			if(!curr.isColumnsLayout()){
+				label.addClass(labelCol);
+			}
+			if(options && options.required){
+				label.append($('<span class="required"></span>').text(' * '));
+			}
+
+			
+			var opts = utils.copy(options,{},['label','cols']);
+			var inputDiv = curr.build(opts);
+			if(inputDiv){
+				if(options.required){
+					inputDiv.attr("data-required",1);
+					inputDiv.attr("required",1);
+				}
+				if(options.icon){
+					inputDiv = $('<div class="input-icon"><i class="fa fa-'+options.icon+'"></i></div>').append(inputDiv);
+				}
+			}
+			if(!curr.isColumnsLayout()){
+				inputDiv = $('<div />').addClass(inputCol).append(inputDiv);
+			}
+			if(options && options.help){
+				inputDiv.append($('<span class="help-block"></span>').text(options.help));
+			}
+			
+			return fg.append(label).append(inputDiv);
+		};
+		
+		
+		this.formRow = function(rowOpts){
+			if(!$.isArray(rowOpts.rows) || rowOpts.rows.length == 0){
+				return null;
+			}
+
+			var rc = 12/rowOpts.rows.length;
+			if(rowOpts && rowOpts['row-col']){
+				rc = rowOpts['row-col'];
+			}
+			if($.isNumeric(rc)){
+				rc = 'col-md-'+rc;
+			}
+			
+			var gc = null;
+			if(rowOpts && rowOpts['group-cols']){
+				gc = rowOpts['group-cols'];
+			}
+			
+			var row = null;
+			var rows = null;
+			$.each(rowOpts.rows,function(){
+				if($.isArray(this)){
+					var newOpts = {
+						'row-col':rc,
+						'group-cols':gc,
+						rows:this
+					}
+					
+					var r = curr.formRow(newOpts);
+					if(r){
+						if(!rows){
+							rows = [];
+						}
+						rows.push(r);
+					}
+					return;
+				}
+
+				if(!row){
+					row = $("<div class='row' />");
+				}
+				if(gc){
+					this['cols'] = gc;
+				}
+				var group = curr.formGroup(this);
+				if(group){
+					$("<div />").addClass(rc).appendTo(row).append(group);
+				}
+			});
+			
+			if(row){
+				return row;
+			}
+			return rows;
+		};
+		
+		var defaultValidateOptions = {
+			errorElement: "span", //default input error message container
+			errorClass: 'help-block help-block-error', // default input error message class
+            focusInvalid: false, // do not focus the last invalid input
+            ignore: "", // validate all fields including form hidden input
+
+            errorPlacement: function (error, element) { // render error placement for each input type
+                if (element.parent(".input-group").size() > 0) {
+                    error.insertAfter(element.parent(".input-group"));
+                } else if (element.attr("data-error-container")) { 
+                    error.appendTo(element.attr("data-error-container"));
+                } else if (element.parents('.radio-list').size() > 0) { 
+                    error.appendTo(element.parents('.radio-list').attr("data-error-container"));
+                } else if (element.parents('.radio-inline').size() > 0) { 
+                    error.appendTo(element.parents('.radio-inline').attr("data-error-container"));
+                } else if (element.parents('.checkbox-list').size() > 0) {
+                    error.appendTo(element.parents('.checkbox-list').attr("data-error-container"));
+                } else if (element.parents('.checkbox-inline').size() > 0) { 
+                    error.appendTo(element.parents('.checkbox-inline').attr("data-error-container"));
+                } else {
+                    error.insertAfter(element); // for other inputs, just perform default behavior
+                }
+            },
+
+
+            highlight: function (element) { // hightlight error inputs
+               $(element)
+                    .closest('.form-group').addClass('has-error'); // set error class to the control group
+            },
+
+            unhighlight: function (element) { // revert the change done by hightlight
+                $(element)
+                    .closest('.form-group').removeClass('has-error'); // set error class to the control group
+            },
+
+            success: function (label) {
+                label
+                    .closest('.form-group').removeClass('has-error'); // set success class to the control group
+            },
+
+            submitHandler: function (form) {
+                form[0].submit(); // submit the form
+            }
+        };
+		
+		if(options && options.groups && $.isArray(options.groups)){
+			$.each(options.groups,function(){
+				if(this.section){
+					$('<h3 class="form-section">'+this.section+'</h3>').appendTo(fbody);
+					var row = curr.formRow(this);
+					if(row){
+						fbody.append(row);
+					}
+				}else {
+					var group = curr.formGroup(this);
+					if(group){
+						fbody.append(group);
+					}
+				}
+			});
+		}
+
+		return fbody;
 	},
 	
 	portlet:function(options){
@@ -436,7 +713,7 @@ var MGenerator = HTMLGenerator.extend({
 	        }
 	        
 	        if($.isArray(opts)){
-	        	ele.append(build(opts));
+	        	ele.append(this.build(opts));
 	        }
 	        
 	        if($.isPlainObject(opts)){
@@ -617,12 +894,12 @@ var MGenerator = HTMLGenerator.extend({
 	    }
 	    
 	    var input = this._super(opts);
-	    if(this.isButton(opts && opts.type)){
-	    	//btn-sm yellow filter-submit margin-bottom
-	    	input.addClass("btn");
-	    }else {
-	    	input.addClass("form-control");
-	    }
+	    if(input.is("button")){
+    		input.addClass("btn");
+    	}else {
+    		input.addClass("form-control");
+    	}
+
 	    if(opts && opts.icon){
 	    	input.prepend($("<i class='fa fa-"+opts.icon+"' />"));
 	    }
