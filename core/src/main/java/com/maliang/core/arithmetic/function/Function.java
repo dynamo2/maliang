@@ -122,6 +122,14 @@ public class Function {
 			return ListFunction.toList(this, params);
 		}
 		
+		if("add".equalsIgnoreCase(key)){
+			return ListFunction.add(this, params);
+		}
+		
+		if("prepend".equalsIgnoreCase(key)){
+			return ListFunction.prepend(this, params);
+		}
+		
 		if("print".equalsIgnoreCase(key)){
 			System.out.println(this.executeExpression(params));
 			return null;
@@ -137,6 +145,10 @@ public class Function {
 		
 		if("set".equalsIgnoreCase(key)){
 			return AssignFunction.set(this, params);
+		}
+		
+		if("update".equalsIgnoreCase(key)){
+			return AssignFunction.update(this, params);
 		}
 		
 //		if("wrap".equalsIgnoreCase(key)){

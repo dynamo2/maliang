@@ -1,21 +1,33 @@
 package com.maliang.core.arithmetic.function;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.commons.collections.map.LinkedMap;
 
 import com.maliang.core.arithmetic.AE;
 import com.maliang.core.service.MapHelper;
+import com.maliang.core.util.Utils;
 
 public class AssignFunction {
 	public static Object set(Function function,Map<String,Object> params){
 		String key = function.getKeySource();
-		if(key.contains(".")){
+		key = key.substring(0,key.length()-".set".length());
+		
+		if(!Utils.isEmpty(key)){
 			Object newVal = function.executeExpression(params);
-			
+			return set(key,newVal,params);
+		}
+		
+		
+		return null;
+	}
+	
+	private static Object set(String key,Object newVal,Map<String,Object> params){
+		if(!Utils.isEmpty(key)){
 			String[] names = key.split("\\.");
 			Map<String,Object> parent = params;
-			for(int i = 0; i < names.length-2; i++){
+			for(int i = 0; i < names.length-1; i++){
 				Object v = MapHelper.readValue(parent,names[i]);
 				if(v == null || !(v instanceof Map)){
 					v = new LinkedMap();
@@ -26,7 +38,7 @@ public class AssignFunction {
 				parent = (Map<String,Object>)v;
 			}
 			
-			parent.put(names[names.length-2],newVal);
+			parent.put(names[names.length-1],newVal);
 			return newVal;
 		}
 		
@@ -127,27 +139,36 @@ public class AssignFunction {
 	 * **/
 	public static Object update(Function function,Map<String,Object> params){
 		String key = function.getKeySource();
-		if(key.contains(".")){
-			Object newVal = function.executeExpression(params);
-			
-			String[] names = key.split("\\.");
-			Map<String,Object> parent = params;
-			for(int i = 0; i < names.length-2; i++){
-				Object v = MapHelper.readValue(parent,names[i]);
-				if(v == null || !(v instanceof Map)){
-					v = new LinkedMap();
-					
-					parent.put(names[i],v);
-				}
-				
-				parent = (Map<String,Object>)v;
-			}
-			
-			parent.put(names[names.length-2],newVal);
-			return newVal;
-		}
+		key = key.substring(0,key.length()-".update".length());
+		if(Utils.isEmpty(key))return null;
 		
-		return null;
+		Object oldVal = MapHelper.readValue(params,key);
+		Object newVal = function.executeExpression(params);
+		if(oldVal == null || !(oldVal instanceof Map) 
+				|| !(newVal instanceof Map)){
+			return set(key,newVal,params);
+		}
+
+		return merge((Map<String,Object>)oldVal,(Map<String,Object>) newVal);
+	}
+	
+	private static Map<String,Object> merge(Map<String,Object> left,Map<String,Object> right){
+		if(!Utils.isEmpty(right)){
+			for(String k:right.keySet()){
+				Object lv = left.get(k);
+				Object rv = right.get(k);
+				
+				if(left.containsKey(k)){
+					if(lv instanceof Map && rv instanceof Map){
+						merge((Map<String,Object>)lv,(Map<String,Object>) rv);
+						continue;
+					}
+				}
+				left.put(k, rv);
+			}
+		}
+
+		return left;
 	}
 	
 	public static Object append(Function function,Map<String,Object> params){
@@ -176,10 +197,16 @@ public class AssignFunction {
 	}
 	
 	public static void main(String[] args) {
-		String s = "{aaa:'aaa',c:b.eee.fff.cc.ccc.ggg.bb.bbb.set({cc:{ccc:{ggg:[999,33,22,77]}}}),d:b.eee.fff.cc.ccc.ggg.bb.bbb.cc.ccc.ggg.size}";
-		Object v = AE.execute(s);
+		String s = "{a:{b:{b1:'aaa',b2:'bbb'},c:'222',e:{h:'aaaa',j:[1,3,5]}}}";
+		Map<String,Object> params = new HashMap<String,Object>(); 
+		Object v = AE.execute(s,params);
 		
-		System.out.println(v);
+		s = "a.b.update({tt:'111111',bb:'rrrrrr'})";
+		
+		params = (Map<String,Object>)v;
+		v = AE.execute(s,params);
+		
+		System.out.println(params);
 	}
 	
 	public static Object execute(Function function,Map<String,Object> params){

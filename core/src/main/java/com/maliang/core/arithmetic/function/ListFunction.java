@@ -6,6 +6,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
+import com.maliang.core.arithmetic.AE;
 import com.maliang.core.arithmetic.ArithmeticExpression;
 import com.maliang.core.arithmetic.node.Parentheses;
 import com.maliang.core.util.Utils;
@@ -52,8 +53,38 @@ public class ListFunction {
 		return keyVal != null && value != null && keyVal.equals(value);
 	}
 	
+	public static Object add(Function function ,Map<String,Object> params){
+		Object keyVal = function.getKeyValue();
+		Object value = function.executeExpression(params);
+		
+		if(keyVal instanceof List){
+			if(value instanceof List){
+				((List)keyVal).addAll((List)value);
+			}else {
+				((List)keyVal).add(value);
+			}
+		}
+
+		return keyVal;
+	}
+	
+	public static Object prepend(Function function ,Map<String,Object> params){
+		Object keyVal = function.getKeyValue();
+		Object value = function.executeExpression(params);
+		
+		if(keyVal instanceof List){
+			if(value instanceof List){
+				((List)keyVal).addAll(0,(List)value);
+			}else {
+				((List)keyVal).add(0,value);
+			}
+		}
+
+		return keyVal;
+	}
+	
 	public static boolean isList(Function function ,Map<String,Object> params){
-		Object value = ArithmeticExpression.execute(function.getKey(), params);
+		Object value = AE.execute(function.getKey(), params);
 		if(value == null){
 			value = function.executeExpression(params);
 		}
