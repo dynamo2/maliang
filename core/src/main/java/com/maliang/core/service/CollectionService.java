@@ -116,6 +116,7 @@ public class CollectionService {
 		pageMap.put("currentPage",page.getCurPage());
 		pageMap.put("totalRows",page.getTotalRow());
 		pageMap.put("pageSize",page.getPageSize());
+		pageMap.put("totalPage",page.getTotalPage());
 		pageMap.put("datas",datas);
 		
 		return pageMap;
@@ -365,8 +366,10 @@ public class CollectionService {
 			if(value != null && value instanceof Map){
 				v = (Map)value;
 
-				page.setStart((Integer)MapHelper.readValue(v,"page.start",0));
-				page.setPageSize((Integer)MapHelper.readValue(v,"page.pageSize",0));
+				page.setPageSize(MapHelper.readValue(v,"page.pageSize",Pager.PAGE_SIZE));
+				page.setCurPage(MapHelper.readValue(v,"page.page",1));
+				//page.setStart((Integer)MapHelper.readValue(v,"page.start",0));
+				
 				
 				query = (Map<String,Object>)MapHelper.readValue(v,"query");
 				sort = (Map<String,Object>)MapHelper.readValue(v,"sort");

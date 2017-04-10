@@ -314,9 +314,9 @@ public class Function {
 			return DBFunction.execute(this, params);
 		}
 
-		if(this.isHtmlFun()){
-			return HtmlFunction.execute(this, params);
-		}
+//		if(this.isHtmlFun()){
+//			return HtmlFunction.execute(this, params);
+//		}
 		
 		/*
 		if(key != null && key.contains(".")){

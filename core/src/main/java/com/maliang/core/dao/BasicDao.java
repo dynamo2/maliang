@@ -84,19 +84,23 @@ public class BasicDao extends AbstractDao{
 	
 	public List<Map<String,Object>> findByMap(Map<String,Object> query,String collName){
 		BasicDBObject bq = build(query);
+		bq = projectQuery(bq,collName);
 		
+		return this.find(bq, collName);
+	}
+	
+	protected BasicDBObject projectQuery(BasicDBObject query,String collName){
 		if(this.isSystemCollection(collName)){
 			Project project = getSessionProject();
 			if(project != null){
-				if(bq == null){
-					bq = new BasicDBObject();
+				if(query == null){
+					query = new BasicDBObject();
 				}
 				
-				bq.append("project", project.getId().toString());
+				query.append("project", project.getId().toString());
 			}
 		}
-		
-		return this.find(bq, collName);
+		return query;
 	}
 	
 	public List<Map<String,Object>> find(BasicDBObject query,String collName){

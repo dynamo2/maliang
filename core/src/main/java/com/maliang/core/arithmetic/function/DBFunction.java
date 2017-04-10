@@ -1,6 +1,7 @@
 package com.maliang.core.arithmetic.function;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -50,6 +51,10 @@ public class DBFunction {
 			
 			if("or".equals(method)){
 				return or(function,params);
+			}
+			
+			if("between".equals(method)){
+				return between(function,params);
 			}
 			
 			if("match".equals(method)){
@@ -160,9 +165,68 @@ public class DBFunction {
 		return queryMap(key,pattern);
 	}
 	
+	private static Object between(Function function,Map<String,Object> params){
+		Map map = readMapValue(function,params);
+		if(map.isEmpty())return null;
+		
+		String key = map.keySet().iterator().next().toString();
+		Object value = map.get(key);
+		if(Utils.isEmpty(value))return null;
+		
+		if(Utils.isArray(value)){
+			List<Object> vals = Utils.toList(value);
+			if(vals.size() == 1){
+				return comparisonMap(key,vals.get(0),"$eq");
+			}
+			if(vals.size() != 2)return null;
+			
+			Object v1 = vals.get(0);
+			Object v2 = vals.get(1);
+			if(Utils.isEmpty(v1) || Utils.isEmpty(v2))return null;
+			
+			if(v1 instanceof Comparable && v2 instanceof Comparable){
+				int i = ((Comparable)v1).compareTo(v2);
+				Object temp = v1;
+				if(i > 0){
+					v1 = v2;
+					v2 = temp;
+				}
+				
+				List<Object> ands = new ArrayList<Object>();
+				ands.add(comparisonMap(key,v1,"$gte"));
+				ands.add(comparisonMap(key,v2,"$lte"));
+				
+				return queryMap("$and",ands);
+			}
+			
+			return null;
+		}else if(value instanceof Map){
+			Map<String,Object> mval = (Map<String,Object>)value;
+			Object fv = mval.get("from");
+			Object tv = mval.get("to");
+			
+			if(Utils.isEmpty(fv) || Utils.isEmpty(tv))return null;
+			
+			List<Object> ands = new ArrayList<Object>();
+			ands.add(comparisonMap(key,fv,"$gte"));
+			ands.add(comparisonMap(key,tv,"$lte"));
+			
+			return queryMap("$and",ands);
+		}
+
+		return comparisonMap(key,value,"$eq");
+	}
+	
 	private static Map and(Function fun,Map<String,Object> p){
 		List<Object> ands = readListValue(fun,p);
 		if(Utils.isEmpty(ands))return null;
+		
+		if(ands.size() == 1){
+			Object mv = ands.get(0);
+			if(mv instanceof Map){
+				return (Map)mv;
+			}
+		}
 		
 		return queryMap("$and",ands);
 	}

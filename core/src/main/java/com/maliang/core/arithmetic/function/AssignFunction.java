@@ -138,6 +138,8 @@ public class AssignFunction {
     })
 	 * **/
 	public static Object update(Function function,Map<String,Object> params){
+		System.out.println("------- update ");
+		
 		String key = function.getKeySource();
 		key = key.substring(0,key.length()-".update".length());
 		if(Utils.isEmpty(key))return null;
@@ -197,16 +199,24 @@ public class AssignFunction {
 	}
 	
 	public static void main(String[] args) {
-		String s = "{a:{b:{b1:'aaa',b2:'bbb'},c:'222',e:{h:'aaaa',j:[1,3,5]}}}";
+		String sss = "addToParams({html:{body:{content:{body:{portlet:{title:{caption:aa.bb,icon:'aaa.jpg'}}}}}},"
+				+ "c:[html.body.content.body.portlet.title.update({caption:'香缇卡',icon:'cart.jpg'}),"
+				+ "print(html)]})";
+
+		String s2 = "addToParams({brand:{title:{caption:aa.bb,icon:'aaa.jpg'}},"
+				+ "c:[brand.title.update({caption:'香缇卡',icon:'cart.jpg'}),"
+				+ "print(brand)]})";
+		
+		String s = "addToParams({a:{b:{b1:'aaa',b2:'bbb'},c:'222',e:{h:'aaaa',j:[1,3,5]}},"
+				+ "c:[a.update({b:{tt:'111111',bb:'rrrrrr'},c:{c1:'c11111',c2:'c222222'},e:{e1:'addd',e2:'add222'}}),"
+				+ "print('---------'),print(a)]})";
 		Map<String,Object> params = new HashMap<String,Object>(); 
-		Object v = AE.execute(s,params);
+		Object v = AE.execute(sss,params);
 		
-		s = "a.b.update({tt:'111111',bb:'rrrrrr'})";
-		
-		params = (Map<String,Object>)v;
-		v = AE.execute(s,params);
-		
-		System.out.println(params);
+//		s = "[a.b.update({tt:'111111',bb:'rrrrrr'}),print('-------------'),print(a)]";
+//		
+//		params = (Map<String,Object>)v;
+//		v = AE.execute(s,params);
 	}
 	
 	public static Object execute(Function function,Map<String,Object> params){

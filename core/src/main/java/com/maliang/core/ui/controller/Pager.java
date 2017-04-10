@@ -7,7 +7,7 @@ public class Pager {
     private int totalRow; // 共多少行
     private int start;// 当前页起始行
     private int end;// 结束行
-    private int totalPage; // 共多少页
+    private int totalPage = -1; // 共多少页
 
     public int getCurPage() {
         return curPage;
@@ -22,6 +22,17 @@ public class Pager {
         
         end = start + pageSize > totalRow ? totalRow : start + pageSize;
         this.curPage = curPage;
+    }
+    
+    public void setCurPage(Object page) {
+    	if(page instanceof String){
+			try {
+				page = Integer.valueOf((String)page);
+				setCurPage((int)page);
+				return;
+			}catch(Exception e){}
+		}
+    	setCurPage(1);
     }
 
     public int getStart() {
@@ -49,23 +60,38 @@ public class Pager {
     	}
         this.pageSize = size;
     }
+    
+    public void setPageSize(Object size) {
+    	if(size instanceof String){
+			try {
+				size = Integer.valueOf((String)size);
+				setPageSize((int)size);
+				return;
+			}catch(Exception e){}
+		}
+    	setPageSize(PAGE_SIZE);
+    }
 
     public int getTotalRow() {
         return totalRow;
     }
 
     public void setTotalRow(int totalRow) {
-        totalPage = (totalRow + pageSize - 1) / pageSize;
         this.totalRow = totalRow;
+        this.reDo();
+    }
+
+    public int getTotalPage() {
+        return this.totalPage;
+    }
+    
+    private void reDo(){
+    	totalPage = (totalRow + pageSize - 1) / pageSize;
         if (totalPage < curPage) {
             curPage = totalPage;
             start = pageSize * (curPage - 1);
             end = totalRow;
         }
         end = start + pageSize > totalRow ? totalRow : start + pageSize;
-    }
-
-    public int getTotalPage() {
-        return this.totalPage;
     }
 }

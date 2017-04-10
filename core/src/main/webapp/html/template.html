@@ -22,6 +22,57 @@
 }
 
 
+/// edit product
+code : 
+addToParams({
+  c:[${G.login}],
+
+  product:db.Product.get(request.id),
+  posts:db.PostStrategy.search(),
+  c:if(not(product.pictures.size()>0)){product.pictures.set([''])},
+  bs:db.Business.search(),
+  c:each(bs){[
+    print('----- bs : ' + this.name),
+    bsName.set(this.name),
+    each(this.workflows){[
+      this.name.set(this.name+'('+bsName+')'),
+      print('----- ** flows : ' + this.name)
+    ]}
+  ]},
+})
+
+
+{
+  title: '±à¼­¡¾'+product.name+'¡¿',
+  data: ${data},
+  jsUrl:'/flows/js.htm?bid='+bid+'&fid='+fid,
+  ht:{
+    template:'${theme.metronic}',    
+    options:{
+      content: {
+        template:'${theme.pageContent}',
+        options:{
+          inputs:[
+            ['form', {id:'product',generator:'MetronicForm'}, [
+              ['$fid', '', 'hidden', 2],
+              ['$bid', '', 'hidden', bid],
+              ['id', '', 'hidden', product.id],
+              ['name', 'Ãû³Æ', 'text', product.name, '[n]'],
+              ['price', '¼Û¸ñ', 'text', product.price, '[n]'],
+              ['stock', '¿â´æ', 'text', product.stock, '[n]'],
+              ['orderStock', '¶©µ¥¿â´æ', 'text', product.orderStock, '[n]'],
+              ['pictures','ÕÕÆ¬',['list',null,each(product.pictures){[['', '', 'text', this, '[n]']]}],'','[n]'],
+              ['postage', 'ÓÊµÝ²ßÂÔ', 
+                  ['select',[{key:'',label:'Ä¬ÈÏ'}]+each(posts){{key:this.id,label:this.name}}], product.postage, '[n]'],
+              ['comments', 'ÆÀÂÛ', 'text', product.comments, '[n]'],
+              ['$submit', '', 'submit', '±£´æ', '[n]']
+            ]]
+          ]
+        }
+      }
+    }
+}}
+
 Metronic:{
 	Actions:function (options){
 		this.back = function(opts){

@@ -5,7 +5,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import com.maliang.core.arithmetic.AE;
 import com.maliang.core.arithmetic.ArithmeticExpression;
@@ -183,7 +182,10 @@ public class CollectionDao extends BasicDao {
 	 * **/
 	public List<Map<String, Object>> findByMap(Map<String, Object> query,
 			Map<String, Object> sort, Pager pg, String collName) {
-		return this.find(build(query), build(sort), pg, collName);
+		BasicDBObject bq = build(query);
+		bq = projectQuery(bq,collName);
+		
+		return this.find(bq, build(sort), pg, collName);
 	}
 
 	/***

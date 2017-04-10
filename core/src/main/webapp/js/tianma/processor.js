@@ -59,7 +59,7 @@ return Class;
 })();
 
 var HTMLGenerator = Class.extend({
-	inputTypes:["text","htmlEditor","hidden","between","radio","date","select","checkbox","button","submit","reset"],
+	inputTypes:["text","htmlEditor","hidden","between","radio","date","select","select2","checkbox","button","submit","reset"],
 	
 	isInput:function(tn){
 		return utils.hasName(this.inputTypes,tn);
@@ -73,16 +73,7 @@ var HTMLGenerator = Class.extend({
 		var curr = this;
 		
 		if($.isArray(opts)){
-			var els = [];
-			$.each(opts,function(){
-				var ce = curr.build(this);
-				if($.isArray(ce)){
-					els = els.concat(ce);
-				}else {
-					els.push(ce);
-				}
-			});
-			return els;
+			return curr.buildArray(opts);
 		}
 		
 		var type = opts && opts.type;
@@ -106,17 +97,46 @@ var HTMLGenerator = Class.extend({
 		if(type === "HT"){
 			return this.htmlTemplate(opts);
 		}
-		
-		if(type === "a"){
-			opts.tag = "a";
-			opts.type = undefined;
-		}
-		
+
 		if(type === "html"){
 			return this.html(opts);
 		}
+		
+		return this.htmlElement(opts);
+	},
+	
+	htmlElement:function(options){
+		var type = options && options.type;
+		if(type){
+			options.tag = type;
+			options.type = undefined;
+		}
+		
+		var body = null;
+		if(options && options.body){
+			body = this.build(options.body);
+			options.body = undefined;
+		}
 
-		return buildHtmlElement(opts);
+		var element = buildHtmlElement(options);
+		if(body){
+			element.append(body);
+		}
+		return element;
+	},
+	
+	buildArray:function(opts){
+		var curr = this;
+		var els = [];
+		$.each(opts,function(){
+			var ce = curr.build(this);
+			if($.isArray(ce)){
+				els = els.concat(ce);
+			}else {
+				els.push(ce);
+			}
+		});
+		return els;
 	},
 	
 	htmlTemplate:function(opts){
@@ -160,6 +180,7 @@ var HTMLGenerator = Class.extend({
 		return null;
 	},
 
+	
 	input:function(opts){
 		/**
 	     * {
@@ -708,15 +729,9 @@ var MGenerator = HTMLGenerator.extend({
 	    };
 	    
 	    this.full = function(ele,opts){
-	        if($.type(opts) == 'string'){
-	            ele.text(opts);
-	        }
-	        
 	        if($.isArray(opts)){
 	        	ele.append(this.build(opts));
-	        }
-	        
-	        if($.isPlainObject(opts)){
+	        }else if($.isPlainObject(opts)){
 	        	if(opts.type){
 	        		return ele.append(this.build(opts));
 	        	}
@@ -735,6 +750,8 @@ var MGenerator = HTMLGenerator.extend({
 	        	
 	        	var newOpts = utils.copy(opts,{},['type','text','html','class']);
 	            ele.attr(newOpts);
+	        }else {
+	            ele.text(opts);
 	        }
 	        return ele;
 	    };
@@ -770,7 +787,10 @@ var MGenerator = HTMLGenerator.extend({
 		        $.each(opts.filter,function(){
 		        	var td = $('<td />').appendTo(row);
 		        	var cfig = _.config.thead.filter;
-		        	if(this.type){
+		        	
+		        	if($.isArray(this)){
+		        		td.append(_.build(this));
+		        	}else if(this.type){
 		        		var isInput = _.isInput(this.type);
 		        		var ele = _.build(this);
 		        		if(isInput){
@@ -846,6 +866,23 @@ var MGenerator = HTMLGenerator.extend({
         return div;
 	},
 	
+	/**
+	 * <div class="select2-container form-control input-medium select2me" id="s2id_autogen5">
+		    <a href="javascript:void(0)" class="select2-choice select2-default" tabindex="-1"> 
+		        <span class="select2-chosen" id="select2-chosen-6">Select...</span>
+		        <abbr class="select2-search-choice-close"></abbr> 
+		        <span class="select2-arrow" role="presentation"><b role="presentation"></b></span>
+		    </a>
+		    <label for="s2id_autogen6" class="select2-offscreen"></label>
+		    <input class="select2-focusser select2-offscreen" type="text" aria-haspopup="true" role="button" aria-labelledby="select2-chosen-6" id="s2id_autogen6" />
+		</div>
+		<select class="form-control input-medium select2me select2-offscreen" data-placeholder="Select..." tabindex="-1" title="">
+		    <option value=""></option>
+		    <option value="AL">Alabama</option>
+		    <option value="WY">Wyoming</option>
+		</select>
+	 * 
+	 * **/
 	input:function(opts){
 		var curr = this;
 		
@@ -884,6 +921,17 @@ var MGenerator = HTMLGenerator.extend({
 	    	
 	    	return els;
 	    };
+	    
+	    this.select2 = function(opts){
+	    	opts.type = "select";
+	    	
+	    	var element = this._super(opts);
+	    	element.addClass("form-control input-medium select2me select2-offscreen");
+	    	element.attr("data-placeholder","Select...");
+	    	element.attr("tabindex","-1");
+
+	    	return element;
+	    };
 
 	    if(opts.type === "between"){
 	    	return this.between(opts);
@@ -891,6 +939,10 @@ var MGenerator = HTMLGenerator.extend({
 	    
 	    if(opts.type === "date"){
 	    	return this.date(opts);
+	    }
+	    
+	    if(opts.type == "select2"){
+	    	return this.select2(opts);
 	    }
 	    
 	    var input = this._super(opts);
@@ -909,12 +961,12 @@ var MGenerator = HTMLGenerator.extend({
 	
     paginate:function(opts){
     	this.toPage = function(pno){
-        	$("input[name='page.number']").val(pno);
-        	$("input[name='page.number']").trigger("click");
+        	$("input[name='page.page']").val(pno);
+        	$("input[name='page.page']").trigger("click");
         };
         
         this.validPage = function(pno){
-        	return pno > 0 && pno < opts.total;
+        	return pno >= 1 && pno <= opts.total;
         };
         
         this.initPageButton = function(pno,bnt){
