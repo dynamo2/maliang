@@ -55,6 +55,36 @@ function Utils(){
 	};
 	
 	/***
+	 * 将input.name转换成数组格式：
+	 *    如：provice.city 转换成 province.0.city
+	 * **/
+	this.toArrayName = function(name,arrayIndex){
+		if(!utils.isString(name))return;
+		
+		if(name.charAt(name.length-1) == '.'){
+			return name.substr(0,name.length-1);
+		}
+		
+		var n = '';
+		var ns = name.split(".");
+		if(ns.length > 1){
+			for(var i = 0; i<ns.length-1;i++){
+				if(n.length > 0){
+					n += '.';
+				}
+				n += ns[i];
+			}
+		}
+		
+		if(n.length > 0){
+			n += '.';
+		}
+		n += arrayIndex+'.'+ns[ns.length-1];
+		
+		return n;
+	};
+	
+	/***
 	 * 复制对象属性， exts：不操作的属性
 	 */
 	 this.copy = function (fromObj, toObj, exts) {
@@ -74,6 +104,23 @@ function Utils(){
 			toObj[k] = v;
 		 });
 		 return toObj;
+	};
+	
+	this.clone = function(obj){
+		var curr = this;
+		var newObj = obj;
+		if($.isArray(obj)){
+			newObj = [];
+			$.each(obj,function(){
+				newObj.push(curr.clone(this));
+			});
+		}
+		
+		if($.isPlainObject(obj)){
+			newObj = curr.copy(obj,null,null);
+		}
+		
+		return newObj;
 	};
 	
 	this.addEvent = function(element,eveName,funs){

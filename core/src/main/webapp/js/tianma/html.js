@@ -47,7 +47,7 @@
     		return true;
     	}
     	
-    	jObj.prop(key,value);
+    	jObj.attr(key,value);
     });
     
 	return jObj;

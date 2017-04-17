@@ -58,6 +58,24 @@ return Class;
 };
 })();
 
+function refreshTr(tr,options){
+	var tds = $("td",tr);
+
+	if($.isArray(options)){
+		for(var i = 0; i < tds.length && i < options.length; i++){
+			var td = $(tds[i]);
+			var opts = options[i];
+			
+			td.empty();
+			if($.isArray(opts) || $.isPlainObject(opts)){
+				td.append(generator.build(opts));
+			}else {
+				td.text(opts);
+			}
+		}
+	}
+}
+
 var HTMLGenerator = Class.extend({
 	inputTypes:["text","htmlEditor","hidden","between","radio","date","select","select2","checkbox","button","submit","reset"],
 	
@@ -70,6 +88,9 @@ var HTMLGenerator = Class.extend({
     },
 	
 	build:function(opts){
+		//if(!opts)return;
+		
+		
 		var curr = this;
 		
 		if($.isArray(opts)){
@@ -101,7 +122,6 @@ var HTMLGenerator = Class.extend({
 		if(type === "html"){
 			return this.html(opts);
 		}
-		
 		return this.htmlElement(opts);
 	},
 	
@@ -250,6 +270,14 @@ var MGenerator = HTMLGenerator.extend({
 			return this.ScrollableTable(opts);
 		}
 		
+		if(et === 'table'){
+			return this.table(opts);
+		}
+		
+		if(et === 'editTable'){
+			return this.editTable(opts);
+		}
+		
 		if(et === "paginate"){
 			return this.paginate(opts);
 		}
@@ -273,8 +301,90 @@ var MGenerator = HTMLGenerator.extend({
 		if(et === "form"){
 			return this.form(opts);
 		}
+		
+		if(et === "row"){
+			return this.row(opts);
+		}
+		
+		if(et === "rows"){
+			return this.rows(opts);
+		}
+		
+		if(et === "dialog"){
+			return this.dialog(opts);
+		}
 
 		return this._super(opts);
+	},
+	
+	/**
+	 * {
+	 * 		type:'dialog',
+	 * 		header:'',
+	 * 		body:{
+	 * 		},
+	 * 		buttons:{
+	 * 			'save':fun
+	 * 		}
+	 * }
+	 * **/
+	dialog:function(options){
+		var curr = this;
+		
+		var dialog = $('<div class="modal fade bs-modal-lg" id="dialog" tabindex="-1" role="dialog" aria-hidden="true">'
+				+'<div class="modal-dialog modal-lg">'
+					+'<div class="modal-content">'
+						+'<div class="modal-header">'
+							+'<button type="button" class="close" data-dismiss="modal" aria-hidden="true"></button>'
+							+'<h4 class="modal-title"></h4>'
+						+'</div>'
+						
+						+'<div class="modal-body">'
+						+'</div>'
+						
+						+'<div class="modal-footer">'
+							+'<button type="button" class="btn default" data-dismiss="modal">Close</button>'
+						+'</div>'
+						
+					+'</div>'
+				+'</div>'
+			+'</div>');
+
+		this.fullIn = function(element,options){
+			if(!element)return;
+			if(!options)return;
+			
+			if($.isArray(options) || $.isPlainObject(options)){
+				element.append(curr.build(options));
+			}else {
+				element.text(options);
+			}
+		};
+		
+		curr.fullIn($('.modal-title',dialog),options && options.header);
+		curr.fullIn($('.modal-body',dialog),options && options.body);
+		curr.fullIn($('.modal-footer',dialog),options && options.footer);
+		
+		if(options && options.buttons){
+			var bopts = options.buttons;
+			$.each(bopts,function(k,v){
+				var bnt = $('<button type="button" class="btn blue" />').text(k);
+				
+				if($.type(v) == 'function'){
+					bnt.click(v);
+				}else if($.type(v) === 'string'){
+					bnt.click(eval(v));
+				}
+				
+				$('.modal-footer',dialog).append(bnt);
+			});
+		}
+		
+		var newOpts = utils.copy(options,{},['type','header','body','footer']);
+		dialog.attr(newOpts);
+		dialog.prop(newOpts);
+		
+		return dialog;
 	},
 	
 	/*
@@ -412,7 +522,7 @@ var MGenerator = HTMLGenerator.extend({
 		if(options && options.action){
 			action = options.action;
 		}
-		var form = this.build(utils.copy(options,{tag:"form",action:action},['type','body']));
+		var form = this.build(utils.copy(options,{tag:"form",action:action,role:"form"},['type','body']));
 		if(options && options.body){
 			form.append(this.build(options.body));
 		}
@@ -652,6 +762,78 @@ var MGenerator = HTMLGenerator.extend({
 		return fbody;
 	},
 	
+	rows:function(options){
+		var curr = this;
+		var optsRows = options && options.rows;
+		var rowCss = options && options['row-css'];
+		
+		if($.isArray(optsRows)){
+			var elements = [];
+			
+			$.each(optsRows,function(){
+				var rowOpts = {type:'row'};
+				rowOpts.body = this;
+				
+				if(rowCss){
+					rowOpts.css = rowCss;
+				}
+				if(options && options.cols){
+					rowOpts.cols = options.cols;
+				}
+				
+				elements.push(curr.row(rowOpts));
+			});
+
+			return elements;
+		}
+		return null;
+	},
+	
+	/**
+	 * <div class="row static-info">
+    <div class="col-md-5 name">Order #:</div>
+    <div class="col-md-7 value">
+        12313232 <span class="label label-info label-sm">Email confirmation was sent </span>
+    </div>
+</div>
+	 * **/
+	row:function(options){
+		var curr = this;
+		
+		var row = $('<div class="row" style="margin-bottom:15px;" />');
+		if(options && options.css){
+			row.addClass(options.css);
+		}
+		
+		var body = options && options.body;
+		var cols = options && options.cols;
+
+		var idx = 0;
+		var defaultCol = 5;
+		if($.isArray(body)){
+			if(body.length > 0){
+				defaultCol = 12/body.length;
+			}
+			
+			$.each(body,function(){
+				var colClass = 'col-md-'+defaultCol;
+				if($.isArray(cols) && cols.length > idx){
+					colClass = 'col-md-'+cols[idx++];
+				}
+				
+				var divCol = $('<div />').addClass(colClass).appendTo(row);
+				
+				if($.type(this) === 'string'){
+					divCol.text(this);
+				}else {
+					divCol.append(curr.build(this));
+				}
+			});
+		}
+		
+		return row;
+	},
+	
 	portlet:function(options){
 		var curr = this;
 		
@@ -702,7 +884,96 @@ var MGenerator = HTMLGenerator.extend({
 		return pe.append(te).append(be);
 	},
 	
+	editTable:function (options){
+		var curr = this;
+		var dataIndex = 0;
+		var newDatas = [];
+		
+		this.toArrayName = function(options){
+			var isInput = curr.isInput(options && options.type);
+			if(isInput && options && options.name){
+				options.name = utils.toArrayName(options.name,dataIndex);
+				return;
+			}
+			
+			if($.isArray(options)){
+				$.each(options,function(){
+					curr.toArrayName(this);
+				});
+			}
+		};
+		
+		this.clearInputValue = function(options){
+			if($.isArray(options)){
+				$.each(options,function(){
+					curr.clearInputValue(this);
+				});
+			}
+			
+			var isInput = curr.isInput(options && options.type);
+			if(isInput && options && options.value){
+				options.value = null;
+				return;
+			}
+		};
+
+		if($.isArray(options && options.body)){
+			if(options.body.length > 0){
+				newDatas = utils.clone(options.body[0]);
+				curr.clearInputValue(newDatas);
+			}
+			$.each(options.body,function(){
+				curr.toArrayName(this);
+				dataIndex++;
+			});
+		}
+		
+		var table = this.table(options);
+		this.addButton = function(){
+			var addBnt = $("<button class='yellow btn' type='button' style='margin:5px;width:100px;'><i class='fa fa-plus'></i>新增</button>");
+			var tbody = $('tbody',table);
+			
+			addBnt.click(function(){
+				if(newDatas.length > 0){
+					var newOpts = utils.clone(newDatas);
+					curr.toArrayName(newOpts);
+					var row = $("<tr />").appendTo(tbody);
+					$.each(newOpts,function(){
+						$("<td />").append(curr.build(this)).appendTo(row);
+					});
+					
+					$('input:text:first',row).focus();
+					dataIndex++;
+				}
+			});
+			
+			$('thead',table).prepend(addBnt);
+		};
+		
+		this.deleteButton = function(){
+			var tbody = $('tbody',table);
+			var rows = $('tr',tbody);
+			$.each(rows,function(){
+				var delBnt = $("<button class='red btn' type='button'><i class='fa fa-remove'></i></button>");
+				($('<td />').append(delBnt)).appendTo($(this));
+				
+				delBnt.click(function(){
+					$(this).closest('tr').remove();
+				});
+			});
+		};
+		
+		this.addButton();
+		//this.deleteButton();
+
+		return table;
+	},
+	
 	ScrollableTable:function (options){
+		return this.table(options);
+	},
+	
+	table:function (options){
 	    var _ = this;
 	    
 	    this.table = function(opts){
@@ -865,24 +1136,8 @@ var MGenerator = HTMLGenerator.extend({
         
         return div;
 	},
-	
-	/**
-	 * <div class="select2-container form-control input-medium select2me" id="s2id_autogen5">
-		    <a href="javascript:void(0)" class="select2-choice select2-default" tabindex="-1"> 
-		        <span class="select2-chosen" id="select2-chosen-6">Select...</span>
-		        <abbr class="select2-search-choice-close"></abbr> 
-		        <span class="select2-arrow" role="presentation"><b role="presentation"></b></span>
-		    </a>
-		    <label for="s2id_autogen6" class="select2-offscreen"></label>
-		    <input class="select2-focusser select2-offscreen" type="text" aria-haspopup="true" role="button" aria-labelledby="select2-chosen-6" id="s2id_autogen6" />
-		</div>
-		<select class="form-control input-medium select2me select2-offscreen" data-placeholder="Select..." tabindex="-1" title="">
-		    <option value=""></option>
-		    <option value="AL">Alabama</option>
-		    <option value="WY">Wyoming</option>
-		</select>
-	 * 
-	 * **/
+
+
 	input:function(opts){
 		var curr = this;
 		

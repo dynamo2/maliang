@@ -82,8 +82,8 @@
 			});
 		}
 		
+		var generator = new MGenerator();
 		function newInit(){
-			var generator = new MGenerator();
 			var ele = generator.build(htmlCode);
 			if(ele){
 				$("body").append(ele);
