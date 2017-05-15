@@ -3,7 +3,7 @@ package com.maliang.core.arithmetic;
 
 /**
  * 
- * 执行<java::>内的内容，并用执行结果替换表达式
+ * 将<ht::XX>的内容替换成：<div id='htmlTemplate-XX' style='display:none' />
  * ***/
 public class HtmlTemplateReplacer extends Replacer {
 	public HtmlTemplateReplacer(String s){

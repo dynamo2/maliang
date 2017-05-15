@@ -40,7 +40,9 @@ public class WorkFlowController extends BasicController {
 			model.addAttribute("resultJson", resultJson);
 			return "/business/flow";
 		} catch (TurnToPage page) {
-			model.addAttribute("resultJson", json(page.getResult()));
+			String result = new HtmlTemplateReplacer(json(page.getResult())).replace(null);
+			
+			model.addAttribute("resultJson", result);
 			return "/business/flow";
 		} catch (TianmaException e) {
 			model.addAttribute("errorMsg", e.getMessage());
