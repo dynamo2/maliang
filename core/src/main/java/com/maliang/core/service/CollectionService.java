@@ -343,6 +343,15 @@ public class CollectionService {
 		}
 		
 		if("save".equals(method)){
+			if(isInner){
+				Map mval = new HashMap();
+				mval.put(innerName, value);
+				
+				System.out.println("------------- mval : " + mval);
+				this.save(mval);
+				return value;
+			}
+			
 			return this.save(value);
 		}
 		

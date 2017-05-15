@@ -9,6 +9,7 @@
 		<script src="../js/jquery-2.1.3.min.js"></script>
 		<script src="../js/jquery-ui.min.js"></script>
 		<script src="../js/jquery.simulate.js"></script>
+		<script src="/static/ace/src-noconflict/ace.js"></script>
 		
 		<!-- tianma -->
 		<script src="../js/tianma/component.js"></script>
@@ -29,9 +30,13 @@
 		var basicEditerDialog = null;
 		var workflowEditerDialog = null;
 		var blockEditerDialog = null;
+		//var aceEditor = null;
 		
 		$(function(){
 			init();
+			
+			aceEditor.init();
+			blockEditor.init();
 		});
 		
 		function refresh(json){
@@ -112,7 +117,7 @@
 			blockEditerDialog = $("#blockEditerDialog").dialog({
 				autoOpen: false,
 				modal:true,
-				width:1000,
+				width:'99%',
 				height:800,
 				buttons: {
 					"Save": function() {
@@ -163,6 +168,8 @@
 			});
 			
 			blockEditerDialog.dialog("open");
+			
+			$("#blockCodeDivLink > a").trigger('click');
 		}
 		
 		function initWorkflows(){
@@ -184,7 +191,7 @@
 			workflowEditerDialog = $("#workflowEditerDialog").dialog({
 				autoOpen: false,
 				modal:true,
-				width:1000,
+				width:'99%',
 				height:800,
 				buttons: {
 					"Save": function() {
@@ -196,6 +203,8 @@
 					}
 				  }
 				});
+			
+			
 			
 			$("#workflowTab").tabs();
 		}
@@ -229,6 +238,7 @@
 			$("#ajax").val(flow.ajax);
 			
 			$("#previewFlowLink").prop("href","/flows/flow.htm?bid="+business.id+"&fid="+flow.step);
+			$("#codeDivLink > a").trigger("click");
 		}
 		
 		function deleteBusiness(){
@@ -316,8 +326,8 @@
 		
 		#workflowEditerDialog textarea,
 		#blockEditerDialog textarea {
-			width:930px;
-			height:593px;
+			width:100%;
+			height:0px;
 		}
 		
 		#workflowEditerDialog input[type='text'],
@@ -329,6 +339,7 @@
 		#blockTab {
 			border:0px;
 			padding:0px;
+			width:100%;
 		}
 		
 		#workflowDiv,
@@ -344,8 +355,12 @@
 		}
 		
 		#formDialog textarea {
-			width:900px;
-			height:600px;
+			width:100%;
+			height:150px;
+		}
+		
+		.ui-tabs .ui-tabs-panel{
+			padding:5px 5px;
 		}
 		</style>
 		
@@ -366,8 +381,8 @@
 			<form id="blockEditForm">
 				<div id="blockTab">
 					<ul>
-						<li id="nameDivLink"><a href="#nameDiv">Name</a></li>
-						<li id="blockCodeDivLink"><a href="#blockCodeDiv">Code</a></li>
+						<li id="nameDivLink"><a href="#nameDiv" onclick="blockEditor.hide();">Name</a></li>
+						<li id="blockCodeDivLink"><a href="#blockCodeDiv" onclick="blockEditor.edit('blockCode');">Code</a></li>
 					</ul>
 					<div id="nameDiv">
 						<input type="hidden" name="business.blocks.id" id="blockId" />
@@ -386,22 +401,25 @@
 					</div>
 				</div>
 			</form>
+			
+			<div id="blockEditor" style="width:100%;height:620px;"></div>
 		<div>
 		
 		<div id="workflowEditerDialog" title="Workflow Editer">
 			<form id="workflowEditForm">
 				<div id="workflowTab">
 					<ul>
-						<li id="stepDivLink"><a href="#stepDiv">Step</a></li>
-						<li id="requestTypeDivLink"><a href="#requestTypeDiv">RequestType</a></li>
-						<li id="codeDivLink"><a href="#codeDiv">Code</a></li>
-						<li id="responseDivLink"><a href="#responseDiv">Response</a></li>
-						<li id="javaScriptDivLink"><a href="#javaScriptDiv">JavaScript</a></li>
-						<li id="ajaxDivLink"><a href="#ajaxDiv">Ajax</a></li>
+						<li id="stepDivLink"><a href="#stepDiv" onclick="aceEditor.hide();">Step</a></li>
+						<li id="requestTypeDivLink"><a href="#requestTypeDiv" onclick="aceEditor.edit('requestType');">RequestType</a></li>
+						<li id="codeDivLink"><a href="#codeDiv" onclick="aceEditor.edit('code');">Code</a></li>
+						<li id="responseDivLink"><a href="#responseDiv" onclick="aceEditor.edit('response');">Response</a></li>
+						<li id="javaScriptDivLink"><a href="#javaScriptDiv" onclick="aceEditor.edit('javaScript');">JavaScript</a></li>
+						<li id="ajaxDivLink"><a href="#ajaxDiv" onclick="aceEditor.edit('ajax');">Ajax</a></li>
+						<p><a id="previewFlowLink" style="margin-left:15px;" href="www.sohu.com" target="_blank">预览</a></p>
 					</ul>
 					<div id="stepDiv">
 						<input type="hidden" name="business.workflows.id" id="id" />
-						<p><a id="previewFlowLink" href="www.sohu.com" target="_blank">预览</a></p>
+						
 						<div>
 							<label>step:</label>
 							<input type="text" name="business.workflows.step" id="step" value="" />
@@ -430,10 +448,86 @@
 					</div>
 				</div>
 			</form>
+			
+			<div id="editor" style="width:100%;height:620px;"></div>
 		<div>
 	</body>
 	
 	<script>
+		var aceEditor = {
+			bindTextarea:null,
+			editor:null,
+			init:function(){
+				var _ = aceEditor;
+				
+				_.editor = ace.edit("editor");
+				_.editor.setTheme("ace/theme/twilight");
+				_.editor.session.setMode("ace/mode/javascript");
+				
+				_.editor.on("change",_.changeText);
+			},
+			edit:function(tid){
+				var _ = aceEditor;
+				_.bindTextarea = $("#"+tid);
+				
+				_.editor.setValue(_.bindTextarea.val());
+				_.bindTextarea.hide();
+				_.show();
+				_.editor.clearSelection();
+				_.editor.focus();
+				_.editor.moveCursorTo(0,0);
+			},
+			changeText:function(){
+				var _ = aceEditor;
+				if(_.bindTextarea){
+					_.bindTextarea.val(_.editor.getValue());
+				}
+			},
+			show:function(){
+				$("#editor").show();
+			},
+			hide:function(){
+				$("#editor").hide();
+			}
+		};
+		
+		var blockEditor = {
+				bindTextarea:null,
+				editor:null,
+				init:function(){
+					var _ = blockEditor;
+					
+					_.editor = ace.edit("blockEditor");
+					_.editor.setTheme("ace/theme/twilight");
+					_.editor.session.setMode("ace/mode/javascript");
+					
+					_.editor.on("change",_.changeText);
+				},
+				edit:function(tid){
+					var _ = blockEditor;
+					_.bindTextarea = $("#"+tid);
+					
+					_.editor.setValue(_.bindTextarea.val());
+					_.bindTextarea.hide();
+					_.show();
+					_.editor.clearSelection();
+					_.editor.focus();
+					_.editor.moveCursorTo(0,0);
+				},
+				changeText:function(){
+					var _ = blockEditor;
+					if(_.bindTextarea){
+						_.bindTextarea.val(_.editor.getValue());
+					}
+				},
+				show:function(){
+					$("#blockEditor").show();
+				},
+				hide:function(){
+					$("#blockEditor").hide();
+				}
+		};
+		
 		function initFormDialog(){
 			if($("#formDialog").size() == 0){
 				var dialog = $('<div id="formDialog" title="编辑"><div id="formDialogContent" /></div>');

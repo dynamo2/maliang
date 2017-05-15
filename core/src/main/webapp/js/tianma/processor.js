@@ -76,8 +76,12 @@ function refreshTr(tr,options){
 	}
 }
 
+function log(s){
+	console.log(s);
+}
+
 var HTMLGenerator = Class.extend({
-	inputTypes:["text","htmlEditor","hidden","between","radio","date","select","select2","checkbox","button","submit","reset"],
+	inputTypes:["text","textarea","number2","summernote","password","htmlEditor","hidden","between","radio","date","select","select2","checkbox","button","submit","reset"],
 	
 	isInput:function(tn){
 		return utils.hasName(this.inputTypes,tn);
@@ -88,13 +92,14 @@ var HTMLGenerator = Class.extend({
     },
 	
 	build:function(opts){
-		//if(!opts)return;
-		
-		
 		var curr = this;
 		
 		if($.isArray(opts)){
 			return curr.buildArray(opts);
+		}
+		
+		if($.type(opts) === 'string'){
+			return $("<span />").text(opts);
 		}
 		
 		var type = opts && opts.type;
@@ -168,7 +173,12 @@ var HTMLGenerator = Class.extend({
 				return;
 			}
 
-			var ve = g.build(v);
+			var ve = null;
+			if($.isArray(v) || $.isPlainObject(v)){
+				ve = g.build(v);
+			}else {
+				ve = $("<span />").text(v);
+			}
 			
 			var tempDiv = ele.find("#htmlTemplate-"+k);
 			tempDiv.after(ve);
@@ -270,6 +280,17 @@ var MGenerator = HTMLGenerator.extend({
 			return this.ScrollableTable(opts);
 		}
 		
+		if(et === 'bootstrapTable'){
+			return this.bootstrapTable(opts);
+		}
+
+		if(et === 'testTable'){
+			return $("<table id='testTable' data-height='428' data-toolbar='#toolbar' data-toggle='table' " +
+					"data-url='/static/json/table.json' />" +
+					"<tr><th data-field='id'>ID</th><th data-field='name'>Item Name</th><th data-field='price'>Item Price</th></tr>" +
+					"</table>");
+		}
+
 		if(et === 'table'){
 			return this.table(opts);
 		}
@@ -310,11 +331,130 @@ var MGenerator = HTMLGenerator.extend({
 			return this.rows(opts);
 		}
 		
-		if(et === "dialog"){
-			return this.dialog(opts);
+		if(et === "modal"){
+			return this.modal(opts);
+		}
+		
+		if(et === "tab"){
+			return this.tab(opts);
+		}
+		
+		if(et === "summernote"){
+			return this.summernote(opts);
 		}
 
 		return this._super(opts);
+	},
+	
+	summernote:function(options){
+		
+		$("head").append($('<link rel="stylesheet" type="text/css" href="/static/metronic/theme/assets/global/plugins/bootstrap-summernote/summernote.css">'));
+		//$("head").append($('<script src="/static/metronic/theme/assets/global/plugins/bootstrap-summernote/summernote.min.js" type="text/javascript"></script>'));
+		
+		var textarea = $("<textarea name='"+options.name+"' style='width:300px;height:200px;' />");
+		var element = $('<div name=summernote_"'+options.name+'" class=".summernote" >'+options.value+'</div>');
+		element.show("normal",function(){
+			textarea.hide();
+			
+			$(this).summernote({
+				height: 500,
+				focus:true
+			});
+			
+			$(this).on('summernote.blur', function() {
+				textarea.val($(this).summernote('code'));
+			});
+		});
+		
+		
+		return [textarea,element];
+	},
+	
+	tab:function(options){
+		var curr = this;
+		var tabs = options && options.tabs;
+		var ulNav = $('<ul class="nav nav-tabs" />');
+		var divContent = $('<div class="tab-content" />');
+		var dateTime = (new Date()).getTime();
+		var idx = 1;
+		
+		this.appendTab = function(tabOpts){
+			var cid = tabOpts.contentId;
+			if(!cid){
+				cid = dateTime+'_'+(idx++);
+			}
+			
+			var liNav = $('<li><a href="#'+cid+'" data-toggle="tab">'+tabOpts.nav+'</a></li>');
+			var divPane = $('<div class="tab-pane fade" id="'+cid+'" />');
+			this._fillIn(divPane,tabOpts.content);
+			
+			//active
+			if(tabOpts.active){
+				liNav.addClass('active');
+				divPane.addClass('active in');
+			}
+			
+			ulNav.append(liNav);
+			divContent.append(divPane);
+		};
+		
+		if($.isArray(tabs)){
+			$.each(tabs,function(){
+				curr.appendTab(this);
+			});
+		}else if($.isPlainObject(tabs)){
+			curr.appendTab(tabs);
+		}
+		
+		/**
+		 * autoActive
+		 * */
+		var autoActive = options && options.autoActive;
+		if(autoActive == null || autoActive == undefined){
+			autoActive = true;
+		}
+		if(autoActive){
+			var active = $('.active.in',divContent);
+			if(active.size() == 0){
+				var li = $('li:first',ulNav).addClass('active');
+				var pane = $('.tab-pane:first',divContent).addClass('active in');
+			}
+		}
+		
+		/**
+		 * layout:inline
+		 * **/
+		var inline = options && options.layout && options.layout === 'inline';
+		if(inline){
+			return $('<div class="tabbable-line" />').append([ulNav,divContent]);
+		}
+
+		return [ulNav,divContent];
+	},
+	
+	bootstrapTable:function(options){
+		console.log("bootstrapTable : ");
+		console.log(options);
+		
+		var tableOptions = utils.copy(options,null,['type']);
+		
+		var tt = $("<table />");
+		
+		if(!tt.bootstrapTable){
+			$("head").append($('<link rel="stylesheet" type="text/css" href="/static/bootstrap-table-master/src/bootstrap-table.css"/>'));
+			$("head").append("<script src='/static/bootstrap-table-master/src/bootstrap-table.js'></script>");
+			$("head").append("<script src='/static/bootstrap-table-master/src/extensions/editable/bootstrap-table-editable.js'></script>");
+			$("head").append("<script src='http://rawgit.com/vitalets/x-editable/master/dist/bootstrap3-editable/js/bootstrap-editable.js'></script>");
+			$("head").append("<script src='http://rawgit.com/hhurz/tableExport.jquery.plugin/master/tableExport.js'></script>");
+			
+			$("head").append("<script src='/static/bootstrap-table-master/src/extensions/export/bootstrap-table-export.js'></script>");
+			
+			
+		}
+		
+		tt.bootstrapTable(tableOptions);
+		
+		return tt;
 	},
 	
 	/**
@@ -328,10 +468,10 @@ var MGenerator = HTMLGenerator.extend({
 	 * 		}
 	 * }
 	 * **/
-	dialog:function(options){
+	modal:function(options){
 		var curr = this;
 		
-		var dialog = $('<div class="modal fade bs-modal-lg" id="dialog" tabindex="-1" role="dialog" aria-hidden="true">'
+		var $modal = $('<div class="modal fade bs-modal-lg" id="dialog" tabindex="-1" role="dialog" aria-hidden="true">'
 				+'<div class="modal-dialog modal-lg">'
 					+'<div class="modal-content">'
 						+'<div class="modal-header">'
@@ -361,9 +501,9 @@ var MGenerator = HTMLGenerator.extend({
 			}
 		};
 		
-		curr.fullIn($('.modal-title',dialog),options && options.header);
-		curr.fullIn($('.modal-body',dialog),options && options.body);
-		curr.fullIn($('.modal-footer',dialog),options && options.footer);
+		curr.fullIn($('.modal-title',$modal),options && options.header);
+		curr.fullIn($('.modal-body',$modal),options && options.body);
+		curr.fullIn($('.modal-footer',$modal),options && options.footer);
 		
 		if(options && options.buttons){
 			var bopts = options.buttons;
@@ -373,18 +513,22 @@ var MGenerator = HTMLGenerator.extend({
 				if($.type(v) == 'function'){
 					bnt.click(v);
 				}else if($.type(v) === 'string'){
-					bnt.click(eval(v));
+					try {
+						bnt.click(eval(v));
+					}catch(e){}
 				}
 				
-				$('.modal-footer',dialog).append(bnt);
+				$('.modal-footer',$modal).append(bnt);
 			});
 		}
 		
 		var newOpts = utils.copy(options,{},['type','header','body','footer']);
-		dialog.attr(newOpts);
-		dialog.prop(newOpts);
+		$modal.attr(newOpts);
+		$modal.prop(newOpts);
 		
-		return dialog;
+		
+		
+		return $modal;
 	},
 	
 	/*
@@ -618,7 +762,6 @@ var MGenerator = HTMLGenerator.extend({
 				label.append($('<span class="required"></span>').text(' * '));
 			}
 
-			
 			var opts = utils.copy(options,{},['label','cols']);
 			var inputDiv = curr.build(opts);
 			if(inputDiv){
@@ -765,7 +908,6 @@ var MGenerator = HTMLGenerator.extend({
 	rows:function(options){
 		var curr = this;
 		var optsRows = options && options.rows;
-		var rowCss = options && options['row-css'];
 		
 		if($.isArray(optsRows)){
 			var elements = [];
@@ -774,12 +916,8 @@ var MGenerator = HTMLGenerator.extend({
 				var rowOpts = {type:'row'};
 				rowOpts.body = this;
 				
-				if(rowCss){
-					rowOpts.css = rowCss;
-				}
-				if(options && options.cols){
-					rowOpts.cols = options.cols;
-				}
+				rowOpts.css = options && options['row-css'];
+				rowOpts.cols = options && options.cols;
 				
 				elements.push(curr.row(rowOpts));
 			});
@@ -800,38 +938,61 @@ var MGenerator = HTMLGenerator.extend({
 	row:function(options){
 		var curr = this;
 		
-		var row = $('<div class="row" style="margin-bottom:15px;" />');
+		var rowElement = $('<div class="row" style="margin-bottom:15px;" />');
 		if(options && options.css){
-			row.addClass(options.css);
+			rowElement.addClass(options.css);
 		}
 		
 		var body = options && options.body;
 		var cols = options && options.cols;
+		
+		this.fnColumnElement = function(col,columnBody){
+			var columnElement = $('<div />').addClass('col-md-'+col);
+			curr._fillIn(columnElement,columnBody);
+			return columnElement;
+		};
 
 		var idx = 0;
-		var defaultCol = 5;
+		var defaultCol = 1;
 		if($.isArray(body)){
 			if(body.length > 0){
 				defaultCol = 12/body.length;
 			}
 			
 			$.each(body,function(){
-				var colClass = 'col-md-'+defaultCol;
-				if($.isArray(cols) && cols.length > idx){
-					colClass = 'col-md-'+cols[idx++];
-				}
-				
-				var divCol = $('<div />').addClass(colClass).appendTo(row);
-				
-				if($.type(this) === 'string'){
-					divCol.text(this);
-				}else {
-					divCol.append(curr.build(this));
-				}
+				/**
+				 * col class: 'col-md-4'
+				 * **/
+				var col = (this && this.col) 
+							|| ($.isArray(cols) && cols.length > idx && cols[idx++])
+							|| defaultCol;
+
+				curr.fnColumnElement(col,this).appendTo(rowElement);
 			});
+		}else {
+			/**
+			 * col class: 'col-md-4'
+			 * **/
+			var col = (body && body.col) 
+						|| ($.isArray(cols) && cols.length > 0 && cols[0])
+						|| defaultCol;
+			
+			curr.fnColumnElement(col,body).appendTo(rowElement);
 		}
 		
-		return row;
+		return rowElement;
+	},
+	
+	_fillIn:function(element,childOptions){
+		if($.isArray(childOptions) || $.isPlainObject(childOptions)){
+			element.append(this.build(childOptions));
+		}else {
+			if(!childOptions){
+				childOptions = '';
+			}
+			element.text(childOptions);
+		}
+		return element;
 	},
 	
 	portlet:function(options){
@@ -970,6 +1131,9 @@ var MGenerator = HTMLGenerator.extend({
 	},
 	
 	ScrollableTable:function (options){
+		if(!(options && options.table && options.table['class'])){
+			options.table['class'] = "table table-striped table-bordered table-hover dataTable no-footer";
+		}
 		return this.table(options);
 	},
 	
@@ -997,6 +1161,11 @@ var MGenerator = HTMLGenerator.extend({
 	            });
 	        });
 	        return tbody;
+	    };
+	    
+	    this.tfoot = function(option){
+	    	var tfoot = $("<tfoot />");
+	    	var row = $("<tr />");
 	    };
 	    
 	    this.full = function(ele,opts){
@@ -1090,7 +1259,7 @@ var MGenerator = HTMLGenerator.extend({
 
 	    this.config = {
 	        "table":{
-	            "class":"table table-striped table-bordered table-hover dataTable no-footer",
+	            "class":"table table-hover table-bordered",
 	            "id":"datatable_products",
 	            "aria-describedby":"datatable_products_info",
 	            "role":"grid"
@@ -1151,6 +1320,84 @@ var MGenerator = HTMLGenerator.extend({
 	        return de;
 	    };
 	    
+	    
+	    /**
+	     * <div class="input-group">
+        <span class="input-group-btn">
+            <button class="btn red" type="button">-</button>
+        </span>
+        <input type="text" class="form-control">
+        <span class="input-group-btn">
+            <button class="btn red" type="button">+</button>
+        </span>
+    </div>
+	     * **/
+	    this.number2 = function(option){
+	    	var newOption = utils.copy(option,null,['type','range']);
+	    	newOption.type = 'text';
+	    	var textElement = this._super(newOption);
+	    	textElement.addClass('form-control');
+	    	
+	    	var min = option && option.min;
+	    	var max = option && option.max;
+	    	if(option && option.range && $.isArray(option.range) && option.range.length == 2){
+	    		if(!min){
+	    			min = option.range[0];
+	    		}
+	    		if(!max){
+	    			max = option.range[1];
+	    		}
+	    	}
+	    	
+	    	/**
+	    	 * minus button
+	    	 * **/
+	    	var minusSpan = $('<span class="input-group-btn"><button class="btn btn-default" type="button"> - </button></span>');
+	    	$("button",minusSpan).on("click",function(){
+	    		var val = Number(textElement.val());
+	    		if(isNaN(val)){
+	    			val = 1;
+	    		}else {
+	    			val--;
+	    		}
+	    		
+	    		if(min){
+		    		if(val < min) val = min;
+	    		}
+	    		if(max){
+	    			if(val > max) val = max;
+	    		}
+	    		
+	    		textElement.val(val);
+	    		textElement.trigger("change");
+	    	});
+	    	
+	    	/**
+	    	 * add button
+	    	 * **/
+	    	var addSpan = $('<span class="input-group-btn"><button class="btn btn-default" type="button">+</button></span>');
+	    	$("button",addSpan).on("click",function(){
+	    		var val = Number(textElement.val());
+	    		if(isNaN(val)){
+	    			val = 1;
+	    		}else {
+	    			val++;
+	    		}
+	    		
+	    		if(min){
+		    		if(val < min) val = min;
+	    		}
+	    		if(max){
+	    			if(val > max) val = max;
+	    		}
+	    		
+	    		textElement.val(val);
+	    		textElement.trigger("change");
+	    	});
+	    	
+	    	return $("<div class='input-group' />").append(minusSpan).append(textElement).append(addSpan);
+	    };
+	    
 	    /**
 	     * {
 	     * 	  type:'between',
@@ -1187,6 +1434,117 @@ var MGenerator = HTMLGenerator.extend({
 
 	    	return element;
 	    };
+	    
+	    this.defaultClass = function(ele){
+	    	if($.isArray(ele)){
+	    		$.each(ele,function(){
+	    			curr.defaultClass(this);
+	    		});
+	    	}else {
+	    		if(ele.is("button")){
+	        		ele.addClass("btn");
+	        	}else {
+	        		ele.addClass("form-control");
+	        	}
+	    	}
+	    };
+	    
+	    this.checkElement = function(options){
+	    	var newOpts = utils.copy(options,null,['icheck','layout']);
+	    	var element = this._super(newOpts);
+	    	
+	    	var goupDiv = $("<div class='input-group' />");
+	    	var layoutDiv = $("<div />").append(element);
+	    	goupDiv.append(layoutDiv);
+	    	
+	    	/**
+	    	 * layout
+	    	 * **/
+	    	var layout = options && options.layout;
+	    	if(layout === 'inline'){
+	    		layout = 'icheck-inline';
+	    	}else {
+	    		layout = 'icheck-list';
+	    	}
+	    	layoutDiv.addClass(layout);
+	    	
+	    	return goupDiv;
+	    }
+	    
+	    this.radio = function(options){
+	    	var ele = this.checkElement(options);
+	    	
+	    	if(options && options.icheck){
+	    		this.icheck($(':radio',ele),options.icheck);
+	    	}
+	    	
+	    	return ele;
+	    };
+	    
+	    this.checkbox = function(options){
+	    	var ele = this.checkElement(options);
+	    	
+	    	if(options && options.icheck){
+	    		this.icheck($(':checkbox',ele),options.icheck);
+	    	}
+	    	
+	        return ele;
+	    };
+	    
+	    this.icheck = function(check,options){
+	    	if(options){
+	    		check.addClass('icheck');
+	    		
+	    		if($().iCheck){
+	    			curr.doICheck(check,options);
+	    		}else {
+	    			$.getScript('/static/icheck-1.x/icheck.js').done(function(){
+		    			curr.doICheck(check,options);
+		    		});
+	    		}
+	    	}
+	    };
+	    
+	    this.doICheck = function(check,options){
+	    	$.each(check,function(){
+				var self = $(this);
+				
+				self.iCheck({
+			        checkboxClass : 'icheckbox_square-blue',
+			        radioClass : 'iradio_square-blue'
+				});
+				
+				if(options.events){
+    				$.each(options.events,function(eve,fun){
+    					self.on(eve,$.isFunction(fun)?fun:eval(fun));
+    				});
+    			}
+			});
+	    };
+
+	    this.summernote = function(options){
+			
+			$("head").append($('<link rel="stylesheet" type="text/css" href="/static/metronic/theme/assets/global/plugins/bootstrap-summernote/summernote.css">'));
+			//$("head").append($('<script src="/static/metronic/theme/assets/global/plugins/bootstrap-summernote/summernote.min.js" type="text/javascript"></script>'));
+			
+			options.type = "textarea";
+			if(!options.value)options.value = '';
+			
+			var textarea = this._super(options);
+			var element = $('<div name=summernote_"'+options.name+'" class=".summernote" >'+options.value+'</div>');
+			element.show("normal",function(){
+				textarea.hide();
+				
+				$(this).summernote({height: 300});
+				
+				$(this).on('summernote.blur', function() {
+					textarea.val($(this).summernote('code'));
+				});
+			});
+			
+			
+			return [textarea,element];
+		};
 
 	    if(opts.type === "between"){
 	    	return this.between(opts);
@@ -1200,12 +1558,28 @@ var MGenerator = HTMLGenerator.extend({
 	    	return this.select2(opts);
 	    }
 	    
+	    if(opts.type == "radio"){
+	    	return this.radio(opts);
+	    }
+	    
+	    if(opts.type == "checkbox"){
+	    	return this.checkbox(opts);
+	    }
+	    
+	    if(opts.type == "summernote"){
+	    	return this.summernote(opts);
+	    }
+	    
+	    if(opts.type == "htmlEditor"){
+	    	return this.summernote(opts);
+	    }
+	    
+	    if(opts.type == "number2"){
+	    	return this.number2(opts);
+	    }
+	    
 	    var input = this._super(opts);
-	    if(input.is("button")){
-    		input.addClass("btn");
-    	}else {
-    		input.addClass("form-control");
-    	}
+	    this.defaultClass(input);
 
 	    if(opts && opts.icon){
 	    	input.prepend($("<i class='fa fa-"+opts.icon+"' />"));

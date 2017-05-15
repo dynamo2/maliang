@@ -54,6 +54,12 @@ function Utils(){
 		return $.type(obj) === 'string';
 	};
 	
+	this.eq = function(v1,v2){
+		if(!v1 || !v2)return false;
+
+		return $.trim(v1.toString()) === $.trim(v2.toString());
+	};
+	
 	/***
 	 * 将input.name转换成数组格式：
 	 *    如：provice.city 转换成 province.0.city

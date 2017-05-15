@@ -66,7 +66,9 @@ public class WorkFlowController extends BasicController {
 	private String executeAjaxWorkFlow(Workflow flow, HttpServletRequest request) {
 		Map<String, Object> params = executeCode(flow, request);
 		Object ajaxMap = AE.execute(flow.getAjax(), params);
-		return this.json(ajaxMap);
+		String rs = this.json(ajaxMap);
+		System.out.println("------------- ajax result :" + rs);
+		return rs;
 	}
 	
 	private Workflow readWorkFlow(HttpServletRequest request) {

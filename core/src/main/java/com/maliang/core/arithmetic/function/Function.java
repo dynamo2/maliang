@@ -147,6 +147,14 @@ public class Function {
 			return AssignFunction.set(this, params);
 		}
 		
+		if("setIfNull".equalsIgnoreCase(key)){
+			return AssignFunction.setIfNull(this, params);
+		}
+		
+		if("setIfEmpty".equalsIgnoreCase(key)){
+			return AssignFunction.setIfEmpty(this, params);
+		}
+		
 		if("update".equalsIgnoreCase(key)){
 			return AssignFunction.update(this, params);
 		}
@@ -214,6 +222,10 @@ public class Function {
 		
 		if("each".equals(key)){
 			return Each.execute(this, params);
+		}
+		
+		if("eachUpdate".equals(key)){
+			return Each.eachUpdate(this, params);
 		}
 		
 		if("size".equals(key)){

@@ -99,6 +99,44 @@ function HtmlBuilder(){
 	};
 	
 	this.newRadio = function(data){
+		var eles = [];
+		var options = builder.formalizeSelectOptions(data.options);
+		$.each(options,function(){
+			var val = $.trim(this.key);
+			var radio = builder.newInput(data)
+				.prop("type","radio")
+				.val(val)
+				.prop("checked",utils.eq(val,data.value));
+			
+			eles.push($("<label />").append(radio).append(this.label));
+		});
+		
+		return eles;
+	};
+	
+	this.newCheckbox = function(data){
+		var eles = [];
+		var options = builder.formalizeSelectOptions(data.options);
+		var nidx = 0;
+		$.each(options,function(){
+			var val = $.trim(this.key);
+			var box = builder.newInput(data)
+						.val(val)
+						.prop("type","checkbox");
+			
+			if(utils.isString(data.value)){
+				box.prop("checked",utils.eq(val,data.value));
+			}else if($.isArray(data.value)){
+				box.prop("checked",$.inArray(val,data.value) >= 0);
+			}
+			
+			eles.push($("<label />").append(box).append(this.label));
+		});
+		
+		return eles;
+	};
+	
+	this.newRadio_bak = function(data){
 		var ul = builder.newBoxUL(data)
 					.addClass('ul-radio');
 		
@@ -119,7 +157,7 @@ function HtmlBuilder(){
 		return ul;
 	};
 	
-	this.newCheckbox = function(data){
+	this.newCheckbox_bak = function(data){
 		var ul = builder.newBoxUL(data)
 					.addClass('ul-checkbox');
 		
@@ -143,6 +181,8 @@ function HtmlBuilder(){
 		
 		return ul;
 	};
+	
+	
 	
 	this.formalizeSelectOptions = function(options){
 		if($.isPlainObject(options)){
@@ -233,11 +273,11 @@ function HtmlBuilder(){
 			options = {};
 		}
 		
-		return ele.prop(options);
+		return ele.prop(options) && ele.attr(options);
 	};
 	
 	this.newInput = function(data){
-		var input = $("<input></input>");
+		var input = $("<input />");
 		if(data){
 			input.prop("value",data.value)
 				.prop("type",data.type)
@@ -253,6 +293,9 @@ function HtmlBuilder(){
 					input.on(x,eval(fun));
 				}
 			}
+			
+			var newOpts = utils.copy(data,null,['options','value','type','name','class','events']);
+			input.attr(newOpts);
 		}
 		
 		return input;

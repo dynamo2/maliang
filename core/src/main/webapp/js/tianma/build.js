@@ -156,7 +156,7 @@ function ajax(reqData, doneFun) {
 		}
 	}
 
-	$.ajax('/business/ajax.htm', {
+	$.ajax('/flows/ajax.htm', {
 		data : reqData,
 		dataType : 'json',
 		type : 'POST',
@@ -172,11 +172,29 @@ function ajax(reqData, doneFun) {
 	});
 }
 
-function ajaxForm(formId, doneFun) {
-	var form = $("#" + formId);
-	var reqDatas = readFormDatas(form);
+//function ajaxForm(formId, doneFun) {
+//	var form = $("#" + formId);
+//	var reqDatas = readFormDatas(form);
+//
+//	ajax(reqDatas, doneFun);
+//}
 
-	ajax(reqDatas, doneFun);
+function ajaxForm(form, doneFun) {
+	$.ajax({
+	    cache:true,
+	    type:"POST",
+	    dataType : 'json',
+	    url:'/flows/ajax.htm',
+	    data:form.serialize(),
+	    async:false,
+	    success:doneFun
+	});
+	
+	
+	
+	//var reqDatas = readFormDatas(form);
+
+	//ajax(form.serialize(), doneFun);
 }
 
 function addChildren(parent, json) {

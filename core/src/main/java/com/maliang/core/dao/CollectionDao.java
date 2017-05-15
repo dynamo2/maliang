@@ -230,24 +230,21 @@ public class CollectionDao extends BasicDao {
 
 	public Map<String, Object> updateBySet(Map value, String collName) {
 		value = this.toDBModel(value, collName);
-		
-		System.out.println("updateBySet value : " + value);
 		/**
 		 * 执行触发器
 		 * **/
 		this.updateTrigger(value, collName);
-		
-		System.out.println("after trigger value : " + value);
-		
+
 		String id = (String) value.remove("id");
 		BasicDBObject query = this.getObjectId(id);
 
 		ObjectMetadata meta = this.metaDao.getByName(collName);
 		List<Map<String, BasicDBObject>> updates = new ArrayList<Map<String, BasicDBObject>>();
 		Map<String, Object> daoMap = buildUpdates(meta.getFields(), value,
-				null, updates, query);
+				null, updates, query,false);
+		
 		updates.add(buildSetUpdateMap(query, daoMap));
-
+		
 		DBCollection db = this.getDBCollection(collName);
 		DBObject result = null;
 		List<Map<Object,Object>> resultValueMap = new ArrayList<Map<Object,Object>>();

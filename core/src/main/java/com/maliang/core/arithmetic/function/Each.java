@@ -9,6 +9,7 @@ import java.util.Map;
 import com.maliang.core.arithmetic.AE;
 import com.maliang.core.arithmetic.ArithmeticExpression;
 import com.maliang.core.exception.Break;
+import com.maliang.core.util.Utils;
 
 public class Each {
 	public static void main(String[] args) {
@@ -20,11 +21,77 @@ public class Each {
 		System.out.println(val);
 	}
 	
+	public static List<Object> eachUpdate(Function function,Map<String,Object> params){
+		if(params == null)params = new HashMap<String,Object>();
+		
+		List<Object> resultList = new ArrayList<Object>();
+		
+		Object value = null;
+		if(function.useKeyValue()){
+			value = function.getKeyValue();
+		}else {
+			value = (Object)function.executeExpression(params);
+		}
+		
+		if(value == null){
+			return resultList;
+		}
+		
+		if(Utils.isArray(value)){
+			value = Utils.toArray(value);
+		}
+		if(!(value instanceof Object[])){
+			throw new RuntimeException("Error parameter to eachUpdate() function");
+		}
+		
+		Map<String,Object> eachParams = new HashMap<String,Object>();
+		eachParams.putAll(params);
+		Function.pushThis(eachParams);
+		
+		int i = 0;
+		boolean isBreak = false;
+		for(Object data : (Object[])value){
+			if(data == null){
+				continue;
+			}
+
+			Object oldVal = data;
+			if(!function.isEmptyBody()){
+				eachParams.put("this", data);
+				eachParams.put("EACH_CURRENT_INDEX", i);
+
+				try {
+					Object newVal = AE.execute(function.getBody(), eachParams);
+					if(oldVal == null || !(oldVal instanceof Map) 
+							|| !(newVal instanceof Map)){
+						oldVal = newVal;
+					}else {
+						AssignFunction.merge((Map<String,Object>)oldVal, (Map<String,Object>)newVal);
+					}
+				}catch(Break be){
+					isBreak = true;
+				}
+			}
+			((Object[])value)[i] = oldVal;
+			
+			i++;
+			if(isBreak)break;
+		}
+		
+		return Utils.toList(value);
+	}
+	
 	public static List<Object> execute(Function function,Map<String,Object> params){
 		if(params == null)params = new HashMap<String,Object>();
 		
 		List<Object> resultList = new ArrayList<Object>();
-		Object value = function.executeExpression(params);
+		Object value = null;
+		if(function.useKeyValue()){
+			value = function.getKeyValue();
+		}else {
+			value = (Object)function.executeExpression(params);
+		}
+		
 		if(value == null){
 			return resultList;
 		}

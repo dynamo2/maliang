@@ -11,14 +11,34 @@ import com.maliang.core.util.Utils;
 
 public class AssignFunction {
 	public static Object set(Function function,Map<String,Object> params){
-		String key = function.getKeySource();
-		key = key.substring(0,key.length()-".set".length());
+		String key = getKey(function,params,".set");
+		return set(function,key,params,true);
+	}
+	
+	public static Object setIfNull(Function function,Map<String,Object> params){
+		String key = getKey(function,params,".setIfNull");
 		
-		if(!Utils.isEmpty(key)){
-			Object newVal = function.executeExpression(params);
+		Object val = MapHelper.readValue(params, key);
+		return set(function,key,params,val == null);
+	}
+	
+	public static Object setIfEmpty(Function function,Map<String,Object> params){
+		String key = getKey(function,params,".setIfEmpty");
+		
+		Object val = MapHelper.readValue(params, key);
+		return set(function,key,params,Utils.isEmpty(val));
+	}
+	
+	private static String getKey(Function function,Map<String,Object> params,String keywords){
+		String key = function.getKeySource();
+		return key.substring(0,key.length()-keywords.length());
+	}
+	
+	private static Object set(Function fun,String key,Map<String,Object> params,boolean doSet){
+		if(doSet && !Utils.isEmpty(key)){
+			Object newVal = fun.executeExpression(params);
 			return set(key,newVal,params);
 		}
-		
 		
 		return null;
 	}
@@ -154,7 +174,7 @@ public class AssignFunction {
 		return merge((Map<String,Object>)oldVal,(Map<String,Object>) newVal);
 	}
 	
-	private static Map<String,Object> merge(Map<String,Object> left,Map<String,Object> right){
+	protected static Map<String,Object> merge(Map<String,Object> left,Map<String,Object> right){
 		if(!Utils.isEmpty(right)){
 			for(String k:right.keySet()){
 				Object lv = left.get(k);

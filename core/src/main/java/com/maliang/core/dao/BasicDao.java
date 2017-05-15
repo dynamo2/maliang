@@ -210,18 +210,37 @@ public class BasicDao extends AbstractDao{
 		return daoMap;
 	}
 	
+	/**
+	 * 关于内联的“array.innerObject”类型的更新：
+	 * 第一层array的更新：
+	 * 	1. 新数据，使用$push插入
+	 *  2. 旧数据，逐条采用$set:array.field方式更新
+	 *  例子：Province.cities.update([{city:'杭州',zipCode:'310000',id:1},{city:'金华',zipCode:'320000',id:2}])
+	 *  更新代码： $set:[{Province.cities.$.city:'杭州'},{Province.cities.$.zipCode:'310000'}]
+	 *            $query:{id:1}
+	 *            $set:[{Province.cities.$.city:'金华'},{Province.cities.$.zipCode:'320000'}]
+	 *            $query:{id:2}
+	 * 多层array的更新：
+	 *  1. 使用$set:parent.arrayField方式更新
+	 *  例子:Province.cities.update({city:'杭州',id:1,counties:[{id:11,county:'上城区'},{id:12,county:'下城区'}]})
+	 *  更新代码: $set:[{Province.cities.$.city:'杭州'},
+	 *  					{Province.cities.$.counties:[{id:11,county:'上城区'},{id:12,county:'下城区'}]
+	 *  			   }]
+	 *  		  $query:{id:1}
+	 * **/
 	protected static Map<String,Object> buildUpdates(List<ObjectField> fields,Map<String,Object> innMap,
-			String prefix,List<Map<String,BasicDBObject>> updates,BasicDBObject updateQuery){
+			String prefix,List<Map<String,BasicDBObject>> updates,BasicDBObject updateQuery,boolean multilevelArray){
 		
 		Map<String,Object> daoMap = new HashMap<String,Object>();
 		String preName = "";
-		if(prefix != null && prefix.trim().length() > 0){
+		if(!StringUtil.isEmpty(prefix)){
 			preName = prefix+".";
 		}
 		
 		for(ObjectField ff : fields){
 			if(!innMap.containsKey(ff.getName()))continue;
 			
+			boolean mlevel = multilevelArray;
 			String key = preName+ff.getName();
 			Object value = innMap.get(ff.getName());
 			
@@ -229,20 +248,25 @@ public class BasicDao extends AbstractDao{
 				if(value != null && value instanceof Map && ((Map)value).size() > 0){
 					Map<String,Object> valMap = (Map<String,Object>)value;
 
-					Map<String,Object> m = buildUpdates(ff.getFields(),(Map<String,Object>)value,key,updates,updateQuery);
+					Map<String,Object> m = buildUpdates(ff.getFields(),(Map<String,Object>)value,key,updates,updateQuery,mlevel);
 					daoMap.putAll(m);
 				}
 			}else if(FieldType.ARRAY.is(ff.getType()) && FieldType.INNER_COLLECTION.is(ff.getElementType())){
+				if(multilevelArray){
+					daoMap.put(key, value);
+					continue;
+				}
+				
 				if(value != null && value instanceof List && ((List)value).size() > 0){
 					List<Map<String,Object>> valList = (List<Map<String,Object>>)value;
 					for(Map<String,Object> valMap:valList){
-						buildInnerUpdates(valMap,ff,key,updates,updateQuery);
+						buildArrayUpdates(valMap,ff,key,updates,updateQuery);
 					}
 				}else if(value != null && value instanceof Map){
 					Map<String,Object> valMap = (Map<String,Object>)value;
 					
 					if(valMap.size() > 0){
-						buildInnerUpdates(valMap,ff,key,updates,updateQuery);
+						buildArrayUpdates(valMap,ff,key,updates,updateQuery);
 					}
 				}
 			}else {
@@ -253,7 +277,7 @@ public class BasicDao extends AbstractDao{
 		return daoMap;
 	}
 	
-	protected static void buildInnerUpdates(Map<String,Object> valMap,ObjectField innerField,String fieldKey,
+	protected static void buildArrayUpdates(Map<String,Object> valMap,ObjectField innerField,String fieldKey,
 			List<Map<String,BasicDBObject>> updates,BasicDBObject updateQuery){
 		if(valMap == null)return;
 		
@@ -267,7 +291,7 @@ public class BasicDao extends AbstractDao{
 				currQuery = new BasicDBObject(fieldKey +"._id",new ObjectId(id));
 			}
 
-			Map<String,Object> updMap = buildUpdates(innerField.getFields(),updateMap,fieldKey+".$",updates,currQuery);
+			Map<String,Object> updMap = buildUpdates(innerField.getFields(),updateMap,fieldKey+".$",updates,currQuery,true);
 			Map<String,BasicDBObject> dbUpdateMap = buildSetUpdateMap(currQuery,updMap);
 			dbUpdateMap.put("value", new BasicDBObject(valMap));
 			
