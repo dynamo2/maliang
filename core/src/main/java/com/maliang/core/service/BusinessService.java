@@ -4,42 +4,14 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import net.sf.json.JSONObject;
-
 import com.maliang.core.arithmetic.AE;
-import com.maliang.core.arithmetic.ArithmeticExpression;
-import com.maliang.core.arithmetic.HtmlTemplateReplacer;
 import com.maliang.core.dao.BusinessDao;
 import com.maliang.core.model.Block;
 import com.maliang.core.model.Business;
 import com.maliang.core.model.Workflow;
-import com.maliang.core.util.Utils;
 
 public class BusinessService {
 	BusinessDao businessDao = new BusinessDao();
-	
-	public Object business2(Map<String,Object> params){
-		String key = (String)MapHelper.readValue(params,"bid");
-		Business business = null;
-		if(key != null && !key.isEmpty()){
-			business = this.businessDao.getByID(key);
-		}
-		
-		if(business == null){
-			key = (String)MapHelper.readValue(params,"bn");
-			business = this.businessDao.getByName(key);
-		}
-		
-		int fid = (Integer)MapHelper.readValue(params,"fid",-1);
-		Workflow flow = business.workFlow(fid);
-		
-		
-		Object responseMap = AE.execute(flow.getResponse(),params);
-		String response = JSONObject.fromObject(responseMap).toString();
-
-		response = this.readBlock(response,business.getUniqueCode(),Block.TYPE_HTML);
-		return new HtmlTemplateReplacer(response).replace(null);
-	}
 	
 	public Object business(Map<String,Object> params){
 		String key = (String)MapHelper.readValue(params,"bid");
