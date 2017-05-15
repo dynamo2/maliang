@@ -1050,6 +1050,7 @@ var MGenerator = HTMLGenerator.extend({
 		var dataIndex = 0;
 		var newDatas = [];
 		
+		
 		this.toArrayName = function(options){
 			var isInput = curr.isInput(options && options.type);
 			if(isInput && options && options.name){
@@ -1148,6 +1149,10 @@ var MGenerator = HTMLGenerator.extend({
 	        table.append(this.thead(opts.head));
 	        table.append(this.tbody(opts.body));
 	        
+	        if(opts.foot){
+	        	table.append(this.tfoot(opts.foot));
+	        }
+	        
 	        return table;
 	    };
 	    
@@ -1165,7 +1170,12 @@ var MGenerator = HTMLGenerator.extend({
 	    
 	    this.tfoot = function(option){
 	    	var tfoot = $("<tfoot />");
-	    	var row = $("<tr />");
+	    	var row = $("<tr />").appendTo(tfoot);
+	    	
+	    	$.each(option,function(){
+	    		_.full($("<td />"),this).appendTo(row);
+	    	});
+	    	return tfoot;
 	    };
 	    
 	    this.full = function(ele,opts){
@@ -1182,6 +1192,8 @@ var MGenerator = HTMLGenerator.extend({
 	        	
 	        	if($.isPlainObject(opts.html)){
 	        		ele.append(this.build(opts.html));
+	        	}else if($.type(opts.html) === 'string'){
+	        		ele.html(opts.html);
 	        	}
 	        	
 	        	if(opts.class){
@@ -1260,7 +1272,6 @@ var MGenerator = HTMLGenerator.extend({
 	    this.config = {
 	        "table":{
 	            "class":"table table-hover table-bordered",
-	            "id":"datatable_products",
 	            "aria-describedby":"datatable_products_info",
 	            "role":"grid"
 	        },
