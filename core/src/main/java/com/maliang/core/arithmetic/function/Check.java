@@ -24,21 +24,25 @@ public class Check {
 	}
 	
 	public static Boolean isNull(Function function,Map<String,Object> params){
-		Object obj = (Object)function.executeExpression(params);
-		return obj == null;
+		return getValue(function,params) == null;
 	}
 	
 	public static Boolean notNull(Function function,Map<String,Object> params){
-		Object obj = (Object)function.executeExpression(params);
-		
-		return obj != null;
+		return getValue(function,params) != null;
+	}
+	
+	private static Object getValue(Function fun,Map<String,Object> params){
+		if(fun.useKeyValue()){
+			return fun.getKeyValue();
+		}else {
+			return fun.executeExpression(params);
+		}
 	}
 	
 	public static Boolean not(Function function,Map<String,Object> params){
-		Object obj = (Object)function.executeExpression(params);
-		
-		if(obj instanceof Boolean){
-			return !((Boolean)obj);
+		Object val = getValue(function,params);
+		if(val instanceof Boolean){
+			return !((Boolean)val);
 		}
 		
 		return false;
