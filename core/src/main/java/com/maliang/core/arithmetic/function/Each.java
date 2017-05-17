@@ -105,11 +105,10 @@ public class Each {
 		
 		Map<String,Object> eachParams = new HashMap<String,Object>();
 		eachParams.putAll(params);
-		
-		//eachParams = params;
+		AssignFunction.pushWholeVariable(eachParams, params);
 
 		Function.pushThis(eachParams);
-		//FunctionBody body = FunctionBody.readBody(function);
+		
 		Object[] dataList = (Object[])value;
 		int i = 0;
 		boolean isBreak = false;
@@ -124,11 +123,10 @@ public class Each {
 				eachParams.put("EACH_CURRENT_INDEX", i++);
 
 				try {
-					v = ArithmeticExpression.execute(function.getBody(), eachParams);
+					v = AE.execute(function.getBody(), eachParams);
 				}catch(Break be){
 					isBreak = true;
 				}
-				
 			}
 			resultList.add(v);
 			

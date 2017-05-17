@@ -10,6 +10,7 @@ import com.maliang.core.service.MapHelper;
 import com.maliang.core.util.Utils;
 
 public class AssignFunction {
+	public static String WHOLE_VAR = "_WHOLE_VARIABLE_";
 	public static Object set(Function function,Map<String,Object> params){
 		String key = getKey(function,params,".set");
 		return set(function,key,params,true);
@@ -59,10 +60,33 @@ public class AssignFunction {
 			}
 			
 			parent.put(names[names.length-1],newVal);
+			
+			/***
+			 * 赋值到全局变量中
+			 * **/
+			Object wholeVal = params.get(WHOLE_VAR);
+			if(wholeVal != null && wholeVal instanceof Map){
+				set(key,newVal,(Map<String,Object> )wholeVal);
+			}
+			
 			return newVal;
 		}
 		
 		return null;
+	}
+	
+	public static void pushWholeVariable(Map<String,Object> pushedParams,Map<String,Object> params){
+		if(pushedParams == null || params == null){
+			return;
+		}
+		
+		Map<String,Object> wholeParams = params;
+		Object wholeVal = params.get(WHOLE_VAR);
+		if(wholeVal != null && wholeVal instanceof Map){
+			wholeParams = (Map<String,Object>)wholeVal;
+		}
+		
+		pushedParams.put(AssignFunction.WHOLE_VAR, wholeParams);
 	}
 	
 	/***
