@@ -81,7 +81,13 @@ public class AbstractDao  {
 				return dao.findOne(new BasicDBObject("subprojects._id",bpro.getId()));
 			}
 		}
-		return null;
+		
+		Project testProject = new Project();
+		testProject.setKey("EB");
+		testProject.setId(new ObjectId("583d197675f52cd7f03a78dc"));
+		return testProject;
+		
+		//return null;
 	}
 	
 	public void renameCollection(String collName,String newName){

@@ -24,15 +24,23 @@ public class Pager {
         this.curPage = curPage;
     }
     
-    public void setCurPage(Object page) {
-    	if(page instanceof String){
-			try {
-				page = Integer.valueOf((String)page);
-				setCurPage((int)page);
-				return;
-			}catch(Exception e){}
-		}
-    	setCurPage(1);
+    public void setCurPage(Object pageNo) {
+    	int intVal = intValue(pageNo,1);
+    	setCurPage(intVal);
+    }
+    
+    private int intValue(Object val,int defaultVal){
+    	if(val != null){
+    		if(val instanceof Integer){
+    			return ((Integer)val).intValue();
+        	}else if(val instanceof String){
+				try {
+					return ((Integer)Integer.valueOf((String)val)).intValue();
+				}catch(Exception e){
+				}
+			}
+    	}
+    	return defaultVal;
     }
 
     public int getStart() {
@@ -62,14 +70,8 @@ public class Pager {
     }
     
     public void setPageSize(Object size) {
-    	if(size instanceof String){
-			try {
-				size = Integer.valueOf((String)size);
-				setPageSize((int)size);
-				return;
-			}catch(Exception e){}
-		}
-    	setPageSize(PAGE_SIZE);
+    	int intVal = intValue(size,PAGE_SIZE);
+    	setPageSize(intVal);
     }
 
     public int getTotalRow() {

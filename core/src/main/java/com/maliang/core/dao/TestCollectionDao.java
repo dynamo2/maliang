@@ -6,12 +6,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.bson.types.ObjectId;
+
 import com.maliang.core.arithmetic.AE;
 import com.maliang.core.arithmetic.ArithmeticExpression;
 import com.maliang.core.arithmetic.calculator.DateCalculator;
-import com.maliang.core.service.MapHelper;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
+import com.mongodb.DBObject;
 
 public class TestCollectionDao extends CollectionDao {
 	public static void main(String[] args) {
@@ -31,12 +33,82 @@ public class TestCollectionDao extends CollectionDao {
 //		
 //		System.out.println(consignee);
 		
-		String s = "db.User.aggregate([{$match:{consignees.default:111}},"
-				+ "{$unwind :{path:'$consignees'}},"
-				+ "{$match:{consignees.default:111}},"
-				+ "{$project:{consignees.consignee:1,consignees.default:1,consignees._id:1,cgnIndex:1,_id:0}}])";
+//		String s = "db.User.aggregate([{$match:{consignees.default:111}},"
+//				+ "{$unwind :{path:'$consignees'}},"
+//				+ "{$match:{consignees.default:111}},"
+//				+ "{$project:{consignees.consignee:1,consignees.default:1,consignees._id:1,cgnIndex:1,_id:0}}])";
+//		Object v = AE.execute(s);
+//		System.out.println(v);
+		
+		
+		testPull();
+	}
+	
+	private static void testPull(){
+		ObjectId queryId = new ObjectId("5911368ce14fbac8c348fcc7");
+		ObjectId itemsId = new ObjectId("591d55dac39fd842416810e4");
+		
+		CollectionDao dao = new CollectionDao();
+		DBCollection db = dao.getDBCollection("Cart");
+		
+		BasicDBObject query = new BasicDBObject("items._id",queryId);
+		DBObject result = db.findOne(query);
+		
+		System.out.println("result : " + result);
+		
+		BasicDBObject pull = new BasicDBObject("$pull",new BasicDBObject("items",new BasicDBObject("_id",itemsId)));
+		db.update(query, pull);
+		
+//		dao.getDBCollection("").updateMulti(query,
+//				new BasicDBObject("$pull", innerName+".$"));
+	}
+	
+	/***
+	 * db.Cart.items.page({
+      page:request.page,
+      match:{user:user.id},
+      query:'',
+      order:'',
+  })
+  
+  aggregateOne
+  
+  piple:[],
+  
+  
+  db.Cart.page({
+  	match:{},
+  	unwind:{}
+  })
+	 * **/
+	private static void testPage(){
+		Map<String,Object> params = new HashMap<String,Object>();
+		
+		String s = "db.User.get({name:'ww'})";
 		Object v = AE.execute(s);
-		System.out.println(v);
+		params.put("user",v);
+		
+		s = "db.Product.search(db.like({name:'AQ'}))";
+		v = AE.execute(s);
+		params.put("products",v);
+		
+		//System.out.println("----- products : " + MapHelper.readValue(v, "id"));
+//		
+//		s = "db.Cart.items.page({})";
+		
+		
+		String ss = "db.Cart.items.page({"
+				+ "match:{user:user.id},"
+				+ "query:db.gte({items.num:1}),"
+				+ "page:{page:1,pageSize:2}"
+				+ "})";
+		
+		//ss = "db.Cart.aggregate([{$unwind :'$items'}])";
+		Object val = AE.execute(ss,params);
+		
+		//System.out.println("----- val : " + MapHelper.readValue(val, "size"));
+		//System.out.println("----- val : " + ((List)val).size());
+		System.out.println("----- val : " + val);
 	}
 	
 	private static Map<String,Object> me(String s){

@@ -13,6 +13,7 @@ import com.maliang.core.arithmetic.ArithmeticExpression;
 import com.maliang.core.dao.CollectionDao;
 import com.maliang.core.dao.ObjectMetadataDao;
 import com.maliang.core.ui.controller.Pager;
+import com.maliang.core.util.StringUtil;
 import com.maliang.core.util.Utils;
 
 public class CollectionService {
@@ -123,6 +124,19 @@ public class CollectionService {
 		//return this.collectionDao.findByMap(query, this.collection);
 	}
 	
+	public Object page(Map<String,Object> match,Map<String,Object> query,Map<String,Object> sort,Pager page,String innerName){
+		List<Map<String,Object>> datas =  this.collectionDao.findByMap(match,query,sort,page,this.collection,innerName);
+		
+		Map<String,Object> pageMap = new HashMap<String,Object>();
+		pageMap.put("currentPage",page.getCurPage());
+		pageMap.put("totalRows",page.getTotalRow());
+		pageMap.put("pageSize",page.getPageSize());
+		pageMap.put("totalPage",page.getTotalPage());
+		pageMap.put("datas",datas);
+		
+		return pageMap;
+	}
+	
 	public List<Map<String,Object>> aggregate(List<Map<String,Object>> query){
 		return this.collectionDao.aggregateByMap(query, this.collection);
 	}
@@ -224,13 +238,14 @@ public class CollectionService {
 		return this.collection.contains(".");
 	}
 	
-	private void deleteOneArrayInner(String innerName,String id){
-		Map query = this.collectionDao.buildInnerGetMap(innerName, id);
-		
-		Map delMap = new HashMap();
-		delMap.put(innerName+".$", null);
-		
-		this.update(query,delMap);
+	private int deleteOneArrayInner(String innerName,String id){
+		return this.collectionDao.deleteArrayDocument(this.collection, innerName, id);
+	}
+	
+	private Map<String,Object> newMap(String key,Object val){
+		Map<String,Object> map = new HashMap<String,Object>();
+		map.put(key,val);
+		return map;
 	}
 	
 	
@@ -372,19 +387,23 @@ public class CollectionService {
 			Pager page = new Pager();
 			Map<String,Object> sort = null;
 			Map<String,Object> query = null;
+			Map<String,Object> match = null;
 			if(value != null && value instanceof Map){
 				v = (Map)value;
 
 				page.setPageSize(MapHelper.readValue(v,"page.pageSize",Pager.PAGE_SIZE));
 				page.setCurPage(MapHelper.readValue(v,"page.page",1));
-				//page.setStart((Integer)MapHelper.readValue(v,"page.start",0));
-				
-				
+
+				match = (Map<String,Object>)MapHelper.readValue(v,"match");
 				query = (Map<String,Object>)MapHelper.readValue(v,"query");
 				sort = (Map<String,Object>)MapHelper.readValue(v,"sort");
 			}
 
-			return this.find(query,sort,page);
+			if(StringUtil.isEmpty(innerName)){
+				return this.find(query,sort,page);
+			}
+			
+			return this.page(match,query,sort,page,innerName);
 		}
 
 		/*

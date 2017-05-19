@@ -702,11 +702,15 @@ public class BasicDao extends AbstractDao{
 	}
 	
 	protected Map<String,Object> toMap(DBObject doc,String collName,String innerName){
+		if(doc == null){
+			return null;
+		}
+		
 		ObjectMetadata metedata = this.metaDao.getByName(collName);
 		if(metedata == null){
 			return null;
 		}
-		
+
 		for(ObjectField f : metedata.getFields()){
 			if(f.getName().equals(innerName)){
 				if(FieldType.ARRAY.is(f.getType()) && FieldType.INNER_COLLECTION.is(f.getElementType())){

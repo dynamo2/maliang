@@ -41,6 +41,22 @@ public class DBFunction {
 				return eq(function,params);
 			}
 			
+			if("gt".equals(method)){
+				return gt(function,params);
+			}
+			
+			if("gte".equals(method)){
+				return gte(function,params);
+			}
+			
+			if("lt".equals(method)){
+				return lt(function,params);
+			}
+			
+			if("lte".equals(method)){
+				return lte(function,params);
+			}
+			
 			if("like".equals(method)){
 				return like(function,params);
 			}
@@ -124,6 +140,35 @@ public class DBFunction {
 	}
 	
 	private static Map eq(Function function,Map<String,Object> params){
+//		Map map = readMapValue(function,params);
+//		if(map.isEmpty())return null;
+//		
+//		String key = map.keySet().iterator().next().toString();
+//		Object value = map.get(key);
+//		if(Utils.isEmpty(value))return null;
+//		
+//		return comparisonMap(key,value,"$eq");
+		
+		return doComparison(function,params,"$eq");
+	}
+	
+	private static Map gt(Function function,Map<String,Object> params){
+		return doComparison(function,params,"$gt");
+	}
+	
+	private static Map lt(Function function,Map<String,Object> params){
+		return doComparison(function,params,"$lt");
+	}
+	
+	private static Map gte(Function function,Map<String,Object> params){
+		return doComparison(function,params,"$gte");
+	}
+	
+	private static Map lte(Function function,Map<String,Object> params){
+		return doComparison(function,params,"$lte");
+	}
+	
+	private static Map doComparison(Function function,Map<String,Object> params,String cmd){
 		Map map = readMapValue(function,params);
 		if(map.isEmpty())return null;
 		
@@ -131,7 +176,7 @@ public class DBFunction {
 		Object value = map.get(key);
 		if(Utils.isEmpty(value))return null;
 		
-		return comparisonMap(key,value,"$eq");
+		return comparisonMap(key,value,cmd);
 	}
 	
 	/***
