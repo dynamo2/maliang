@@ -6,6 +6,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import org.bson.BSONObject;
 import org.bson.types.ObjectId;
 
 import com.maliang.core.arithmetic.AE;
@@ -191,6 +192,116 @@ public class CollectionDao extends BasicDao {
 	}
 	
 	/***
+	 * 处理关联对象的条件查找：
+	 * 例如 : db.Order.search({items.product.name:'AQ'})
+	 * 处理结果： pids: db.Product.find({name:'AQ'}).id
+	 * 			 db.Order.search(items.product:{$in:pids})
+	 * 
+	 * 支持递归，嵌套关联处理：
+	 * 例如：db.Order.search({items.product.brand.name:'AQ'})
+	 * 处理结果： bids:db.Brand.search({name:'AQ'}).id,
+	 *           pids:db.Product.search({brand:{$in:bids}}).id,
+	 *           db.Order.search(items.product:{$in:pids})
+	 * 
+	 * **/
+	private Object recursionLinkedQuery(Object query,String collName){
+		if(query instanceof Map){
+			BasicDBObject newQuery = new BasicDBObject();
+			for(String key :((Map<String,Object>)query).keySet()){
+				Object fieldMatch = ((Map<String,Object>)query).get(key);
+				
+				if(key.startsWith("$")){
+					newQuery.put(key, recursionLinkedQuery(fieldMatch,collName));
+					continue;
+				}
+				
+				BasicDBObject linkedQuery = this.recursionLinkedQuery(key, fieldMatch, collName);
+				if(linkedQuery != null){
+					newQuery.putAll((Map)linkedQuery);
+				}else {
+					newQuery.put(key, fieldMatch);
+				}
+			}
+			return newQuery;
+		}else if(query instanceof List){
+			List<Object> newMatchs = new ArrayList<Object>();
+			for(Object match:(List)query){
+				newMatchs.add(recursionLinkedQuery(match,collName));
+			}
+			return newMatchs;
+		}
+		return query;
+	}
+	private BasicDBObject recursionLinkedQuery(String fieldKey,Object fieldMatch,String collName){
+		String[] keys = null;
+		if(fieldKey.contains(".")){
+			keys = fieldKey.split("\\.");
+		}else {
+			keys = new String[]{fieldKey};
+		}
+		
+		ObjectMetadata ometa = this.metaDao.getByName(collName);
+		List<ObjectField> fields = ometa.getFields();
+		String parentKey = null;
+		for(int i = 0; i < keys.length; i++){
+			String key = keys[i];
+			
+			ObjectField oField = null;
+			for(ObjectField of : fields){
+				if(of.getName().equals(key)){
+					oField = of;
+					break;
+				}
+			}
+			
+			if(oField != null && FieldType.LINK_COLLECTION.is(oField.getType())){
+				String linkedCollName = oField.getLinkedObject();
+				
+				fieldKey = key;
+				if(parentKey != null){
+					fieldKey = parentKey+"."+fieldKey;
+				}
+
+				StringBuilder sb = null;
+				for(int ii = i+1; ii < keys.length; ii++){
+					if(sb == null){
+						sb = new StringBuilder(keys[ii]);
+					}else {
+						sb.append(".");
+						sb.append(keys[ii]);
+					}
+				}
+				if(sb == null){
+					return null; 
+				}
+				
+				String linkedKey = sb.toString();
+				BasicDBObject linkedQuery = new BasicDBObject(linkedKey,fieldMatch);
+				linkedQuery = (BasicDBObject)this.recursionLinkedQuery(linkedQuery, linkedCollName);
+				
+				List results = this.find(linkedQuery, linkedCollName);
+				List ids = (List)MapHelper.readValue(results,"id");
+				if(ids == null){
+					ids = new ArrayList();
+					ids.add(false);
+				}
+				
+				return new BasicDBObject(fieldKey,new BasicDBObject("$in",ids));
+			}
+			
+			if(parentKey == null){
+				parentKey = key;
+			}else parentKey += "."+key;
+			
+			if(oField != null){
+				fields = oField.getFields();
+			}
+		}
+		
+		return null;
+	}
+	
+	/***
 	 * 子集的分页查询
 	 * 
 	 * "db.Warehouse.aggregateOne([{$unwind :'$stores'},
@@ -198,15 +309,17 @@ public class CollectionDao extends BasicDao {
 	 * **/
 	public List findByMap(Map<String, Object> match,Map<String, Object> query,
 			Map<String, Object> sort, Pager pg, String collName,String innerName) {
-		BasicDBObject bmatch = build(match);
-		bmatch = projectQuery(bmatch,collName);
+		
+		List<DBObject> pipeline = new ArrayList<DBObject>();
 		
 		/**
 		 * 筛选第一层数据
 		 * 粗选：适用于迅速缩小数据范围
 		 * ***/
-		List<DBObject> pipeline = new ArrayList<DBObject>();
+		BasicDBObject bmatch = build(match);
+		bmatch = projectQuery(bmatch,collName);
 		if(bmatch != null){
+			bmatch = (BasicDBObject)recursionLinkedQuery(bmatch,collName);
 			pipeline.add(new BasicDBObject("$match",bmatch));
 		}
 		
@@ -220,9 +333,10 @@ public class CollectionDao extends BasicDao {
 		 * */
 		BasicDBObject bquery = build(query);
 		if(bquery != null){
+			bquery = (BasicDBObject)recursionLinkedQuery(bquery,collName);
 			pipeline.add(new BasicDBObject("$match",bquery));
 		}
-		
+
 		/**
 		 * $sort
 		 * */
@@ -298,17 +412,6 @@ public class CollectionDao extends BasicDao {
 	 * update by $set
 	 * **/
 	public int update(Map qMap, Map sMap, String collName) {
-//		BasicDBObject query = null;
-//		if(qMap == null){
-//			query = new BasicDBObject();
-//		}else {
-//			query = this.build(this.buildDBQueryMap(qMap, null)); 
-//		}
-//		BasicDBObject set = this.build(this.buildDBQueryMap(sMap, null));
-//
-//		WriteResult result  = this.getDBCollection(collName).updateMulti(query,new BasicDBObject("$set", set));
-//		return result.getN();
-		
 		return update(qMap,sMap,collName,"$set");
 	}
 	

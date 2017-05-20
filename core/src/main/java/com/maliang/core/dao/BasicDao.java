@@ -170,6 +170,9 @@ public class BasicDao extends AbstractDao{
 		return new BasicDBObject(query);
 	}
 	
+	/***
+	 * 将{items:{product:{name:'AQ'}}}转成：{items.product.name:'AQ'}
+	 * **/
 	protected static Map<String,Object> buildDBQueryMap(Map<String,Object> queryMap,String prefix){
 		Map<String,Object> daoMap = new HashMap<String,Object>();
 		String preName = "";
