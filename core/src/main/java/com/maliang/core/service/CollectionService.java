@@ -106,6 +106,14 @@ public class CollectionService {
 		return null;
 	}
 	
+	public List<Map<String,Object>> find(Object query,String innerName){
+		Map mquery = null;
+		if(query != null && query instanceof Map){
+			mquery = (Map<String,Object>)query;
+		}
+		return this.collectionDao.findByMap(null,mquery,null,null,this.collection,innerName);
+	}
+	
 	public List<Map<String,Object>> find(Map query){
 		return this.collectionDao.findByMap(query, this.collection);
 	}
@@ -113,20 +121,16 @@ public class CollectionService {
 	public Map<String,Object> find(Map<String,Object> query,Map<String,Object> sort,Pager page){
 		List<Map<String,Object>> datas = this.collectionDao.findByMap(query,sort,page,this.collection);
 		
-		Map<String,Object> pageMap = new HashMap<String,Object>();
-		pageMap.put("currentPage",page.getCurPage());
-		pageMap.put("totalRows",page.getTotalRow());
-		pageMap.put("pageSize",page.getPageSize());
-		pageMap.put("totalPage",page.getTotalPage());
-		pageMap.put("datas",datas);
-		
-		return pageMap;
-		//return this.collectionDao.findByMap(query, this.collection);
+		return pageMap(page,datas);
 	}
 	
 	public Object page(Map<String,Object> match,Map<String,Object> query,Map<String,Object> sort,Pager page,String innerName){
 		List<Map<String,Object>> datas =  this.collectionDao.findByMap(match,query,sort,page,this.collection,innerName);
 		
+		return pageMap(page,datas);
+	}
+	
+	private Map<String,Object> pageMap(Pager page,List<Map<String,Object>> datas){
 		Map<String,Object> pageMap = new HashMap<String,Object>();
 		pageMap.put("currentPage",page.getCurPage());
 		pageMap.put("totalRows",page.getTotalRow());
@@ -362,7 +366,6 @@ public class CollectionService {
 				Map mval = new HashMap();
 				mval.put(innerName, value);
 				
-				System.out.println("------------- mval : " + mval);
 				this.save(mval);
 				return value;
 			}
@@ -379,7 +382,10 @@ public class CollectionService {
 		}
 
 		if(QUERIES_ALIAS.contains(method)){
-			return this.find(value);
+			if(StringUtil.isEmpty(innerName)){
+				return this.find(value);
+			}
+			return this.find(value,innerName);
 		}
 		
 		if("page".equals(method)){

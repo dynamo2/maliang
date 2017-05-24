@@ -1,16 +1,21 @@
 package com.maliang.core.dao;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 
-import org.bson.BSONObject;
+import org.apache.commons.lang.ArrayUtils;
 import org.bson.types.ObjectId;
+import org.springframework.util.StringUtils;
 
 import com.maliang.core.arithmetic.AE;
 import com.maliang.core.arithmetic.ArithmeticExpression;
+import com.maliang.core.arithmetic.function.DateFunction;
 import com.maliang.core.model.FieldType;
 import com.maliang.core.model.ObjectField;
 import com.maliang.core.model.ObjectMetadata;
@@ -18,6 +23,7 @@ import com.maliang.core.model.Trigger;
 import com.maliang.core.model.TriggerAction;
 import com.maliang.core.service.MapHelper;
 import com.maliang.core.ui.controller.Pager;
+import com.maliang.core.util.StringUtil;
 import com.maliang.core.util.Utils;
 import com.mongodb.AggregationOutput;
 import com.mongodb.BasicDBObject;
@@ -204,18 +210,18 @@ public class CollectionDao extends BasicDao {
 	 *           db.Order.search(items.product:{$in:pids})
 	 * 
 	 * **/
-	private Object recursionLinkedQuery(Object query,String collName){
+	private Object parseLinkedQuery(Object query,String collName){
 		if(query instanceof Map){
 			BasicDBObject newQuery = new BasicDBObject();
 			for(String key :((Map<String,Object>)query).keySet()){
 				Object fieldMatch = ((Map<String,Object>)query).get(key);
 				
 				if(key.startsWith("$")){
-					newQuery.put(key, recursionLinkedQuery(fieldMatch,collName));
+					newQuery.put(key, parseLinkedQuery(fieldMatch,collName));
 					continue;
 				}
 				
-				BasicDBObject linkedQuery = this.recursionLinkedQuery(key, fieldMatch, collName);
+				BasicDBObject linkedQuery = this.parseLinkedQuery(key, fieldMatch, collName);
 				if(linkedQuery != null){
 					newQuery.putAll((Map)linkedQuery);
 				}else {
@@ -226,13 +232,13 @@ public class CollectionDao extends BasicDao {
 		}else if(query instanceof List){
 			List<Object> newMatchs = new ArrayList<Object>();
 			for(Object match:(List)query){
-				newMatchs.add(recursionLinkedQuery(match,collName));
+				newMatchs.add(parseLinkedQuery(match,collName));
 			}
 			return newMatchs;
 		}
 		return query;
 	}
-	private BasicDBObject recursionLinkedQuery(String fieldKey,Object fieldMatch,String collName){
+	private BasicDBObject parseLinkedQuery(String fieldKey,Object fieldMatch,String collName){
 		String[] keys = null;
 		if(fieldKey.contains(".")){
 			keys = fieldKey.split("\\.");
@@ -277,7 +283,7 @@ public class CollectionDao extends BasicDao {
 				
 				String linkedKey = sb.toString();
 				BasicDBObject linkedQuery = new BasicDBObject(linkedKey,fieldMatch);
-				linkedQuery = (BasicDBObject)this.recursionLinkedQuery(linkedQuery, linkedCollName);
+				linkedQuery = (BasicDBObject)this.parseLinkedQuery(linkedQuery, linkedCollName);
 				
 				List results = this.find(linkedQuery, linkedCollName);
 				List ids = (List)MapHelper.readValue(results,"id");
@@ -300,6 +306,206 @@ public class CollectionDao extends BasicDao {
 		
 		return null;
 	}
+	/**
+	 * 处理查询条件中的数据类型
+	 * **/
+	protected Object parseQueryData(Object query,String collName){
+		if(query == null){
+			return null;
+		}
+		
+		if(query instanceof List){
+			List newQuery = new ArrayList();
+			for(Object obj : (List)query){
+				newQuery.add(this.parseQueryData(obj,collName));
+			}
+			return newQuery;
+		}
+		
+		if(query instanceof Map){
+			return parseQueryData((Map<String,Object>)query,collName);
+		}
+		
+		return query;
+	}
+	
+	/**
+	 * 处理Map类型查询条件中的数据类型
+	 * **/
+	private Object parseQueryData(Map<String,Object>query,String collName){
+		if(query == null){
+			return null;
+		}
+		
+		Map<String,Object> newQuery = new HashMap<String,Object>();
+		for(String key : query.keySet()){
+			Object val = query.get(key);
+			
+			if(key.startsWith("$")){
+				val = parseQueryData(val,collName);
+			}else {
+				Object fieldType = readFieldType(key,collName);
+				val = parseFieldType(fieldType,val);
+				
+				if(hasLinkedField(key,collName)){
+					return this.parseLinkedQuery(key,val, collName);
+				}
+				
+				if(!key.endsWith("._id") && key.endsWith(".id")){
+					key = key.substring(0,key.length()-3)+"._id";
+				}
+			}
+			newQuery.put(key,val);
+		}
+		return newQuery;
+	}
+
+	private Object readFieldType(String fieldKey,String collName){
+		if(fieldKey.endsWith(".id") || fieldKey.endsWith("._id")){
+			return ObjectId.class;
+		}
+		
+		ObjectMetadata meta = this.metaDao.getByName(collName);
+		String[] keys = fieldKey.split("\\.");
+		List<ObjectField> lastFields = meta.getFields();
+		Object resultType = null;
+		for(int i = 0; i < keys.length; i++){
+			String key = keys[i];
+			for(ObjectField of:lastFields){
+				if(of.getName().equals(key)){
+					if(FieldType.LINK_COLLECTION.is(of.getType())){
+						String  linkedKey = StringUtils.arrayToDelimitedString(
+												ArrayUtils.subarray(keys,i+1,keys.length), ".");
+						if(StringUtil.isEmpty(linkedKey)){
+							return of;
+						}
+						
+						String linkedColl = of.getLinkedObject();
+						return this.readFieldType(linkedKey, linkedColl);
+					}else {
+						resultType = of;
+						lastFields = of.getFields();
+					}
+					
+					break;
+				}
+			}
+		}
+		
+		return resultType;
+	}
+	
+	/***
+	 * items.id.name
+	 * product.name:{$or:[{$in:['AQ','LAMMER']},{$not:'DQ'}]}
+	 * **/
+	private Object parseFieldType(Object fieldType,Object queryVal){
+		if(queryVal == null)return null;
+		
+		if(queryVal instanceof List){
+			List<Object> newVals = new ArrayList<Object>();
+			for(Object val:(List)queryVal){
+				newVals.add(this.parseFieldType(fieldType,val));
+			}
+			return newVals;
+		}
+		
+		if(queryVal instanceof Map){
+			Map newMap  = new HashMap();
+			for(Object key:((Map)queryVal).keySet()){
+				Object val = ((Map)queryVal).get(key);
+				val = this.parseFieldType(fieldType, val);
+				
+				newMap.put(key,val);
+			}
+			return newMap;
+		}
+		
+		if(queryVal instanceof Pattern){
+			return queryVal;
+		}
+		
+		if(fieldType instanceof Class){
+			if(((Class)fieldType).getCanonicalName().equals("org.bson.types.ObjectId")){
+				if(queryVal instanceof ObjectId){
+					return queryVal;
+				}
+				
+				return new ObjectId(queryVal.toString());
+			}
+		}
+		
+		if(fieldType instanceof ObjectField){
+			return parseFieldType((ObjectField)fieldType,queryVal);
+		}
+		
+		return null;
+	}
+	
+	private Object parseFieldType(ObjectField field,Object queryVal){
+		if(FieldType.LINK_COLLECTION.is(field.getType())){
+			return queryVal.toString();
+		}
+		
+		if(FieldType.STRING.is(field.getType())){
+			return queryVal.toString();
+		}
+		
+		if(FieldType.DATE.is(field.getType())){
+			if(queryVal instanceof Date){
+				return queryVal;
+			}
+			
+			return Utils.parseDate(queryVal.toString());
+		}
+		
+		if(FieldType.INT.is(field.getType())){
+			if(queryVal instanceof Number){
+				return ((Number)queryVal).intValue();
+			}
+			
+			try {
+				return Integer.parseInt(queryVal.toString());
+			}catch(Exception e){
+				return null;
+			}
+		}
+		
+		if(FieldType.DOUBLE.is(field.getType())){
+			if(queryVal instanceof Number){
+				return ((Number)queryVal).doubleValue();
+			}
+			
+			try {
+				return Double.parseDouble(queryVal.toString());
+			}catch(Exception e){
+				return null;
+			}
+		}
+		
+		return null;
+	}
+
+
+	private boolean hasLinkedField(String fieldKey,String collName){
+		ObjectMetadata meta = this.metaDao.getByName(collName);
+		String[] keys = fieldKey.split("\\.");
+		List<ObjectField> lastFields = meta.getFields();
+		
+		for(String key : keys){
+			for(ObjectField of:lastFields){
+				if(of.getName().equals(key)){
+					if(FieldType.LINK_COLLECTION.is(of.getType())){
+						return true;
+					}
+					lastFields = of.getFields();
+					break;
+				}
+			}
+		}
+		
+		return false;
+	}
 	
 	/***
 	 * 子集的分页查询
@@ -309,33 +515,57 @@ public class CollectionDao extends BasicDao {
 	 * **/
 	public List findByMap(Map<String, Object> match,Map<String, Object> query,
 			Map<String, Object> sort, Pager pg, String collName,String innerName) {
+		DBCollection db = this.getDBCollection(collName);
 		
 		List<DBObject> pipeline = new ArrayList<DBObject>();
+		List<DBObject> countPipe = new ArrayList<DBObject>();
 		
 		/**
 		 * 筛选第一层数据
-		 * 粗选：适用于迅速缩小数据范围
+		 * 粗选：迅速缩小数据范围
 		 * ***/
+		if(match == null){
+			match = query;
+		}
+		match = (Map<String, Object>)this.parseQueryData(match, collName);
 		BasicDBObject bmatch = build(match);
 		bmatch = projectQuery(bmatch,collName);
 		if(bmatch != null){
-			bmatch = (BasicDBObject)recursionLinkedQuery(bmatch,collName);
 			pipeline.add(new BasicDBObject("$match",bmatch));
+			countPipe.add(new BasicDBObject("$match",bmatch));
 		}
 		
 		/**
 		 * $unwind
 		 * */
 		pipeline.add(new BasicDBObject("$unwind","$"+innerName+""));
+		countPipe.add(new BasicDBObject("$unwind","$"+innerName+""));
 		
 		/**
 		 * 匹配$unwind后的数据
 		 * */
+		query = (Map<String, Object>)this.parseQueryData(query, collName);
 		BasicDBObject bquery = build(query);
 		if(bquery != null){
-			bquery = (BasicDBObject)recursionLinkedQuery(bquery,collName);
 			pipeline.add(new BasicDBObject("$match",bquery));
+			countPipe.add(new BasicDBObject("$match",bquery));
 		}
+		
+		/**
+		 * count
+		 * page.totalRow
+		 * **/
+		if(pg != null){
+			countPipe.add(new BasicDBObject("$count","totalCount"));
+			AggregationOutput cOut = db.aggregate(countPipe);
+			Iterator<DBObject> cie = cOut.results().iterator();
+			while (cie.hasNext()) {
+				DBObject dbo = cie.next();
+				int  totalCount = (Integer)dbo.get("totalCount");
+				pg.setTotalRow(totalCount);
+			}
+		}
+		
 
 		/**
 		 * $sort
@@ -344,7 +574,7 @@ public class CollectionDao extends BasicDao {
 		if(bsort != null){
 			pipeline.add(new BasicDBObject("$sort",bsort));
 		}
-		
+
 		/**
 		 * $project
 		 * **/
@@ -356,16 +586,19 @@ public class CollectionDao extends BasicDao {
 		/**
 		 * $skip,$limit
 		 * **/
-		int limit = pg.getPageSize();
-		int skip = (pg.getCurPage() - 1) * pg.getPageSize();
-		pipeline.add(new BasicDBObject("$skip",skip));
-		pipeline.add(new BasicDBObject("$limit",limit));
+		if(pg != null){
+			int limit = pg.getPageSize();
+			int skip = (pg.getCurPage() - 1) * pg.getPageSize();
+			pipeline.add(new BasicDBObject("$skip",skip));
+			pipeline.add(new BasicDBObject("$limit",limit));
+		}
+		
+		System.out.println("---------- pipeline : " + pipeline);
 
 		if (pipeline == null || pipeline.isEmpty()) {
 			return this.emptyResults();
 		}
-
-		DBCollection db = this.getDBCollection(collName);
+		
 		AggregationOutput aout = db.aggregate(pipeline);
 		Iterator<DBObject> ie = aout.results().iterator();
 
@@ -382,7 +615,6 @@ public class CollectionDao extends BasicDao {
 			}
 			results.add(val);
 		}
-		
 		
 		return results;
 	}

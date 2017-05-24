@@ -1,8 +1,10 @@
 package com.maliang.core.util;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -22,6 +24,34 @@ public class Utils {
 	
 	public static boolean isArray(Object ob){
 		return ob != null && ((ob instanceof Collection) || (ob instanceof Object[]));
+	}
+	
+	public static Date parseDate(String format,String dateVal){
+		if(!StringUtil.isEmpty(format)){
+			try {
+				return new SimpleDateFormat(format).parse(dateVal);
+			}catch(Exception e){
+				return null;
+			}
+		}
+		return parseDate(dateVal);
+	}
+	
+	public static Date parseDate(String dateVal){
+		List<String> formats =new ArrayList<String>();
+		formats.add("yyyy-MM-dd HH:mm:ss");
+		formats.add("yyyy-MM-dd");
+		formats.add("yyyy/MM/dd HH:mm:ss");
+		formats.add("yyyy/MM/dd");
+		formats.add("yyyy年MM月dd日 HH:mm:ss");
+		formats.add("yyyy年MM月dd日");
+		
+		for(String f: formats){
+			try {
+				return new SimpleDateFormat(f).parse(dateVal);
+			}catch(Exception e){}
+		}
+		return null;
 	}
 	
 	public static Map connect(Map...maps){

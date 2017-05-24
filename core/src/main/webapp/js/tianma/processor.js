@@ -1442,8 +1442,23 @@ var MGenerator = HTMLGenerator.extend({
 	    	element.addClass("form-control input-medium select2me select2-offscreen");
 	    	element.attr("data-placeholder","Select...");
 	    	element.attr("tabindex","-1");
-
+	    	
+	    	if ($().select2) {
+	    		curr.doSelect2();
+	        }else {
+	        	$.getScript('/static/metronic/theme/assets/global/plugins/select2/select2.min.js').done(function(){
+		    		curr.doSelect2();
+	    		});
+	        }
+	    	
 	    	return element;
+	    };
+	    
+	    this.doSelect2 = function(){
+	    	$('.select2me').select2({
+                placeholder: "Select",
+                allowClear: true
+            });
 	    };
 	    
 	    this.defaultClass = function(ele){
