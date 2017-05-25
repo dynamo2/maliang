@@ -82,15 +82,13 @@ public class CollectionDao extends BasicDao {
 	
 	public Map<String, Object> save(Map value, String collName) {
 		value = this.toDBModel(value, collName);
-
+		
 		BasicDBObject doc = this.build(value);
 		if (doc == null) {
 			return null;
 		}
 		
 		this.insertTrigger(value, collName);
-		System.out.println("****** after trigger value : " + value);
-		
 		this.getDBCollection(collName).save(doc);
 
 		value.put("id", doc.getObjectId("_id").toByteArray());
@@ -152,13 +150,22 @@ public class CollectionDao extends BasicDao {
 		if (query == null || query.isEmpty()) {
 			return this.emptyResults();
 		}
-
+		
+		query = (List)this.parseQueryData(query, collName);
+		
 		List<DBObject> pipeline = new ArrayList<DBObject>();
-		for (Map<String, Object> map : query) {
-			if (map.isEmpty())
+		for (Object map : query) {
+			if(Utils.isEmpty(map)){
 				continue;
+			}
+			
+			if(map instanceof Map){
+				pipeline.add(new BasicDBObject((Map)map));
+			}
 
-			pipeline.add(new BasicDBObject(map));
+			if(map instanceof BasicDBObject){
+				pipeline.add((BasicDBObject)map);
+			}
 		}
 
 		return this.aggregate(pipeline, collName);
@@ -191,10 +198,241 @@ public class CollectionDao extends BasicDao {
 	 * **/
 	public List<Map<String, Object>> findByMap(Map<String, Object> query,
 			Map<String, Object> sort, Pager pg, String collName) {
-		BasicDBObject bq = build(query);
+		BasicDBObject bq = null;
+		Object val = this.parseQueryData(query, collName);
+		if(val instanceof Map){
+			bq = build((Map)val);
+		}
+		if(val instanceof BasicDBObject){
+			bq = (BasicDBObject)val;
+		}
 		bq = projectQuery(bq,collName);
 		
-		return this.find(bq, build(sort), pg, collName);
+		BasicDBObject dbSort = null;
+		val = this.parseQueryData(dbSort, collName);
+		if(val instanceof Map){
+			dbSort = build((Map)val);
+		}
+		if(val instanceof BasicDBObject){
+			dbSort = (BasicDBObject)val;
+		}
+
+		return this.find(bq, dbSort, pg, collName);
+	}
+	
+	/***
+	 * 子集的分页查询
+	 * 
+	 * "db.Warehouse.aggregateOne([{$unwind :'$stores'},
+	 * {$group:{_id:'$stores.product',totalStore:{$sum:'$stores.num'}}},{$match:{_id:'574c02d87a779392fcea0c9b'}}])";
+	 * **/
+	public List findByMap(Map<String, Object> match,Map<String, Object> query,
+			Map<String, Object> sort, Pager pg, String collName,String innerName) {
+		DBCollection db = this.getDBCollection(collName);
+		
+		List<DBObject> pipeline = new ArrayList<DBObject>();
+		List<DBObject> countPipe = new ArrayList<DBObject>();
+		
+		/**
+		 * 筛选第一层数据
+		 * 粗选：迅速缩小数据范围
+		 * ***/
+		if(match == null){
+			match = query;
+		}
+		match = (Map<String, Object>)this.parseQueryData(match, collName);
+		BasicDBObject bmatch = build(match);
+		bmatch = projectQuery(bmatch,collName);
+		if(bmatch != null){
+			pipeline.add(new BasicDBObject("$match",bmatch));
+			countPipe.add(new BasicDBObject("$match",bmatch));
+		}
+		
+		/**
+		 * $unwind
+		 * */
+		pipeline.add(new BasicDBObject("$unwind","$"+innerName+""));
+		countPipe.add(new BasicDBObject("$unwind","$"+innerName+""));
+		
+		/**
+		 * 匹配$unwind后的数据
+		 * */
+		query = (Map<String, Object>)this.parseQueryData(query, collName);
+		BasicDBObject bquery = build(query);
+		if(bquery != null){
+			pipeline.add(new BasicDBObject("$match",bquery));
+			countPipe.add(new BasicDBObject("$match",bquery));
+		}
+		
+		/**
+		 * count
+		 * page.totalRow
+		 * **/
+		if(pg != null){
+			countPipe.add(new BasicDBObject("$count","totalCount"));
+			AggregationOutput cOut = db.aggregate(countPipe);
+			Iterator<DBObject> cie = cOut.results().iterator();
+			while (cie.hasNext()) {
+				DBObject dbo = cie.next();
+				int  totalCount = (Integer)dbo.get("totalCount");
+				pg.setTotalRow(totalCount);
+			}
+		}
+		
+
+		/**
+		 * $sort
+		 * */
+		BasicDBObject bsort = build(sort);
+		if(bsort != null){
+			pipeline.add(new BasicDBObject("$sort",bsort));
+		}
+
+		/**
+		 * $project
+		 * **/
+		Map project = new HashMap();
+		project.put("_id",0);
+		project.put(innerName,1);
+		pipeline.add(new BasicDBObject("$project",project));
+		
+		/**
+		 * $skip,$limit
+		 * **/
+		if(pg != null){
+			int limit = pg.getPageSize();
+			int skip = (pg.getCurPage() - 1) * pg.getPageSize();
+			pipeline.add(new BasicDBObject("$skip",skip));
+			pipeline.add(new BasicDBObject("$limit",limit));
+		}
+		
+		System.out.println("---------- pipeline : " + pipeline);
+
+		if (pipeline == null || pipeline.isEmpty()) {
+			return this.emptyResults();
+		}
+		
+		AggregationOutput aout = db.aggregate(pipeline);
+		Iterator<DBObject> ie = aout.results().iterator();
+
+		List<Object> results = new ArrayList<Object>();
+		while (ie.hasNext()) {
+			DBObject dbo = ie.next();
+			Object innerObj = null;
+			Object val = null;
+			if(dbo != null && dbo.containsField(innerName)){
+				innerObj = dbo.get(innerName);
+				if(innerObj != null && innerObj instanceof DBObject){
+					val = this.toMap((DBObject)innerObj, collName, innerName);
+				}
+			}
+			results.add(val);
+		}
+		
+		return results;
+	}
+	
+	/***
+	 * 分页查询
+	 * **/
+	public List<Map<String, Object>> find(BasicDBObject query,
+			BasicDBObject sort, Pager pg, String collName) {
+		if (pg == null) {
+			pg = new Pager();
+		}
+
+		int limit = pg.getPageSize();
+		int skip = (pg.getCurPage() - 1) * pg.getPageSize();
+
+		DBCursor cursor = this.getDBCollection(collName).find(query).sort(sort)
+				.skip(skip).limit(limit);
+
+		int totalRow = cursor.count();
+		pg.setTotalRow(totalRow);
+
+		return this.readCursor(cursor, collName);
+	}
+
+	/**
+	 * update by $set
+	 * **/
+	public int update(Map qMap, Map sMap, String collName) {
+		return update(qMap,sMap,collName,"$set");
+	}
+	
+	/**
+	 * update by $set
+	 * **/
+	public int update(Map qMap, Map updateMap, String collName,String updateCmd) {
+		if(Utils.isEmpty(updateMap)){
+			return 0;
+		}
+		
+		BasicDBObject query = null;
+		if(qMap == null){
+			query = new BasicDBObject();
+		}else {
+			if(qMap instanceof BasicDBObject){
+				query = (BasicDBObject)qMap;
+			}else {
+				query = this.build(this.buildDBQueryMap(qMap, null));
+			}
+		}
+		
+		BasicDBObject updateVal = null;
+		if(updateMap instanceof BasicDBObject){
+			updateVal = (BasicDBObject)updateMap;
+		}else {
+			updateVal = this.build(this.buildDBQueryMap(updateMap, null));
+		} 
+
+		DBCollection db = this.getDBCollection(collName);
+		WriteResult result  = db.updateMulti(query,new BasicDBObject(updateCmd, updateVal));
+		
+		return result.getN();
+	}
+	
+	public int deleteArrayDocument(String collName,String arrayFieldName,String docId){
+		Map query = this.buildInnerGetMap(arrayFieldName, docId);
+		BasicDBObject pullMap = new BasicDBObject(arrayFieldName, new BasicDBObject("_id",new ObjectId(docId)));
+		
+		return this.update(query, pullMap, collName,"$pull");
+	}
+
+	public int updateAll(Map value, String collName) {
+		return this.update(null, value, collName);
+	}
+
+	public Map<String, Object> updateBySet(Map value, String collName) {
+		value = this.toDBModel(value, collName);
+		/**
+		 * 执行触发器
+		 * **/
+		this.updateTrigger(value, collName);
+
+		String id = (String) value.remove("id");
+		BasicDBObject query = this.getObjectId(id);
+
+		ObjectMetadata meta = this.metaDao.getByName(collName);
+		List<Map<String, BasicDBObject>> updates = new ArrayList<Map<String, BasicDBObject>>();
+		Map<String, Object> daoMap = buildUpdates(meta.getFields(), value,
+				null, updates, query,false);
+		
+		updates.add(buildSetUpdateMap(query, daoMap));
+		
+		DBCollection db = this.getDBCollection(collName);
+		DBObject result = null;
+		List<Map<Object,Object>> resultValueMap = new ArrayList<Map<Object,Object>>();
+		for (Map<String, BasicDBObject> um : updates) {
+			if (um != null) {
+				result = db.findAndModify(um.get("query"), null, null, false,
+						um.get("update"), true, false);
+			}
+		}
+
+		value.put("id", id);
+
+		return value;
 	}
 	
 	/***
@@ -507,220 +745,11 @@ public class CollectionDao extends BasicDao {
 		return false;
 	}
 	
-	/***
-	 * 子集的分页查询
-	 * 
-	 * "db.Warehouse.aggregateOne([{$unwind :'$stores'},
-	 * {$group:{_id:'$stores.product',totalStore:{$sum:'$stores.num'}}},{$match:{_id:'574c02d87a779392fcea0c9b'}}])";
-	 * **/
-	public List findByMap(Map<String, Object> match,Map<String, Object> query,
-			Map<String, Object> sort, Pager pg, String collName,String innerName) {
-		DBCollection db = this.getDBCollection(collName);
-		
-		List<DBObject> pipeline = new ArrayList<DBObject>();
-		List<DBObject> countPipe = new ArrayList<DBObject>();
-		
-		/**
-		 * 筛选第一层数据
-		 * 粗选：迅速缩小数据范围
-		 * ***/
-		if(match == null){
-			match = query;
-		}
-		match = (Map<String, Object>)this.parseQueryData(match, collName);
-		BasicDBObject bmatch = build(match);
-		bmatch = projectQuery(bmatch,collName);
-		if(bmatch != null){
-			pipeline.add(new BasicDBObject("$match",bmatch));
-			countPipe.add(new BasicDBObject("$match",bmatch));
-		}
-		
-		/**
-		 * $unwind
-		 * */
-		pipeline.add(new BasicDBObject("$unwind","$"+innerName+""));
-		countPipe.add(new BasicDBObject("$unwind","$"+innerName+""));
-		
-		/**
-		 * 匹配$unwind后的数据
-		 * */
-		query = (Map<String, Object>)this.parseQueryData(query, collName);
-		BasicDBObject bquery = build(query);
-		if(bquery != null){
-			pipeline.add(new BasicDBObject("$match",bquery));
-			countPipe.add(new BasicDBObject("$match",bquery));
-		}
-		
-		/**
-		 * count
-		 * page.totalRow
-		 * **/
-		if(pg != null){
-			countPipe.add(new BasicDBObject("$count","totalCount"));
-			AggregationOutput cOut = db.aggregate(countPipe);
-			Iterator<DBObject> cie = cOut.results().iterator();
-			while (cie.hasNext()) {
-				DBObject dbo = cie.next();
-				int  totalCount = (Integer)dbo.get("totalCount");
-				pg.setTotalRow(totalCount);
-			}
-		}
-		
-
-		/**
-		 * $sort
-		 * */
-		BasicDBObject bsort = build(sort);
-		if(bsort != null){
-			pipeline.add(new BasicDBObject("$sort",bsort));
-		}
-
-		/**
-		 * $project
-		 * **/
-		Map project = new HashMap();
-		project.put("_id",0);
-		project.put(innerName,1);
-		pipeline.add(new BasicDBObject("$project",project));
-		
-		/**
-		 * $skip,$limit
-		 * **/
-		if(pg != null){
-			int limit = pg.getPageSize();
-			int skip = (pg.getCurPage() - 1) * pg.getPageSize();
-			pipeline.add(new BasicDBObject("$skip",skip));
-			pipeline.add(new BasicDBObject("$limit",limit));
-		}
-		
-		System.out.println("---------- pipeline : " + pipeline);
-
-		if (pipeline == null || pipeline.isEmpty()) {
-			return this.emptyResults();
-		}
-		
-		AggregationOutput aout = db.aggregate(pipeline);
-		Iterator<DBObject> ie = aout.results().iterator();
-
-		List<Object> results = new ArrayList<Object>();
-		while (ie.hasNext()) {
-			DBObject dbo = ie.next();
-			Object innerObj = null;
-			Object val = null;
-			if(dbo != null && dbo.containsField(innerName)){
-				innerObj = dbo.get(innerName);
-				if(innerObj != null && innerObj instanceof DBObject){
-					val = this.toMap((DBObject)innerObj, collName, innerName);
-				}
-			}
-			results.add(val);
-		}
-		
-		return results;
-	}
-
-	/***
-	 * 分页查询
-	 * **/
-	public List<Map<String, Object>> find(BasicDBObject query,
-			BasicDBObject sort, Pager pg, String collName) {
-		if (pg == null) {
-			pg = new Pager();
-		}
-
-		int limit = pg.getPageSize();
-		int skip = (pg.getCurPage() - 1) * pg.getPageSize();
-
-		DBCursor cursor = this.getDBCollection(collName).find(query).sort(sort)
-				.skip(skip).limit(limit);
-
-		int totalRow = cursor.count();
-		pg.setTotalRow(totalRow);
-
-		return this.readCursor(cursor, collName);
-	}
-
-	/**
-	 * update by $set
-	 * **/
-	public int update(Map qMap, Map sMap, String collName) {
-		return update(qMap,sMap,collName,"$set");
-	}
 	
-	/**
-	 * update by $set
-	 * **/
-	public int update(Map qMap, Map updateMap, String collName,String updateCmd) {
-		if(Utils.isEmpty(updateMap)){
-			return 0;
-		}
-		
-		BasicDBObject query = null;
-		if(qMap == null){
-			query = new BasicDBObject();
-		}else {
-			if(qMap instanceof BasicDBObject){
-				query = (BasicDBObject)qMap;
-			}else {
-				query = this.build(this.buildDBQueryMap(qMap, null));
-			}
-		}
-		
-		BasicDBObject updateVal = null;
-		if(updateMap instanceof BasicDBObject){
-			updateVal = (BasicDBObject)updateMap;
-		}else {
-			updateVal = this.build(this.buildDBQueryMap(updateMap, null));
-		} 
 
-		DBCollection db = this.getDBCollection(collName);
-		WriteResult result  = db.updateMulti(query,new BasicDBObject(updateCmd, updateVal));
-		
-		return result.getN();
-	}
 	
-	public int deleteArrayDocument(String collName,String arrayFieldName,String docId){
-		Map query = this.buildInnerGetMap(arrayFieldName, docId);
-		BasicDBObject pullMap = new BasicDBObject(arrayFieldName, new BasicDBObject("_id",new ObjectId(docId)));
-		
-		return this.update(query, pullMap, collName,"$pull");
-	}
-
-	public int updateAll(Map value, String collName) {
-		return this.update(null, value, collName);
-	}
-
-	public Map<String, Object> updateBySet(Map value, String collName) {
-		value = this.toDBModel(value, collName);
-		/**
-		 * 执行触发器
-		 * **/
-		this.updateTrigger(value, collName);
-
-		String id = (String) value.remove("id");
-		BasicDBObject query = this.getObjectId(id);
-
-		ObjectMetadata meta = this.metaDao.getByName(collName);
-		List<Map<String, BasicDBObject>> updates = new ArrayList<Map<String, BasicDBObject>>();
-		Map<String, Object> daoMap = buildUpdates(meta.getFields(), value,
-				null, updates, query,false);
-		
-		updates.add(buildSetUpdateMap(query, daoMap));
-		
-		DBCollection db = this.getDBCollection(collName);
-		DBObject result = null;
-		List<Map<Object,Object>> resultValueMap = new ArrayList<Map<Object,Object>>();
-		for (Map<String, BasicDBObject> um : updates) {
-			if (um != null) {
-				result = db.findAndModify(um.get("query"), null, null, false,
-						um.get("update"), true, false);
-			}
-		}
-
-		value.put("id", id);
-
-		return value;
-	}
+	
+	
 
 	public static void main(String[] args) {
 		String s = "info.items.product";
@@ -1097,11 +1126,6 @@ public class CollectionDao extends BasicDao {
 		}
 	}
 	
-	
-
-	
-
-
 	private String getLinkedCollectionName(String linkedObjectId) {
 		ObjectMetadata linkMeta = this.metaDao.getByID(linkedObjectId);
 		if (linkMeta != null) {
