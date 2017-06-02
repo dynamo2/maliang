@@ -39,6 +39,9 @@ public class Utils {
 	
 	public static Date parseDate(String dateVal){
 		List<String> formats =new ArrayList<String>();
+//		formats.add("yyyyMMdd HH:mm:ss");
+//		formats.add("yyyyMMddHHmmss");
+//		formats.add("yyyyMMdd");
 		formats.add("yyyy-MM-dd HH:mm:ss");
 		formats.add("yyyy-MM-dd");
 		formats.add("yyyy/MM/dd HH:mm:ss");

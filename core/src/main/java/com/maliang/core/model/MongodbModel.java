@@ -3,11 +3,13 @@ package com.maliang.core.model;
 import java.beans.BeanInfo;
 import java.beans.Introspector;
 import java.beans.PropertyDescriptor;
+import java.sql.Timestamp;
 
 import org.bson.types.ObjectId;
 
 public class MongodbModel {
 	protected ObjectId id;
+	//protected Timestamp createdDate;
 	
 	public ObjectId getId() {
 		return id;
@@ -16,7 +18,7 @@ public class MongodbModel {
 	public void setId(ObjectId id) {
 		this.id = id;
 	}
-	
+
 //	public void setId(String id) {
 //		System.out.println("-------- setId(String id) : " + id);
 //		try {
@@ -26,6 +28,14 @@ public class MongodbModel {
 //		}
 //	}
 	
+//	public Timestamp getCreatedDate() {
+//		return createdDate;
+//	}
+//
+//	public void setCreatedDate(Timestamp createdDate) {
+//		this.createdDate = createdDate;
+//	}
+
 	public String toString(){
 		StringBuffer sbf = null;
 		try {

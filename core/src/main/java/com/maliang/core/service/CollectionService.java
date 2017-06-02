@@ -404,6 +404,8 @@ public class CollectionService {
 				query = (Map<String,Object>)MapHelper.readValue(v,"query");
 				sort = (Map<String,Object>)MapHelper.readValue(v,"sort");
 			}
+			
+			System.out.println("-------- page sort : " + sort);
 
 			if(StringUtil.isEmpty(innerName)){
 				return this.find(query,sort,page);

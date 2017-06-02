@@ -48,27 +48,34 @@ public class TestCollectionDao extends CollectionDao {
 		// find,findOne
 		String s = "db.Cart.items.find(db.in({items.id:['5911368ce14fbac8c348fcc7']}))";
 		s = "db.in({items.id:['5911368ce14fbac8c348fcc7']})";
+		s = "db.Brand.get('592645ca784fe94a84286d5d')";
+		s = "db.Brand.search()";
 		Object v = AE.execute(s);
 		
-		
-		s = "db.gt({items.product.price:'333.2'})";
-		s = "db.like({items.product.brand.name:'黛'})";
-		s = "db.Cart.items.page({match:db.eq({user.name:'ww'}),query:db.gt({items.product.price:'333.2'})})";
-		s = "db.Cart.items.page({match:db.eq({user.name:'ww'})})";
-		v = AE.execute(s);
-		
-		
-		System.out.println("=========== before ==============");
-		//System.out.println(v);
-		System.out.println("v.size : " + ((List)((Map)v).get("datas")).size());
-		
-		s = "db.Cart.items.search(db.in({items.product.price:'3199'}))";
-		s = "db.Cart.items.search(db.in({items.id:['5911368ce14fbac8c348fcc7','5911368ce14fbac8c348fcc3']}))";
-		v = AE.execute(s);
-		
-		System.out.println("=========== result by search ==============");
 		System.out.println(v);
-		System.out.println("v.size : " + ((List)v).size());
+		//System.out.println(((Map)v).get("createdDate").getClass());
+		
+		
+//		s = "db.gt({items.product.price:'333.2'})";
+//		s = "db.like({items.product.brand.name:'黛'})";
+//		s = "db.Cart.items.page({match:db.eq({user.name:'ww'}),query:db.gt({items.product.price:'333.2'})})";
+//		s = "db.Cart.items.page({match:db.eq({user.name:'ww'})})";
+//		//v = AE.execute(s);
+//		
+//		
+//		System.out.println("=========== before ==============");
+//		//System.out.println(v);
+//		System.out.println("v.size : " + ((List)((Map)v).get("datas")).size());
+//		
+//		s = "db.Cart.items.search(db.in({items.product.price:'3199'}))";
+//		s = "db.Cart.items.search(db.in({items.id:['5911368ce14fbac8c348fcc7','5911368ce14fbac8c348fcc3']}))";
+//		//v = AE.execute(s);
+//		
+//		System.out.println("=========== result by search ==============");
+//		System.out.println(v);
+//		System.out.println("v.size : " + ((List)v).size());
+		
+		
 		
 //		v = dao.parseQueryData(v,"Cart");
 //		System.out.println("");

@@ -86,6 +86,14 @@ public class CollectionDao extends BasicDao {
 			return null;
 		}
 		
+		/**
+		 * 新增数据时，自动设置createdDate,modifiedDate字段
+		 * **/
+		if(!(doc.containsKey("id") || doc.containsKey("_id"))){
+			doc.put("createdDate",new Date());
+		}
+		doc.put("modifiedDate",new Date());
+		
 		this.insertTrigger(value, collName);
 		this.getDBCollection(collName).save(doc);
 
@@ -206,13 +214,12 @@ public class CollectionDao extends BasicDao {
 		}
 		bq = projectQuery(bq,collName);
 		
-		BasicDBObject dbSort = null;
-		val = this.parseQueryData(dbSort, collName);
-		if(val instanceof Map){
-			dbSort = build((Map)val);
+		BasicDBObject dbSort = this.build(sort);
+		if(dbSort == null){
+			dbSort = new BasicDBObject("_id",-1);
 		}
-		if(val instanceof BasicDBObject){
-			dbSort = (BasicDBObject)val;
+		if(!dbSort.containsKey("_id")){
+			dbSort.put("_id",-1);
 		}
 
 		return this.find(bq, dbSort, pg, collName);
@@ -382,10 +389,16 @@ public class CollectionDao extends BasicDao {
 			updateVal = (BasicDBObject)updateMap;
 		}else {
 			updateVal = this.build(this.buildDBQueryMap(updateMap, null));
-		} 
-
+		}
+		
+		BasicDBObject updateObj = new BasicDBObject(updateCmd, updateVal);
+//		BasicDBObject modifiedDate = new BasicDBObject("modifiedDate",new Date());
+//		updateObj.put("$set", modifiedDate);
+		
 		DBCollection db = this.getDBCollection(collName);
-		WriteResult result  = db.updateMulti(query,new BasicDBObject(updateCmd, updateVal));
+		WriteResult result  = db.updateMulti(query,updateObj);
+		
+		System.out.println("update UpsertedId : " + result.getUpsertedId());
 		
 		return result.getN();
 	}
@@ -423,6 +436,8 @@ public class CollectionDao extends BasicDao {
 		List<Map<Object,Object>> resultValueMap = new ArrayList<Map<Object,Object>>();
 		for (Map<String, BasicDBObject> um : updates) {
 			if (um != null) {
+				System.out.println("updateBySet : " + um.get("update"));
+				
 				result = db.findAndModify(um.get("query"), null, null, false,
 						um.get("update"), true, false);
 			}

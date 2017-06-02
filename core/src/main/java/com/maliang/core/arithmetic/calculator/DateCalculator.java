@@ -7,6 +7,7 @@ import java.util.Calendar;
 import java.util.Date;
 
 import com.maliang.core.arithmetic.node.Operator;
+import com.maliang.core.util.Utils;
 
 public class DateCalculator {
 	public final static DateFormat dateFormat = new SimpleDateFormat("yyyy年MM月dd日HH时mm分ss秒");
@@ -53,7 +54,9 @@ public class DateCalculator {
 			try {
 				String ds = source.substring(1,source.length());
 				ds = readString(ds);
-				return dateFormat.parse(ds);
+				
+				return Utils.parseDate(ds);
+				//return dateFormat.parse(ds);
 			} catch (Exception e) {}
 		}
 

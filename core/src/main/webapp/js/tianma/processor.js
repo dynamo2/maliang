@@ -228,15 +228,21 @@ var HTMLGenerator = Class.extend({
 	    	if(name){
 	    		name += ".";
 	    	}
+	    	var rangName = opts && opts.rangName;
+	    	if(!($.isArray(rangName) && rangName.length == 2)){
+	    		rangName = ['from','to'];
+	    	}
 	    	
+	    	var fromName = rangName[0];
+	    	var toName = rangName[1];
 	    	var fopts = {
-	    		name:name+'from',
+	    		name:name+fromName,
 	    		placeholder:'From',
 	    		type:opts.input,
 	    	};
 	    	var topts = {
 	    		type:opts.input,
-	            name:name+'to',
+	            name:name+toName,
 	            placeholder:'To'
 	    	};
 	    	
@@ -250,11 +256,11 @@ var HTMLGenerator = Class.extend({
 	    				topts.value = opts.value[1];
 	    			}
 	    		}else {
-	    			if(opts.value && opts.value.from){
-		    			fopts.value = opts.value.from;
+	    			if(opts.value && opts.value[fromName]){
+		    			fopts.value = opts.value[fromName];
 		    		}
-	    			if(opts.value && opts.value.to){
-	    				topts.value = opts.value.to;
+	    			if(opts.value && opts.value[toName]){
+	    				topts.value = opts.value[toName];
 		    		}
 	    		}
 	    	}
@@ -1321,14 +1327,49 @@ var MGenerator = HTMLGenerator.extend({
 	input:function(opts){
 		var curr = this;
 		
-		this.date = function(opts){
-	        var de = $('<div class="input-group date date-picker margin-bottom-5" data-date-format="dd/mm/yyyy" />');
-	        var dinput = $('<input type="text" class="form-control form-filter input-sm" readonly="" />').prop('name',opts.name).prop('placeholder',opts.placeholder);
-	        var dbnt = $('<span class="input-group-btn"><button class="btn btn-sm default" type="button"><i class="fa fa-calendar"></i></button></span>');
+//		this.date = function(opts){
+//	        var de = $('<div class="input-group date date-picker margin-bottom-5" data-date-format="dd/mm/yyyy" />');
+//	        var dinput = $('<input type="text" class="form-control form-filter input-sm" readonly="" />').prop('name',opts.name).prop('placeholder',opts.placeholder);
+//	        var dbnt = $('<span class="input-group-btn"><button class="btn btn-sm default" type="button"><i class="fa fa-calendar"></i></button></span>');
+//	        
+//	        de.append(dinput).append(dbnt);
+//	        
+//	        $(function(){
+//	        	dinput.datepicker({
+//		            format: 'yyyy-mm-dd hh:ii'
+//		        });
+//	        });
+//	        
+//			return de;
+//	    };
+	    
+	    this.date = function(opts){
+	    	opts.type = "text";
+	        var input = curr.input(opts);
+	        input.addClass("form-control input-sm");
+	        input.prop("readonly",true);
 	        
-	        de.append(dinput).append(dbnt);
-
-	        return de;
+	        var dateDIV = $('<div class="input-group date date-picker margin-bottom-5" data-provide="datepicker" data-date-format="dd/mm/yyyy" />');
+	        var dbnt = $('<span class="input-group-btn"><button class="btn btn-sm default" type="button"><i class="fa fa-calendar"></i></button></span>');
+	        dateDIV.append(input).append(dbnt);//.append($('<span class="input-group-addon"><i class="glyphicon glyphicon-th"></i></span>'));
+	        
+//	        $(function(){
+//	        	dateDIV.datepicker();
+//	        });
+	        
+	        return dateDIV;
+	    };
+	    
+	    /**
+	     * {type:'between',input:'date',rangeName:['startDate','endDate'],name:'coupon.expiryDate',label:'有效期',value:coupon.expiryDate,required:true},
+	     * **/
+	    this.betweenDate = function(option){
+	    	var div = $('<div class="input-group input-large date-picker input-daterange" data-provide="datepicker" data-date-format="yyyy-mm-dd">');
+	    	var to = $('<span class="input-group-addon"> to </span>');
+	    	
+	    	option.input = "text";
+	    	var els = this._super(option);
+	    	return div.append(els[0]).append(to).append(els[1]);
 	    };
 	    
 	    
@@ -1421,6 +1462,10 @@ var MGenerator = HTMLGenerator.extend({
 	     * {type:'between',layout:'vertical',input:'text',name:'ps.price',value:[100,1000]},
 	     * **/
 	    this.between = function(opts){
+	    	if((opts && opts.input) == 'date' ){
+	    		return this.betweenDate(opts);
+	    	}
+	    	
 	    	var vertical = (opts && opts.layout) == "v";
 	    	
 	    	var els = this._super(opts);

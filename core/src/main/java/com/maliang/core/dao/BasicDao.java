@@ -1,6 +1,7 @@
 package com.maliang.core.dao;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -317,7 +318,11 @@ public class BasicDao extends AbstractDao{
 	}
 	
 	protected static Map<String,BasicDBObject> buildSetUpdateMap(BasicDBObject query,Map<String,Object> setMap){
-		if(setMap == null || setMap.size() == 0)return null;
+		if(Utils.isEmpty(setMap)){
+			return null;
+		}
+		
+		setMap.put("modifiedDate",new Date());
 		
 		Map<String,BasicDBObject> bdbMap = new HashMap<String,BasicDBObject>();
 		bdbMap.put("query", query);
