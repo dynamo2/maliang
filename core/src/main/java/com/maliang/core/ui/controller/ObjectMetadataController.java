@@ -32,6 +32,7 @@ import com.maliang.core.model.Project;
 import com.maliang.core.model.Trigger;
 import com.maliang.core.model.TriggerAction;
 import com.maliang.core.model.UCType;
+import com.maliang.core.util.StringUtil;
 import com.maliang.core.util.Utils;
 import com.mongodb.util.Util;
 
@@ -132,6 +133,43 @@ public class ObjectMetadataController extends BasicController {
 
 		model.addAttribute("resultJson", json(resultMap));
 		return "/metadata/gojs/main";
+	}
+	
+	@RequestMapping(value = "code.htm")
+	public String code(String code,Model model) {
+		String result = "";
+		if(!StringUtil.isEmpty(code)){
+			Object val = AE.execute(code);
+			if(val != null){
+				result = val.toString();
+			}
+		}
+		
+		System.out.println("----------- code result -----------------");
+		System.out.println(result);
+		System.out.println("----------- code result end -----------------");
+		
+		model.addAttribute("result", result);
+		return "/metadata/code";
+	}
+	
+	@RequestMapping(value = "code2.htm")
+	@ResponseBody
+	public String runCode(HttpServletRequest request) {
+		String code = request.getParameter("code");
+		Object result = null;
+		if(!StringUtil.isEmpty(code)){
+			result = AE.execute(code);
+		}
+		if(result == null){
+			result = "";
+		}
+		
+		System.out.println("----------- code2 result -----------------");
+		System.out.println(result);
+		System.out.println("----------- code2 result end -----------------");
+		
+		return this.json(this.newMap("result",result.toString()));
 	}
 	
 	@RequestMapping(value = "edit3.htm")

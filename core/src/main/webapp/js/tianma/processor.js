@@ -376,6 +376,28 @@ var MGenerator = HTMLGenerator.extend({
 		return [textarea,element];
 	},
 	
+	/**
+	 * {
+        type:'tab',
+        layout:'inline',
+        tabs:[
+            {
+                nav:'宝贝详情',
+                content:{
+                    type:'div',
+                    style:'width:1000px;padding-left:50px;',
+                    html:product.description
+                }
+            },{
+                nav:'累计评论',
+                content:'累计评论'
+            },{
+                nav:'专享服务',
+                content:'专享服务'
+            }
+        ]
+    }
+	 * ***/
 	tab:function(options){
 		var curr = this;
 		var tabs = options && options.tabs;

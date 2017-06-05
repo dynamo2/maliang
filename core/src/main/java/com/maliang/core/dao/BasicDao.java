@@ -458,9 +458,9 @@ public class BasicDao extends AbstractDao{
 	public Map toDBModel(Map dataMap,List<ObjectField> fields){
 		Map<String,Object> newMap = new HashMap<String,Object>();
 		
-		if(!StringUtil.isEmpty((String)dataMap.get("id"))){
+		if(!Utils.isEmpty(dataMap.get("id"))){
 			//newMap.put("_id",new ObjectId(dataMap.get("id").toString().trim()));
-			newMap.put("id",dataMap.get("id"));
+			newMap.put("id",dataMap.get("id").toString());
 		}
 		
 		if(dataMap.get("_id") != null){
@@ -587,12 +587,16 @@ public class BasicDao extends AbstractDao{
 		if(dataMap == null)return null;
 		
 		Map<String,Object> newMap = new HashMap<String,Object>();
-		
-		if(!StringUtil.isEmpty((String)dataMap.get("id"))){
+		Object id = dataMap.get("id");
+		if(!Utils.isEmpty(id)){
 			if(dealWithId){
-				newMap.put("_id",new ObjectId(dataMap.get("id").toString().trim()));
+				if(id instanceof ObjectId){
+					newMap.put("_id",id);
+				}else {
+					newMap.put("_id",new ObjectId(id.toString().trim()));
+				}
 			}else {
-				newMap.put("id",dataMap.get("id"));
+				newMap.put("id",id.toString());
 			}
 		}
 

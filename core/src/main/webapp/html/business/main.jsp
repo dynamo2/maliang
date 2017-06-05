@@ -30,7 +30,8 @@
 		<div class="ui-layout-north">
 			<a href="/metadata/main.htm">对象模型</a>&nbsp;&nbsp;
 			<a href="/business/main.htm">业务</a>&nbsp;&nbsp;
-			<a href="/uctype/main.htm">自定义类型</a>
+			<a href="/uctype/main.htm">自定义类型</a>&nbsp;&nbsp;
+			<a href="/metadata/code.htm" target="_blank">编辑器</a>
 			<a style="display:none;" id="refreshMainLink" href="/business/main.htm" target="_top">刷新</a>
 		</div>
 		<div class="ui-layout-center">
