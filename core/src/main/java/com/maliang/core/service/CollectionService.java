@@ -149,10 +149,14 @@ public class CollectionService {
 		return this.collectionDao.aggregateOne(query, this.collection);
 	}
 	
+	//待优化
 	public Map<String,Object> save(Object obj){
 		if(obj == null || !(obj instanceof Map))return null;
 		
 		Map<String,Object> dataMap = (Map<String,Object>)obj;
+		dataMap = this.collectionDao.toDBModel(dataMap, this.collection);
+//		System.out.println("service save dataMap : " + dataMap);
+//		System.out.println("service save has id : " + hasId(dataMap));
 		
 		if(hasId(dataMap)){// Update
 			dataMap = this.collectionDao.correctData(dataMap, this.collection,false,false);

@@ -80,6 +80,10 @@ function log(s){
 	console.log(s);
 }
 
+function reload(element,newOption){
+	return generator.reload(element,newOption);
+}
+
 var HTMLGenerator = Class.extend({
 	inputTypes:["text","textarea","number2","summernote","password","htmlEditor","hidden","between","radio","date","select","select2","checkbox","button","submit","reset"],
 	
@@ -90,6 +94,52 @@ var HTMLGenerator = Class.extend({
 	isButton:function(type){
     	return utils.hasName(['button','submit','reset'],type);
     },
+    
+    _cache_:{
+    	_database:{},
+    	add:function(element,option){
+    		this._database[element] = option;
+//    		console.log('-------- cache add start ------');
+//    		console.log('*** element : ' + element.prop('outerHTML'));
+//    		console.log('*** option : ' + ts(option));
+//    		console.log('-------- cache add end ------');
+    	},
+    	get:function(element){
+    		return this._database && this._database[element]; 
+    	},
+    	remove:function(element){
+    		this._database[element] = undefined;
+    	}
+    },
+    
+    reload:function(element,newOption){
+    	var option = this._cache_.get(element);
+    	option = this.updateOption(option,newOption);
+    	if(!option)return;
+    	
+    	var ele = this.build(option);
+    	element.after(ele);
+    	element.remove();
+    	
+    	return ele;
+    },
+    
+    updateOption:function(opts,newOption){
+    	if(!opts){
+    		return newOption;
+    	}
+    	
+    	if($.isPlainObject(opts) && $.isPlainObject(newOption)){
+    		$.each(newOption,function(k,v){
+    			opts[k] = v;
+    		});
+    		
+    		return opts;
+    	}
+    	
+    	return newOption;
+    },
+    
 	
 	build:function(opts){
 		var curr = this;
@@ -127,6 +177,16 @@ var HTMLGenerator = Class.extend({
 		if(type === "html"){
 			return this.html(opts);
 		}
+		
+		if(type === 'ajax'){
+			//var clone = utils.copy(opts,null,null);
+			
+			var ele = this.ajax(opts);
+			this._cache_.add(ele,opts);
+			
+			return ele;
+		}
+		
 		return this.htmlElement(opts);
 	},
 	
@@ -208,6 +268,41 @@ var HTMLGenerator = Class.extend({
 		}
 		
 		return null;
+	},
+	
+	
+	/**
+	 * {
+	 * 		type:'ajax',
+	 * 		data:
+	 * }
+	 * **/
+	ajax:function(opts){
+		var ajaxSpan = $("<span model='ajax' />");
+
+		var done = null;
+		if(opts && opts.done){
+    		done = opts.done;
+    		if(!$.isFunction(done)){
+    			done = eval(done);
+    		}
+    	}
+		
+		$.ajax({
+		    cache:true,
+		    type:"POST",
+		    dataType : 'json',
+		    url:'/flows/ajax.htm',
+		    data:opts.data,
+		    async:false
+		}).done(function(result,status){
+	    	if(result && result.html){
+	    		var ele = generator.build(result.html);
+		    	ajaxSpan.append(ele);
+	    	}
+	    }).done(done?done:function(){});
+		
+		return ajaxSpan;
 	},
 
 	
@@ -348,8 +443,99 @@ var MGenerator = HTMLGenerator.extend({
 		if(et === "summernote"){
 			return this.summernote(opts);
 		}
+		
+		if(et === "popover"){
+			return this.popover(opts);
+		}
 
 		return this._super(opts);
+	},
+	
+	
+	/**
+	 * 
+	 * {
+    type:'popover',
+    modal:'link | button',
+    id:'',
+    css:'',
+    text:'',
+    option:{
+      content:function(){
+        var eles = [
+          $("<p><input type='text'></p>"),
+          $("<p><input type='text'></p>"),
+          $("<p><select><option value='1'>1111</option><option value='2'>2222</option></select></p>"),
+          $("<p><input type='button' value='ok' onclick=\"$('#pop').trigger('click')\" /></p>")
+        ];
+        return eles;
+      },
+      html:true,
+      title:'物流策略'
+    }
+  }
+  
+  {
+  	type:'popover',
+  	id:'',
+  	text:'',
+  	option:{
+  		content:{
+  			type:'radio',
+  		},
+  		title:'物流策略列表'
+  	}
+  }
+	 * **/
+	popover:function(option){
+		var gb = this;
+		
+		var modal = option && option.modal;
+		if(!modal){
+			modal = 'link';
+		}
+		
+		var pop = null;
+		if(modal === 'button'){
+			pop = $("<button />");
+		}else {
+			pop = $("<a tabindex='0' role='button' />");
+		}
+		
+		var props = utils.copy(option,null,['type','modal','option']);
+		pop.text(option && option.text);
+		pop.prop("id",option && option.id);
+		pop.addClass(option && option.css);
+		
+		var popOption = option && option.option;
+		var popContent = popOption && popOption.content;
+		var popHtml = popOption && popOption.html;
+		if(popContent){
+			if($.isPlainObject(popContent) || $.isArray(popContent)){
+				if(popHtml === null || popHtml === undefined || popHtml === true){
+					var popContent = gb.build(popContent); 
+					popHtml = true;
+				}
+			}else if($.type(popContent) === 'string'){
+				if(popHtml === null || popHtml === undefined || popHtml === true){
+					var fun = eval(popContent);
+					if($.isFunction(fun)){
+						popContent = fun;
+					}
+					popHtml = true;
+				}
+			}
+			
+			popOption.content = popContent;
+			popOption.html = popHtml;
+		}
+		
+		//<script src="http://localhost:8080/static/metronic/theme/assets/global/plugins/bootstrap/js/bootstrap.min.js" type="text/javascript"></script>
+		$.getScript("/static/metronic/theme/assets/global/plugins/bootstrap/js/bootstrap.min.js",function(){
+			pop.popover(popOption);
+		});
+		
+		return pop;
 	},
 	
 	summernote:function(options){

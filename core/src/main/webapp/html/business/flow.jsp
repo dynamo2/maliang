@@ -32,10 +32,11 @@
 		<script src="../js/tianma/inputs.js"></script>
 		<script src="../html/business/tianma.js"></script>
 		
-		<script src="../js/tianma/processor.js?ddd"></script>
+		<script src="../js/tianma/processor.js?ddDdsddp"></script>
 		<script src="../js/tianma/metronic.js"></script>
 	
 
+		<script src="http://localhost:8080/static/metronic/theme/assets/global/plugins/bootstrap/js/bootstrap.min.js" type="text/javascript"></script>
 		<style>
 		.page-content {
 			min-height:1000px;

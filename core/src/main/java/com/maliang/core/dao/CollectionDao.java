@@ -79,7 +79,7 @@ public class CollectionDao extends BasicDao {
 	
 	
 	public Map<String, Object> save(Map value, String collName) {
-		value = this.toDBModel(value, collName);
+		//value = this.toDBModel(value, collName);
 		
 		BasicDBObject doc = this.build(value);
 		if (doc == null) {
