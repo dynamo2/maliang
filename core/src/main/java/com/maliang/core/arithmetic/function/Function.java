@@ -130,6 +130,14 @@ public class Function {
 			return ListFunction.prepend(this, params);
 		}
 		
+		if("loop".equalsIgnoreCase(key)){
+			return LoopFunction.loop(this, params);
+		}
+		
+		if("random".equalsIgnoreCase(key)){
+			return MathFunction.random(this, params);
+		}
+		
 		if("print".equalsIgnoreCase(key)){
 			System.out.println(this.executeExpression(params));
 			return null;
@@ -318,6 +326,10 @@ public class Function {
 			return ExpandFunction.execute(this, params);
 		}
 		
+		if("oid".equals(key)){
+			return DBFunction.oid(this, params);
+		}
+		
 //		if("filter".equals(key)){
 //			return FilterFunction.execute(this, params);
 //		}
@@ -371,7 +383,7 @@ public class Function {
 	}
 	
 	private boolean isDBFun(){
-		return key != null && key.startsWith("db.");
+		return key != null && (key.startsWith("db.") || key.startsWith("pdb."));
 	}
 	
 	private boolean isHtmlFun(){

@@ -98,6 +98,11 @@ public class CollectionDao extends BasicDao {
 		this.getDBCollection(collName).save(doc);
 
 		value.put("id", doc.getObjectId("_id").toByteArray());
+		
+		/***
+		 * Log
+		 * **/
+		this.insertLog(doc,collName);
 
 		return toMap(doc, collName);
 	}
@@ -423,6 +428,8 @@ public class CollectionDao extends BasicDao {
 
 		String id = (String) value.remove("id");
 		BasicDBObject query = this.getObjectId(id);
+		
+		
 
 		ObjectMetadata meta = this.metaDao.getByName(collName);
 		List<Map<String, BasicDBObject>> updates = new ArrayList<Map<String, BasicDBObject>>();
@@ -431,17 +438,26 @@ public class CollectionDao extends BasicDao {
 		
 		updates.add(buildSetUpdateMap(query, daoMap));
 		
+		/***
+		 * update log
+		 * ***/
+		Map<String,Object> oldVal = this.getByID(id, collName);
+		Map<String,Object> logVal = this.logUpdateValue(meta.getFields(),oldVal, value);
+		
 		DBCollection db = this.getDBCollection(collName);
 		DBObject result = null;
 		List<Map<Object,Object>> resultValueMap = new ArrayList<Map<Object,Object>>();
 		for (Map<String, BasicDBObject> um : updates) {
 			if (um != null) {
-				System.out.println("updateBySet : " + um.get("update"));
-				
 				result = db.findAndModify(um.get("query"), null, null, false,
 						um.get("update"), true, false);
 			}
 		}
+		
+		/***
+		 * update log
+		 * ***/
+		this.updateLog(new ObjectId(id),logVal, collName);
 
 		value.put("id", id);
 

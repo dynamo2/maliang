@@ -4,12 +4,13 @@ import java.beans.BeanInfo;
 import java.beans.Introspector;
 import java.beans.PropertyDescriptor;
 import java.sql.Timestamp;
+import java.util.Date;
 
 import org.bson.types.ObjectId;
 
 public class MongodbModel {
 	protected ObjectId id;
-	//protected Timestamp createdDate;
+	protected Date createdDate;
 	
 	public ObjectId getId() {
 		return id;
@@ -28,13 +29,13 @@ public class MongodbModel {
 //		}
 //	}
 	
-//	public Timestamp getCreatedDate() {
-//		return createdDate;
-//	}
-//
-//	public void setCreatedDate(Timestamp createdDate) {
-//		this.createdDate = createdDate;
-//	}
+	public Date getCreatedDate() {
+		return createdDate;
+	}
+
+	public void setCreatedDate(Date createdDate) {
+		this.createdDate = createdDate;
+	}
 
 	public String toString(){
 		StringBuffer sbf = null;

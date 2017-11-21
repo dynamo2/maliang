@@ -36,6 +36,21 @@ public class MapHelper {
 		System.out.println(curlyToMap("{product:this,"
 					+ "num:request.product.num,"
 					+ "price:user.user_grade.discount*0.01*this.product.price}"));
+		
+		System.out.println("list class : " + List.class.isAssignableFrom(ArrayList.class));
+	}
+	
+	public static <T> T readValue(Object obj,String fname,Class<T> cls,T defaultValue){
+		Object value = readValue(obj,fname);
+		if(value == null){
+			return defaultValue;
+		}
+		
+		if(cls.isAssignableFrom(value.getClass())){
+			return (T)value;
+		}
+		
+		return defaultValue;
 	}
 	
 	public static Object readValue(Object obj,String fname,Object defaultValue){

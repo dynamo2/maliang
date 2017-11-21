@@ -52,6 +52,8 @@ public class TestCollectionDao extends CollectionDao {
 		s = "db.Brand.search()";
 		Object v = AE.execute(s);
 		
+		
+		
 		System.out.println(v);
 		//System.out.println(((Map)v).get("createdDate").getClass());
 		

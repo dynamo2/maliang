@@ -10,10 +10,45 @@ import java.util.regex.Pattern;
 import org.bson.types.ObjectId;
 
 import com.maliang.core.arithmetic.AE;
+import com.maliang.core.dao.DaoHelper;
 import com.maliang.core.service.CollectionService;
+import com.maliang.core.service.PrimitiveDBService;
 import com.maliang.core.util.Utils;
 
 public class DBFunction {
+	public static Object pdb(Function function,Map<String,Object> params){
+		String key = function.getKey();
+		int start = key.indexOf(".");
+		int end = key.lastIndexOf(".");
+		
+		Object value = function.executeExpression(params);
+//		if(start == end){
+//			String method = key.substring(end+1);
+//			if("in".equals(method)){
+//				PrimitiveDBService.invoke(method, collection, value);
+//				return in(function,params);
+//			}
+//		}
+		
+		String collection = start<end?key.substring(start+1,end):null;
+		String method = key.substring(end+1);
+
+		return PrimitiveDBService.invoke(method, collection, value);
+	}
+	
+	public static Object oid(Function function,Map<String,Object> params){
+		Object value = function.executeExpression(params);
+//		if(start == end){
+//			String method = key.substring(end+1);
+//			if("in".equals(method)){
+//				PrimitiveDBService.invoke(method, collection, value);
+//				return in(function,params);
+//			}
+//		}
+		
+		return DaoHelper.getObjectId(value,true);
+	}
+	
 	public static Object execute(Function function,Map<String,Object> params){
 //		String[] keys = function.getKey().split("\\.");
 //
@@ -23,7 +58,12 @@ public class DBFunction {
 //		Object value = function.executeExpression(params);
 //		return new CollectionService(collection).invoke(method, value);
 		
+		
 		String key = function.getKey();
+		if(key.startsWith("pdb.")){
+			return pdb(function,params);
+		}
+		
 		int start = key.indexOf(".");
 		int end = key.lastIndexOf(".");
 		

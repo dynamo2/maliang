@@ -173,7 +173,11 @@ public class AbstractDao  {
 
 				
 				if(value instanceof BasicDBObject){
-					value = decode((BasicDBObject)value,pd.getPropertyType());
+					if(pd.getPropertyType().isAssignableFrom(Map.class)){
+						value = ((BasicDBObject)value).toMap();
+					}else {
+						value = decode((BasicDBObject)value,pd.getPropertyType());
+					}
 				}else if(value instanceof BasicDBList){
 					List vlist = new ArrayList();
 					Class innerCls = INNER_TYPE.get(cls.getSimpleName()+"."+pd.getName());

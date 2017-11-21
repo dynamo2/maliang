@@ -6,10 +6,10 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 
 import org.springframework.web.context.request.RequestContextHolder;
@@ -174,5 +174,12 @@ public class Utils {
 		}catch(Exception e){
 			return null;
 		}
+	}
+	
+	public static Map newMap(Object key,Object val){
+		Map map = new LinkedHashMap();
+		map.put(key,val);
+		
+		return map;
 	}
 }

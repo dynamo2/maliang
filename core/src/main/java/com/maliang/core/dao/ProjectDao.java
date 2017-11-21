@@ -10,7 +10,7 @@ import com.maliang.core.model.TriggerAction;
 
 public class ProjectDao extends ModelDao<Project> {
 	protected static String COLLECTION_NAME = "System";
-	protected CollectionDao collectionDao = new CollectionDao();
+	//protected CollectionDao collectionDao = new CollectionDao();
 	
 	static {
 		INNER_TYPE.put("Project.subprojects",Subproject.class);

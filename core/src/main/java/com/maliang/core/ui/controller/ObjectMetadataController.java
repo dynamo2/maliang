@@ -145,9 +145,9 @@ public class ObjectMetadataController extends BasicController {
 			}
 		}
 		
-		System.out.println("----------- code result -----------------");
-		System.out.println(result);
-		System.out.println("----------- code result end -----------------");
+//		System.out.println("----------- code result -----------------");
+//		System.out.println(result);
+//		System.out.println("----------- code result end -----------------");
 		
 		model.addAttribute("result", result);
 		return "/metadata/code";
@@ -165,9 +165,9 @@ public class ObjectMetadataController extends BasicController {
 			result = "";
 		}
 		
-		System.out.println("----------- code2 result -----------------");
-		System.out.println(result);
-		System.out.println("----------- code2 result end -----------------");
+//		System.out.println("----------- code2 result -----------------");
+//		System.out.println(result);
+//		System.out.println("----------- code2 result end -----------------");
 		
 		return this.json(this.newMap("result",result.toString()));
 	}

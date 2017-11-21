@@ -11,6 +11,7 @@ import org.bson.types.ObjectId;
 
 import com.maliang.core.arithmetic.AE;
 import com.maliang.core.model.FieldType;
+import com.maliang.core.model.Log;
 import com.maliang.core.model.ObjectField;
 import com.maliang.core.model.ObjectMetadata;
 import com.maliang.core.model.Project;
@@ -31,6 +32,7 @@ public class BasicDao extends AbstractDao{
 	protected UCTypeDao uctypeDao = new UCTypeDao();
 	//protected CollectionDao collDao = new CollectionDao();
 	public static final String[] DB_KEYWORDS = {"if","then","else"};
+	public LogDao logDao = new LogDao();
 
 	public static boolean isDBKeyword(String name){
 		if(StringUtil.isEmpty(name))return false;
@@ -45,6 +47,29 @@ public class BasicDao extends AbstractDao{
 		return false;
 	}
 	
+	public void insertLog(BasicDBObject doc,String collName){
+		Log log = new Log();
+		log.setActionId(doc.getObjectId("_id"));
+		log.setActionType(Log.INSERT_ACTION);
+		log.setActionObject(collName);
+		//log.setOperator(Utils.getSessionValue("user"));
+		
+		logDao.save(log);
+	}
+	
+	public void updateLog(ObjectId id,Map<String,Object> doc,String collName){
+		Log log = new Log();
+		log.setActionId(id);
+		log.setActionType(Log.UPDATE_ACTION);
+		log.setActionObject(collName);
+		
+		System.out.println("log doc : " + doc);
+		log.setContent(doc);
+		//log.setOperator(Utils.getSessionValue("user"));
+		
+		logDao.save(log);
+	}
+
 	public void save(BasicDBObject doc,String collName) {
 		this.getDBCollection(collName).save(doc);
 	}
@@ -212,6 +237,222 @@ public class BasicDao extends AbstractDao{
 		}
 		
 		return daoMap;
+	}
+	
+	
+	protected Map<String,Object> logUpdateArrayItemValue(ObjectField field,List<Map<String,Object>> oldVal,Map<String,Object> newVal){
+		String id = this.readObjectIdToString(newVal);
+		
+		Map<String,Object> oo = readItemFromArray(id,oldVal);
+		
+		Map<String,Object> oolv = this.logUpdateValue(field.getFields(),oo,newVal);
+		
+		oolv.put("id",oo.get("id"));
+		return oolv;
+	}
+	
+	protected Map<String,Object> readItemFromArray(String id,List<Map<String,Object>> items){
+		if(id == null){
+			return null;
+		}
+		
+		if(Utils.isEmpty(items)){
+			return null;
+		}
+		
+		for(Map<String,Object> o : items){
+			Object temp = this.readObjectIdToString(o);
+			if(id.equals(temp)){
+				return o;
+			}
+		}
+		return null;
+	}
+	
+	protected boolean compareDBArray(List<Object> x,List<Object> y){
+		if(x == null){
+			if(y == null){
+				return true;
+			}
+			return false;
+		}
+		
+		if(y == null){
+			return false;
+		}
+		
+		if(x.size() != y.size()){
+			return false;
+		}
+		
+		for(Object ox:x){
+			if(!y.contains(ox)){
+				return false;
+			}
+		}
+		return true;
+	}
+	
+	protected List<Object> wrapList(Object o){
+		return this.wrapList(o,false);
+	}
+	
+	protected List<Object> wrapList(Object o,boolean force){
+		if(o instanceof List && !force){
+			return (List<Object>)o;
+		}
+		
+		List<Object> list = new ArrayList<Object>();
+		list.add(o);
+		return list;
+	}
+	
+	
+	protected Map<String,Object> logUpdateValue(List<ObjectField> fields,Map<String,Object> oldVal,Map<String,Object> newVal){
+		Map<String,Object> logVal = new HashMap<String,Object>();
+		
+		for(String k : newVal.keySet()){
+			if(k.startsWith(".")){
+				continue;
+			}
+			
+			if(k.equals("id") || k.equals("_id")){
+				continue;
+			}
+			
+			ObjectField field = readObjectField(fields,k);
+			if(field == null){
+				continue;
+			}
+			
+			Object ov = oldVal.get(k);
+			Object nv = newVal.get(k);
+			
+			if(!oldVal.containsKey(k)){
+				logVal.put(k,logVal(Log.NOT_EXIST,nv));
+				continue;
+			}
+
+			if(FieldType.INNER_COLLECTION.is(field.getType())){
+				if(ov == null){
+					logVal.put(k,logVal(null,nv));
+					continue;
+				}
+				
+				if(nv != null){
+					Map<String,Object> ilv = logUpdateValue(field.getFields(),(Map<String,Object>)ov,(Map<String,Object>)nv); 
+					if(!ilv.isEmpty()){
+						logVal.put(k, ilv);
+					}
+				}
+				
+				continue;
+			}
+			
+			if(FieldType.ARRAY.is(field.getType())){
+				nv = wrapList(nv);
+				
+				if(FieldType.INNER_COLLECTION.is(field.getElementType())){
+					List<Map<String,Object>> oldItems = (List<Map<String,Object>>)ov;
+					
+					List<Map<String,Object>> pushes = new ArrayList<Map<String,Object>>();
+					List<Map<String,Object>> sets = new ArrayList<Map<String,Object>>();
+					for(Map<String,Object> mv : (List<Map<String,Object>>)nv){
+						String id = this.readObjectIdToString(mv);
+						Map<String,Object> oo = readItemFromArray(id,oldItems);
+						
+						if(Utils.isEmpty(oo)){
+							pushes.add(mv);
+						}else {
+							Map<String,Object> oolv = this.logUpdateValue(field.getFields(),oo,mv);
+							oolv.put("id",oo.get("id"));
+							sets.add(oolv);
+						}
+					}
+					
+					Map map = new HashMap();
+					if(!Utils.isEmpty(pushes)){
+						map.put(Log.ARRAY_PUSH,pushes);
+					}
+					
+					if(!Utils.isEmpty(sets)){
+						map.put(Log.ARRAY_SET,sets);
+					}
+					
+					logVal.put(k,map);
+				}
+				
+				if(FieldType.LINK_COLLECTION.is(field.getElementType())){
+					List<Object> oldItems = (List<Object>)ov;
+				}
+				continue;
+			}
+			
+			if(FieldType.LINK_COLLECTION.is(field.getType())){
+				if(ov != null && ov instanceof Map){
+					ov = readObjectIdToString((Map)ov);
+				}
+				
+				if(nv != null && nv instanceof Map){
+					nv = readObjectIdToString((Map)nv);
+				}
+			}
+			
+			if(FieldType.VARIABLE_LINK.is(field.getType())){
+				if(ov != null && ov instanceof Map){
+					String id = readObjectIdToString((Map)ov);
+					String mtype = readMetadataType((Map)ov);
+					
+					if(!StringUtil.isEmpty(id) && !StringUtil.isEmpty(mtype)){
+						ov = mtype+","+id;
+					}
+				}
+				
+				if(nv != null && nv instanceof Map){
+					String id = readObjectIdToString((Map)nv);
+					String mtype = readMetadataType((Map)nv);
+					
+					if(!StringUtil.isEmpty(id) && !StringUtil.isEmpty(mtype)){
+						nv = mtype+","+id;
+					}
+				}
+			}
+			
+			
+			if(nv == null){
+				if(ov == null){
+					if(!oldVal.containsKey(k)){
+						logVal.put(k,logVal(Log.NOT_EXIST,null));
+					}
+				}else {
+					logVal.put(k,logVal(ov,null));
+				}
+			}else if(!nv.equals(ov)){
+				if(ov == null && !oldVal.containsKey(k)){
+					logVal.put(k,logVal(Log.NOT_EXIST,nv));
+				}else {
+					logVal.put(k,logVal(ov,nv));
+				}
+			}
+			
+		}
+		return logVal;
+	}
+	
+	private List<Object> logVal(Object ov,Object nv){
+		List<Object> vs = new ArrayList<Object>();
+		vs.add(ov);
+		vs.add(nv);
+		return vs;
+	}
+	
+	private ObjectField readObjectField(List<ObjectField> fields,String fname){
+		for(ObjectField f:fields){
+			if(f.getName().equals(fname)){
+				return f;
+			}
+		}
+		return null;
 	}
 	
 	/**
@@ -531,22 +772,21 @@ public class BasicDao extends AbstractDao{
 		if(FieldType.ARRAY.is(field.getType())){
 			int type = field.getType();
 			
-			if(Utils.isArray(fieldValue)){
-				List newList = new ArrayList();
-				field.setType(field.getElementType());
-				for(Object arrObj:Utils.toArray(fieldValue)){
-					if(arrObj == null)continue;
-					
-					newList.add(toDBModel(arrObj,field));
-				}
-				
-				fieldValue = newList;
-			}
-			
+			List temp = new ArrayList();
 			if(!Utils.isArray(fieldValue)){
-				fieldValue = null;
+				temp.add(fieldValue);
+				fieldValue = temp;
 			}
 			
+			temp = new ArrayList();
+			field.setType(field.getElementType());
+			for(Object arrObj:Utils.toArray(fieldValue)){
+				if(arrObj == null)continue;
+				
+				temp.add(toDBModel(arrObj,field));
+			}
+			
+			fieldValue = temp;
 			field.setType(type);
 		}
 		

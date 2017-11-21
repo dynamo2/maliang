@@ -1,6 +1,7 @@
 package com.maliang.core.dao;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -31,6 +32,7 @@ public class ModelDao<T extends MongodbModel> extends AbstractDao {
 			this.dbColl.update(
 				new BasicDBObject("_id",om.getId()),new BasicDBObject("$set", doc));
 		}else {
+			doc.append("createdDate", new Date());
 			this.dbColl.save(doc);
 		}
 		
