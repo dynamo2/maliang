@@ -11,8 +11,11 @@ import com.maliang.core.model.Block;
 import com.maliang.core.model.Business;
 import com.maliang.core.model.HtmlTemplate;
 import com.maliang.core.model.MongodbModel;
+import com.maliang.core.model.Project;
+import com.maliang.core.model.Subproject;
 import com.maliang.core.model.Workflow;
 import com.maliang.core.util.StringUtil;
+import com.maliang.core.util.Utils;
 import com.mongodb.AggregationOutput;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBCursor;
@@ -68,6 +71,28 @@ public class BusinessDao extends ModelDao<Business> {
 	
 	public HtmlTemplate getHtmlTemplate(String canonicalName){
 		return getSubObjectByName(canonicalName,"htmlTemplates",HtmlTemplate.class);
+	}
+	
+	public List<Business> listByProject(){
+		Object bus = Utils.getSessionValue("SYS_BUSINESS");
+		if(bus != null && bus instanceof Business){
+			MongodbModel bpro = ((Business)bus).getProject();
+			BasicDBObject projectQuery = new BasicDBObject();
+			
+			String val = null;
+			if(bpro instanceof Project){
+				val = "Project,";
+			}else if(bpro instanceof Subproject){
+				val = "Subproject,";
+			}
+			val += bpro.getId().toString();
+			
+			projectQuery.put("project",val);
+			
+			return this.list(projectQuery);
+		}
+		
+		return null;
 	}
 	
 	private <T> T getSubObjectByName(String canonicalName,String subName,Class<T> subCls){

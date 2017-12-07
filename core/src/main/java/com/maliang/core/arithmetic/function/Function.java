@@ -151,6 +151,14 @@ public class Function {
 			return BusinessFunction.toPage(this, params);
 		}
 		
+		if("blist".equalsIgnoreCase(key)){
+			return BusinessFunction.businesses(this, params);
+		}
+		
+		if("flow".equalsIgnoreCase(key)){
+			return BusinessFunction.flow(this, params);
+		}
+		
 		if("set".equalsIgnoreCase(key)){
 			return AssignFunction.set(this, params);
 		}

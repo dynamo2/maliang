@@ -23,6 +23,7 @@ import com.maliang.core.model.Block;
 import com.maliang.core.model.Business;
 import com.maliang.core.model.Workflow;
 import com.maliang.core.service.BusinessService;
+import com.maliang.core.util.SessionUtil;
 import com.maliang.core.util.Utils;
 
 @Controller
@@ -82,8 +83,6 @@ public class WorkFlowController extends BasicController {
 		if (business == null) {
 			business = businessDao.getByName(businessName);
 		}
-
-		request.getSession().setAttribute("SYS_BUSINESS",business);
 		
 		if (business == null) {
 			return null;
@@ -91,6 +90,10 @@ public class WorkFlowController extends BasicController {
 		
 		Workflow flow = business.workFlow(flowStep);
 		businessService.readBlock(flow,business.getUniqueCode(),Block.TYPE_CODE);
+		
+		//Session cache
+		SessionUtil.put(request,SessionUtil.BUSINESS,business);
+		SessionUtil.put(request,SessionUtil.FLOW,flow);
 		
 		return flow;
 	}

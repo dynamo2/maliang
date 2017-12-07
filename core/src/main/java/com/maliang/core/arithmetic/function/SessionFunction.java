@@ -6,6 +6,7 @@ import java.util.Map;
 import javax.servlet.http.HttpSession;
 
 import com.maliang.core.arithmetic.ArithmeticExpression;
+import com.maliang.core.util.SessionUtil;
 import com.maliang.core.util.Utils;
 
 public class SessionFunction {
@@ -14,18 +15,13 @@ public class SessionFunction {
 	public static Object execute(Function function ,Map<String,Object> params){
 		Object obj = function.executeExpression(params);
 		if(obj != null){
-			HttpSession session = Utils.getSession();
 			if(obj instanceof Map){
 				Map<String,Object> mv = (Map<String,Object>)obj;
-				if(mv.size() > 0){
-					for(String k :mv.keySet()){
-						session.setAttribute(k, mv.get(k));
-					}
-				}
+				SessionUtil.putAll(mv);
 				
 				return mv;
 			}else {
-				return session.getAttribute(obj.toString());
+				return SessionUtil.getValue(obj.toString());
 			}
 		}
 		

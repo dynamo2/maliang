@@ -1,5 +1,8 @@
 package com.maliang.core.service;
 
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -9,9 +12,41 @@ import com.maliang.core.dao.BusinessDao;
 import com.maliang.core.model.Block;
 import com.maliang.core.model.Business;
 import com.maliang.core.model.Workflow;
+import com.maliang.core.util.Utils;
 
 public class BusinessService {
 	BusinessDao businessDao = new BusinessDao();
+	
+	public List<Map<String,Object>> businesses(){
+		List<Business> bes =  this.businessDao.listByProject();
+		List<Map<String,Object>> results = new ArrayList<Map<String,Object>>();
+		
+		if(!Utils.isEmpty(bes)){
+			for(Business b : bes){
+				Map<String,Object> map = new LinkedHashMap<String,Object>();
+				
+				map.put("id",b.getId());
+				map.put("name", b.getName());
+				map.put("flows", new ArrayList<Map<String,Object>>());
+				
+				if(!Utils.isEmpty(b.getWorkflows())){
+					List<Map<String,Object>> flows = (List<Map<String,Object>>)map.get("flows");
+					for(Workflow wf : b.getWorkflows()){
+						Map<String,Object> wm = new LinkedHashMap<String,Object>();
+						wm.put("id",wf.getId());
+						wm.put("name",wf.getName());
+						wm.put("step",wf.getStep());
+						
+						flows.add(wm);
+					}
+				}
+				
+				results.add(map);
+			}
+		}
+		
+		return results;
+	}
 	
 	public Object business(Map<String,Object> params){
 		String key = (String)MapHelper.readValue(params,"bid");
@@ -45,6 +80,8 @@ public class BusinessService {
 		flow.setResponse(this.readBlock(flow.getResponse(), defaultUniqueCode,blockType));
 		flow.setAjax(this.readBlock(flow.getAjax(), defaultUniqueCode,blockType));
 	}
+	
+	
 
 	public String readBlock(String code,String defaultUniqueCode,int blockType) {
 		if(code == null)return null;

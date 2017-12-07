@@ -7,6 +7,8 @@
 		
         <script src="../js/angular.js"></script>
 		<script src="../js/jquery-2.1.3.min.js"></script>
+		
+		<!----> 
 		<script src="../js/jquery-ui.min.js"></script>
 		<script src="../js/jquery.simulate.js"></script>
 		<script src="/static/ace/src-noconflict/ace.js"></script>
@@ -23,8 +25,22 @@
 		<script src="../html/business/tianma.js"></script>
 		<link href="../html/business/style.css" rel="stylesheet" type="text/css"/> 
 		
+		<!-- bootstrap
+		<script src="/static/bootstrap/4.0/js/bootstrap.js"></script>
+		<link href="/static/bootstrap/4.0/css/bootstrap.css" rel="stylesheet" type="text/css"/> 
+		 -->
     </head>
     <body>
+    
+  <style>
+  .ui-tabs-vertical { width: 6em; }
+  .ui-tabs-vertical .ui-tabs-nav { padding: .2em .1em .2em .2em; float: left; width: 5em;}
+  .ui-tabs-vertical .ui-tabs-nav li { clear: left; width: 100%; border-bottom-width: 1px !important; border-right-width: 0 !important; margin: 0 -1px .2em 0; }
+  .ui-tabs-vertical .ui-tabs-nav li a { display:block; }
+  .ui-tabs-vertical .ui-tabs-nav li.ui-tabs-active { padding-bottom: 0; padding-right: .1em; border-right-width: 1px; }
+  .ui-tabs-vertical .ui-tabs-panel { padding: 1em; float: right; width: 0em;}
+  </style>
+  
 		<script>
 		var business = ${resultJson};
 		var basicEditerDialog = null;
@@ -131,6 +147,9 @@
 				});
 			
 			$("#blockTab").tabs();
+			
+			//$( "#blockTab" ).tabs().addClass( "ui-tabs-vertical ui-helper-clearfix" );
+		    //$( "#blockTab li" ).removeClass( "ui-corner-top" ).addClass( "ui-corner-left" );
 		}
 		
 		function initHtmlTemplates(){
@@ -207,6 +226,9 @@
 			
 			
 			$("#workflowTab").tabs();
+			
+			//$( "#workflowTab" ).tabs().addClass( "ui-tabs-vertical ui-helper-clearfix" );
+		    //$( "#workflowTab li" ).removeClass( "ui-corner-top" ).addClass( "ui-corner-left" );
 		}
 
 		function loadWorkFlow(id){
@@ -229,6 +251,7 @@
 			if(!flow)flow = {};
 			
 			$("#id").val(flow.id);
+			$("#flowIDLabel").val(flow.id);
 			$("#step").val(flow.step);
 			$("#workflowName").val(flow.name);
 			$("#code").val(flow.code);
@@ -292,6 +315,7 @@
 			<label>Workflow</label>
 			<input type="button" value="新增" onclick="showWorkflowEditer({});" />
 		</div>
+		
 		<div id="workflowDiv"></div>
 
 		
@@ -300,7 +324,7 @@
 		.title {
 			padding:15px 10px;
 			border-bottom:2px #77C9FF solid;
-			width:800px;
+			width:100%;
 		}
 		
 		.title label {
@@ -402,7 +426,7 @@
 				</div>
 			</form>
 			
-			<div id="blockEditor" style="width:100%;height:620px;"></div>
+			<div id="blockEditor" style="height:620px;"></div>
 		<div>
 		
 		<div id="workflowEditerDialog" title="Workflow Editer">
@@ -419,7 +443,10 @@
 					</ul>
 					<div id="stepDiv">
 						<input type="hidden" name="business.workflows.id" id="id" />
-						
+						<div>
+							<label>ID:</label>
+							<input type="text" id="flowIDLabel" style="width:250px;" value="" />
+						</div>
 						<div>
 							<label>step:</label>
 							<input type="text" name="business.workflows.step" id="step" value="" />
@@ -449,8 +476,16 @@
 				</div>
 			</form>
 			
-			<div id="editor" style="width:100%;height:620px;"></div>
+			<div id="editor" style="height:620px;"></div>
 		<div>
+		
+		
+		
+		
+		
+		
+		
+		
 	</body>
 	
 	<script>
