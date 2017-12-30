@@ -41,6 +41,8 @@
 		.page-content {
 			min-height:1000px;
 		}
+		
+		${css}
 		</style>
     </head>
     <body class="page-header-fixed page-quick-sidebar-over-content">
@@ -51,19 +53,48 @@
 		<div id="dialog"><div id="dialogPanel" /></div>
 		
 		<script>
+		${js}
+		
 		var ARRAY = [];
 		var EMPTY = ARRAY[-1];
 		var LINE_BREAK = '[n]';
 		
+		var result = ${response};
 		
-		var result = ${resultJson};
+		
 		var data = result && result.data;
 		var json = result && result.json;
 		var htmlTemplate = result && result.ht;
 		var htmlCode = result && result.html;
 		var jsUrl = result.jsUrl;
+		
 		if(!jsUrl && data && data.bid && data.fid){
 		    jsUrl = '/flows/js.htm?bid='+data.bid+'&fid='+data.fid;
+		    //cssUrl = '/flows/css.htm?bid='+data.bid+'&fid='+data.fid;
+		}
+		jsUrl = null;
+		
+		/**
+		 ** 加载引用文件：.js 和 .css
+		 **/
+		var files = ${files};
+		if($.isArray(files)){
+			var head= document.getElementsByTagName('head')[0];
+			$.each(files,function(){
+				if(this.type == 1){
+					var script= document.createElement('script'); 
+					script.type= 'text/javascript'; 
+					script.src= this.file; 
+					head.appendChild(script);
+				}else if(this.type == 2){
+					var link = document.createElement('link'); 
+					
+					link.rel = "stylesheet";
+					link.type = "text/css";
+					link.href = this.file;
+					head.appendChild(link);
+				}
+			});
 		}
 		
 		if(jsUrl){

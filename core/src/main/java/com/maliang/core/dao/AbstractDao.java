@@ -5,7 +5,6 @@ import java.beans.IntrospectionException;
 import java.beans.Introspector;
 import java.beans.PropertyDescriptor;
 import java.lang.reflect.Field;
-import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -39,15 +38,13 @@ public class AbstractDao  {
 	@SuppressWarnings("rawtypes")
 	protected static Map<String,Class> INNER_TYPE = new HashMap<String,Class>();
 	static {
-		try {
-			mongoClient = new MongoClient();
-			db = mongoClient.getDB(DB_JIRA);
-			
-			SYSTEM_DB_COLLECTIONS.add("object_metadata");
-			SYSTEM_DB_COLLECTIONS.add("Business");
-			SYSTEM_DB_COLLECTIONS.add("System");
-			SYSTEM_DB_COLLECTIONS.add("UCType");
-		} catch (UnknownHostException ue) {}
+		mongoClient = new MongoClient();
+		db = mongoClient.getDB(DB_JIRA);
+		
+		SYSTEM_DB_COLLECTIONS.add("object_metadata");
+		SYSTEM_DB_COLLECTIONS.add("Business");
+		SYSTEM_DB_COLLECTIONS.add("System");
+		SYSTEM_DB_COLLECTIONS.add("UCType");
 	}
 
 	protected DBCollection getDBCollection(String name){
@@ -180,10 +177,13 @@ public class AbstractDao  {
 					List vlist = new ArrayList();
 					Class innerCls = INNER_TYPE.get(cls.getSimpleName()+"."+pd.getName());
 					
+					//System.out.println("key : " + cls.getSimpleName()+"."+pd.getName());
+					
 					for(Object dbj:(BasicDBList)value){
 						if(dbj == null)continue;
 						
-						if(dbj instanceof BasicDBObject){
+						
+						if(dbj instanceof BasicDBObject && !innerCls.isAssignableFrom(Map.class)){
 							vlist.add(decode((BasicDBObject)dbj,innerCls));
 						}else {
 							vlist.add(dbj);
@@ -285,8 +285,10 @@ public class AbstractDao  {
 	            			value = vl;
 	            		}
 	            		
-	            		doc.append(dbName,value);
+	            		doc.put(dbName, value);
+	            		//doc.append(dbName,value);
 	            	}catch(Exception e){
+	            		System.out.println("+++++++++++ e : " + e.getMessage());
 	            		doc.append(dbName,null);
 	            	}
 	            }

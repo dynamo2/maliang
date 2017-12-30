@@ -1,5 +1,8 @@
 package com.maliang.core.model;
 
+import java.util.List;
+import java.util.Map;
+
 public class Workflow extends MongodbModel {
 	private Integer step;
 	private String name;
@@ -8,6 +11,8 @@ public class Workflow extends MongodbModel {
 	private String response;
 	private String ajax;
 	private String javaScript;
+	private String css;
+	private List<Map> files;
 	
 	public Integer getStep() {
 		return step;
@@ -50,5 +55,17 @@ public class Workflow extends MongodbModel {
 	}
 	public void setAjax(String ajax) {
 		this.ajax = ajax;
+	}
+	public String getCss() {
+		return css;
+	}
+	public void setCss(String css) {
+		this.css = css;
+	}
+	public List<Map> getFiles() {
+		return files;
+	}
+	public void setFiles(List<Map> files) {
+		this.files = files;
 	}
 }

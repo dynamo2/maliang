@@ -47,6 +47,9 @@ public class BasicController {
 	protected static <T extends MongodbModel> T readMongodbModel(HttpServletRequest request,String reqName,Class<T> cls){
 		JSONObject json = JSONObject.fromObject(request.getParameterMap());
 		JSONArray ja = (JSONArray)json.get(reqName);
+		
+		Map<String,Class> cmap = readClassMap(cls);
+		System.out.println("****************** class map : "+cmap);
 
 		return (T)JSONObject.toBean(ja.getJSONObject(0), cls,readClassMap(cls));
 	}
@@ -61,10 +64,12 @@ public class BasicController {
 				String pname = pd.getName();
 				if("class".equals(pname))continue;
 				
-				Mapped mapped = cls.getDeclaredField(pname).getAnnotation(Mapped.class);
-				if(mapped != null){
-					cm.put(pname, mapped.type());
-				}
+				try {
+					Mapped mapped = cls.getDeclaredField(pname).getAnnotation(Mapped.class);
+					if(mapped != null){
+						cm.put(pname, mapped.type());
+					}
+				}catch(Exception e){}
 			}
 		} catch (Exception e) {}
 		

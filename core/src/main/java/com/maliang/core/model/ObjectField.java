@@ -10,11 +10,11 @@ public class ObjectField extends MongodbModel {
 	private String linkedObject;
 	private String label;
 	private String relationship;
-	private Integer elementType;//用于type=array时
-	//private Dict dict;//用于type=dict时
+	private Integer elementType;//鐢ㄤ簬type=array鏃�
+	//private Dict dict;//鐢ㄤ簬type=dict鏃�
 	
 	@Mapped(type=ObjectField.class)
-	private List<ObjectField> fields;//用于type=inner
+	private List<ObjectField> fields;//鐢ㄤ簬type=inner
 
 	public String getName() {
 		return name;

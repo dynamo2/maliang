@@ -28,9 +28,12 @@ public class ModelDao<T extends MongodbModel> extends AbstractDao {
 	public void save(T om) {
 		BasicDBObject doc = encode(om,true);
 
+		System.out.println("doc ------------ " + doc.toMap());
+		
 		if(om.getId() != null){
-			this.dbColl.update(
-				new BasicDBObject("_id",om.getId()),new BasicDBObject("$set", doc));
+			doc = new BasicDBObject("$set", doc);
+			
+			this.dbColl.update(new BasicDBObject("_id",om.getId()),doc);
 		}else {
 			doc.append("createdDate", new Date());
 			this.dbColl.save(doc);
@@ -123,8 +126,8 @@ public class ModelDao<T extends MongodbModel> extends AbstractDao {
 	}
 	
 	/**
-	 * 判断parentKey.fieldKey是否有重复的值
-	 * 如：ObjectMetadata的fields.unique_mark
+	 * 鍒ゆ柇parentKey.fieldKey鏄惁鏈夐噸澶嶇殑鍊�
+	 * 濡傦細ObjectMetadata鐨刦ields.unique_mark
 	 * **/
 	protected boolean isDuplicate(String oid,String parentKey,String fieldKey,String fieldValue,MongodbModel model){
 		BasicDBObject doc = new BasicDBObject("_id",new ObjectId(oid));

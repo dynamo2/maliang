@@ -1,6 +1,5 @@
 package com.maliang.core.dao;
 
-import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -8,6 +7,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.lang.ArrayUtils;
 import org.bson.types.ObjectId;
 
 import com.maliang.core.arithmetic.function.MathFunction;
@@ -23,7 +23,7 @@ import com.mongodb.MongoClient;
 import com.mongodb.WriteResult;
 
 /**
- * 提供原始的DB操作接口和数据
+ * 閹绘劒绶甸崢鐔奉潗閻ㄥ嚍B閹垮秳缍旈幒銉ュ經閸滃本鏆熼幑锟�
  * **/
 public class PrimitiveDao {
 	protected static MongoClient mongoClient;
@@ -40,6 +40,8 @@ public class PrimitiveDao {
 		use();
 	}
 	
+	
+	
 	public static String defaultDB(){
 		return DB_FILE;
 	}
@@ -47,6 +49,44 @@ public class PrimitiveDao {
 	public static void main(String[] args) {
 		PrimitiveDao dao = new PrimitiveDao();
 		dao.use();
+		
+		//CommandResult cr = db.command("Business.find()");
+		//System.out.println("cr : " + cr);
+		
+//		Map data = new HashMap();
+//		Map query = new HashMap();
+//		Map unset = new HashMap();
+//		Map notnull = new HashMap();
+//		
+//		notnull.put("$gt",2);
+//		query.put("_id",new ObjectId("58e85b37f2a3bc01a3757402"));
+//		query.put("workflows.step", notnull);
+//		
+//		data.put("$set", unset);
+//		unset.put("workflows.$.css", "css33");
+//		
+//		dao.update(data, query, "Business", false, false);
+		
+		//dao.rename(,"css","Business");
+		
+		dao.renameDocument("58e85b37f2a3bc01a3757402", "workflows.ddd", null, "Business");
+		
+		
+		/**
+		 * pdb.Business.update({
+    query:{
+        _id:oid'58e85b37f2a3bc01a3757402'),
+        workflows._id:'58e85b37f2a3bc01a3757403'
+    },
+    update:{
+        $unset:{
+           workflows.$.css:''
+        }
+    }
+})
+		 * 
+		 * ***/
+		
 //		dao.connect("File");
 //		
 //		String s = "{name:'dao',code:'dao'}";
@@ -59,15 +99,138 @@ public class PrimitiveDao {
 //		System.out.println("val : " + val);
 //		System.out.println("list : " + list);
 	}
+	
+	public void rename(String oldField,String newField,String coll){
+		List<Object> list = this.find(null, coll);
+
+		String[] fns = oldField.split("\\.");
+		for(Object obj : list){
+			if(!(obj instanceof Map)){
+				continue;
+			}
+			
+			renameDocument((Map)obj,fns,newField,coll);
+		}
+	}
+	
+	public void renameDocument(String id,String oldField,String newField,String coll){
+		Map data = this.getByID(id,coll);
+		String[] fns = oldField.split("\\.");
+		
+		renameDocument(data,fns,newField,coll);
+	}
+	
+	public void renameDocument(Map doc,String[] oldFields,String newField,String coll){
+		Map query = Utils.newMap("_id",doc.get("_id"));
+		Map set = new HashMap();
+		Map update = Utils.newMap("$set",set);
+
+		String parent = null;
+		for(int i = 0; i < oldFields.length; i++){
+			String fn = oldFields[i];
+			
+			Object fv = doc.get(fn);
+			if(Utils.isEmpty(fv)){
+				break;
+			}
+			
+			if(parent == null){
+				parent = fn;
+			}else {
+				parent += "."+fn;
+			}
+			
+			if(Utils.isArray(fv)){	
+				String[] subs = (String[])ArrayUtils.subarray(oldFields, i+1, oldFields.length);
+				renameItems(Utils.toArray(fv),subs,newField);
+				
+				set.put(parent,fv);
+				
+				for(Object fo : Utils.toArray(fv)){
+					System.out.println("fo : " + ((Map)fo).keySet());
+				}
+				break;
+			}
+			
+			if(fv instanceof Map) {
+				doc = (Map)fv;
+			}
+			
+			if(i == oldFields.length-1){
+				set.put(parent,fv);
+			}
+		}
+		
+		System.out.println("rename query : " + query);
+		System.out.println("rename update : " + update);
+		System.out.println("set key : " + set.keySet());
+		
+		this.update(update, query, coll,true,true);
+	}
+	
+	
+	
+	/*
+	 * 我是
+	 * **/
+	public void renameItems(Object[] items,String[] oldFields,String newField){
+		for(Object io:items){
+			if(io instanceof Map){
+				Map data = (Map)io;
+				
+				for(int i = 0; i < oldFields.length; i++){
+					String fn = oldFields[i];
+					
+					if(!data.containsKey(fn)){
+						break;
+					}
+					
+					Object fv = data.get(fn);
+					
+					if(!Utils.isEmpty(fv)){
+						if(Utils.isArray(fv)){
+							String[] subs = (String[])ArrayUtils.subarray(oldFields, i+1, oldFields.length);
+							renameItems(Utils.toArray(fv),subs,newField);
+							
+							break;
+						}
+						
+						if(fv instanceof Map){
+							data = (Map)fv;
+						}
+					}
+					
+					if(i == oldFields.length-1){
+						if(!Utils.isEmpty(newField)){
+							data.put(newField,fv);
+						}
+						data.remove(fn);
+					}
+					
+					if(fv == null){
+						break;
+					}
+				}
+			}
+		}
+	}
+	
+	public void rename(Map data,String oldField,String newField){
+		if(!data.containsKey(oldField)){
+			return;
+		}
+		
+		Object val = data.get(oldField);
+		data.put(newField,val);
+	}
+	
 	public static void use(){
 		use(DB_FILE);
 	}
 	
 	public static void use(String dbName){
 		if(mongoClient == null){
-			try {
-				mongoClient = new MongoClient();
-			} catch (UnknownHostException ue) {}
+			mongoClient = new MongoClient();
 		}
 		
 		db = mongoClient.getDB(dbName);
@@ -148,6 +311,7 @@ public class PrimitiveDao {
 		ObjectId id = this.readId(data);
 		this.removeId(data);
 		
+		
 		BasicDBObject idQuery = DaoHelper.getObjectIdQuery(id);
 		return this.update(data,idQuery, coll,false,false);
 	}
@@ -160,7 +324,21 @@ public class PrimitiveDao {
 		BasicDBObject dbQuery = DaoHelper.dbQuery(query);
 //		BasicDBObject dbData = new BasicDBObject("$set",data);
 		BasicDBObject dbData = new BasicDBObject(data);
-		return dbc.update(dbQuery, dbData,upsert,multi);
+		
+		System.out.println("------------ update dbQuery : " + dbQuery);
+		System.out.println("------------ update dbData : " + dbData);
+		
+		try {
+			WriteResult wr = dbc.update(dbQuery, dbData,upsert,multi);
+			
+			System.out.println("wr : " + wr);
+			return wr;
+		}catch(RuntimeException e){
+			System.out.println(e.getMessage());
+			//e.getStackTrace();
+			
+			throw e;
+		}
 	}
 
 	public WriteResult insert(Map data,String coll){
@@ -178,6 +356,7 @@ public class PrimitiveDao {
 			BasicDBObject dbData = new BasicDBObject(data);
 			list.add(dbData);
 		}
+		
 		return dbc.insert(list);
 	}
 	
@@ -192,7 +371,7 @@ public class PrimitiveDao {
 		return dbc.remove(dbQuery);
 	}
 	
-	public List<Object> find(Map query,String coll){
+ 	public List<Object> find(Map query,String coll){
 		DBCollection dbc = db.getCollection(coll);
 		
 		BasicDBObject dbQuery = DaoHelper.dbQuery(query);

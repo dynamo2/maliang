@@ -56,11 +56,12 @@ public class ObjectMetadataController extends BasicController {
 		wfMap.put("label", "标签");
 		
 		/*
-		wfMap.put("type", "字段类型");
-		wfMap.put("linkedObject", "关联对象");
-		wfMap.put("relationship", "关联方式");
-		wfMap.put("elementType", "元素类型");*/
+		wfMap.put("type", "瀛楁绫诲瀷");
+		wfMap.put("linkedObject", "鍏宠仈瀵硅薄");
+		wfMap.put("relationship", "鍏宠仈鏂瑰紡");
+		wfMap.put("elementType", "鍏冪礌绫诲瀷");*/
 		CLASS_LABELS.put(ObjectField.class.getCanonicalName(), wfMap);
+		
 		
 		EDIT_CODE = "{name:{prefix:'objectMetadata',name:'name',label:'名称',type:'text',value:metadata.name},"
 				+ "id:{prefix:'objectMetadata',name:'id',label:null,type:'hidden',value:metadata.id+''},"
@@ -201,12 +202,12 @@ public class ObjectMetadataController extends BasicController {
 		ObjectMetadata metadata = metadataDao.getByID(id);
 		Map<String,Object> params = newMap("metadata",metadata);
 		
-		String s = "{json:['dialog',[['button','新增','editTrigger(\"\",\"'+metadata.id+'\")'],"
-				+ "['tableList',['名称','条件','行为','操作'],"
+		String s = "{json:['dialog',[['button','鏂板','editTrigger(\"\",\"'+metadata.id+'\")'],"
+				+ "['tableList',['鍚嶇О','鏉′欢','琛屼负','鎿嶄綔'],"
 					+ "each(metadata.triggers){[this.name,this.when,"
 						+ "['tableBlock',each(this.actions){[this.field,this.code]}],"
-						+ "[['button','编辑','editTrigger(\"'+this.id+'\",\"'+metadata.id+'\")'],['button','删除','']]]}]],"
-			+ "{title:'触发器列表',width:1000,height:700}]"
+						+ "[['button','缂栬緫','editTrigger(\"'+this.id+'\",\"'+metadata.id+'\")'],['button','鍒犻櫎','']]]}]],"
+			+ "{title:'瑙﹀彂鍣ㄥ垪琛�',width:1000,height:700}]"
 		+ "}";
 		
 		Object val = AE.execute(s,params);
@@ -237,11 +238,11 @@ public class ObjectMetadataController extends BasicController {
 		String s = "{json:['form','',["
 					+ "['id','','hidden',omId,'[n]'],"
 					+ "['trigger.id','','hidden',trigger.id,'[n]'],"
-					+ "['trigger.mode','类型',['radio',{1:'insert',2:'update'}],trigger.mode,'[n]'],"
-					+ "['trigger.name','名称','text',trigger.name,'[n]'],"
-					+ "['trigger.when','条件','text',trigger.when,'[n]'],"
-					+ "['trigger.actions','行为',"
-						+ "['list',['字段','执行代码'],"
+					+ "['trigger.mode','绫诲瀷',['radio',{1:'insert',2:'update'}],trigger.mode,'[n]'],"
+					+ "['trigger.name','鍚嶇О','text',trigger.name,'[n]'],"
+					+ "['trigger.when','鏉′欢','text',trigger.when,'[n]'],"
+					+ "['trigger.actions','琛屼负',"
+						+ "['list',['瀛楁','鎵ц浠ｇ爜'],"
 							+ "each(trigger.actions){["
 								+ "['field','','text',this.field],"
 								+ "['code','','text',this.code]"
@@ -323,7 +324,10 @@ public class ObjectMetadataController extends BasicController {
 	public String save2(HttpServletRequest request, Model model) {
 		ObjectMetadata reqMetadata = readMongodbModel(request,"metadata",ObjectMetadata.class);
 		
-		System.out.println("********* save reqMetadata  : " + reqMetadata);
+		System.out.println("********* save reqMetadata  : ");
+		System.out.println(reqMetadata);
+		System.out.println("***************************");
+		
 		metadataDao.save(reqMetadata);
 		
 		return jsonEditCode2(reqMetadata);
@@ -412,51 +416,51 @@ public class ObjectMetadataController extends BasicController {
 		String str = "{"
 				+ "name:{value:'Order'},"
 				+ "id:{value:'"+id+"'},"
-				+ "label:{value:'订单'},"
+				+ "label:{value:'璁㈠崟'},"
 				+ "fields:[{"
 					+ "name:{value:'info'},"
-					+ "label:{value:'基本信息'},"
+					+ "label:{value:'鍩烘湰淇℃伅'},"
 					+ "type:{type:'select',value:7,options:'fieldTypes'},"
 					+ "fields:[{"
 						+ "name:{value:'number'},"
-						+ "label:{value:'订单号'},"
+						+ "label:{value:'璁㈠崟鍙�'},"
 						+ "type:{type:'select',value:3,options:'fieldTypes'}"
 					+ "},{"
 						+ "name:{value:'owner'},"
-						+ "label:{value:'订单所属人'},"
+						+ "label:{value:'璁㈠崟鎵�灞炰汉'},"
 						+ "type:{type:'select',value:6,options:'fieldTypes'}"
 					+ "},{"
 						+ "name:{value:'status'},"
-						+ "label:{value:'状态'},"
+						+ "label:{value:'鐘舵��'},"
 						+ "type:{type:'select',value:1,options:'fieldTypes'}"
 					+ "},{"
 						+ "name:{value:'totalPrice'},"
-						+ "label:{value:'总额'},"
+						+ "label:{value:'鎬婚'},"
 						+ "type:{type:'select',value:2,options:'fieldTypes'}"
 					+ "}]"
-				+ "},{"//// 收货地址
+				+ "},{"//// 鏀惰揣鍦板潃
 					+ "name:{value:'address'},"
-					+ "label:{value:'收货地址'},"
+					+ "label:{value:'鏀惰揣鍦板潃'},"
 					+ "type:{type:'select',value:7,options:'fieldTypes'},"
 					+ "fields:[{"
 						+ "name:{value:'province'},"
-						+ "label:{value:'省'},"
+						+ "label:{value:'鐪�'},"
 						+ "type:{type:'select',value:3,options:'fieldTypes'}"
 					+ "},{"
 						+ "name:{value:'city'},"
-						+ "label:{value:'市'},"
+						+ "label:{value:'甯�'},"
 						+ "type:{type:'select',value:3,options:'fieldTypes'}"
 					+ "},{"
 						+ "name:{value:'zoom'},"
-						+ "label:{value:'邮编'},"
+						+ "label:{value:'閭紪'},"
 						+ "type:{type:'select',value:3,options:'fieldTypes'}"
 					+ "},{"
 						+ "name:{value:'address'},"
-						+ "label:{value:'详细地址'},"
+						+ "label:{value:'璇︾粏鍦板潃'},"
 						+ "type:{type:'select',value:3,options:'fieldTypes'}"
 					+ "},{"
 						+ "name:{value:'accepter'},"
-						+ "label:{value:'收件人'},"
+						+ "label:{value:'鏀朵欢浜�'},"
 						+ "type:{type:'select',value:8,linkedObject:'User',options:'fieldTypes'}"
 					+ "}]"
 				+ "}]"
@@ -546,7 +550,7 @@ public class ObjectMetadataController extends BasicController {
 	@RequestMapping(value = "linkedObject.htm")
 	@ResponseBody
 	public String linkedObject() {
-		String desc = "{prefix:'objectMetadata.fields',name:'linkedObject',label:'关联对象',value:null,"
+		String desc = "{prefix:'objectMetadata.fields',name:'linkedObject',label:'鍏宠仈瀵硅薄',value:null,"
 				+ "type:'select',options:each(metadatas){{key:this.name,label:this.name}}}";
 		
 		List<ObjectMetadata> metadataList = metadataDao.list();
@@ -572,15 +576,15 @@ public class ObjectMetadataController extends BasicController {
 	}
 	
 	public static void main(String[] args) {
-		String typeDes = "{name:{prefix:'objectMetadata',name:'name',label:'名称',type:'text',value:metadata.name},"
+		String typeDes = "{name:{prefix:'objectMetadata',name:'name',label:'鍚嶇О',type:'text',value:metadata.name},"
 				+ "id:{prefix:'objectMetadata',name:'id',label:null,type:'hidden',value:metadata.id},"
-				+ "label:{prefix:'objectMetadata',name:'label',label:'标签',type:'text',value:metadata.label},"
-				+ "fields:{item-labels:{name:'名称',label:'标签',type:'字段类型'},prefix:'objectMetadata',"
-					+ "name:'fields',label:'字段',type:'list',item-prefix:'objectMetadata.fields',"
-					+ "value:[each(metadata.fields){{name:{prefix:'objectMetadata.fields',name:'name',label:'名称',type:'text',value:this.name},"
+				+ "label:{prefix:'objectMetadata',name:'label',label:'鏍囩',type:'text',value:metadata.label},"
+				+ "fields:{item-labels:{name:'鍚嶇О',label:'鏍囩',type:'瀛楁绫诲瀷'},prefix:'objectMetadata',"
+					+ "name:'fields',label:'瀛楁',type:'list',item-prefix:'objectMetadata.fields',"
+					+ "value:[each(metadata.fields){{name:{prefix:'objectMetadata.fields',name:'name',label:'鍚嶇О',type:'text',value:this.name},"
 						+ "id:{prefix:'objectMetadata.fields',name:'id',label:null,type:'hidden',value:this.id},"
-						+ "label:{prefix:objectMetadata.fields,name:'label',label:'标签',type:'text',value:this.label},"
-						+ "type:{prefix:'objectMetadata.fields',name:'type',label:'字段类型',type:'select',value:this.type,"
+						+ "label:{prefix:objectMetadata.fields,name:'label',label:'鏍囩',type:'text',value:this.label},"
+						+ "type:{prefix:'objectMetadata.fields',name:'type',label:'瀛楁绫诲瀷',type:'select',value:this.type,"
 							+ "options:each(fieldTypes){{key:this.code,label:this.name}}},"
 						+ "linkedObjected:if(metadata.type==8){{prefix:'objectMetadata.fields',name:'linkedObject',"
 							+ "type:'select',value:this.linkedObject,"
@@ -589,8 +593,8 @@ public class ObjectMetadataController extends BasicController {
 		
 		//Account.id : 56d69195fe559fe3d66284db
 		String account = "{account:{account:'wmx',password:'123456',"
-						+ "personal_profile:{real_name:'王美霞',email:'wmx@tm.com',age:100,"
-						+ "address:[{province:'江苏省',city:'南京市',zone:'鼓楼区'},{province:'浙江省',city:'湖州市',zone:'安吉县'}]}}}";
+						+ "personal_profile:{real_name:'鐜嬬編闇�',email:'wmx@tm.com',age:100,"
+						+ "address:[{province:'姹熻嫃鐪�',city:'鍗椾含甯�',zone:'榧撴ゼ鍖�'},{province:'娴欐睙鐪�',city:'婀栧窞甯�',zone:'瀹夊悏鍘�'}]}}}";
 		
 		account = "{list:db.Account.get('56dd3903e45701ce0113bdda')}";
 		account = "{list:db.Account.search()}";
@@ -628,25 +632,25 @@ public class ObjectMetadataController extends BasicController {
 	@SuppressWarnings("unchecked")
 	public static Map<String, Object> fieldTypeMap(ObjectField ofield) {
 		
-		//{"uniqueMark":{"prefix":"objectMetadata","name":"uniqueMark","label":null,"type":"textarea","value":null},"name":{"prefix":"objectMetadata","name":"name","label":"名称","type":"textarea","value":null},"id":{"prefix":"objectMetadata","name":"id","label":null,"type":"hidden","value":null},"label":{"prefix":"objectMetadata","name":"label","label":"标签","type":"textarea","value":null},"fields":{"item-labels":{"name":"名称","label":"标签"},"prefix":"objectMetadata","name":"fields","label":"字段","type":"list","item-prefix":"objectMetadata.fields","value":[{"uniqueMark":{"prefix":"objectMetadata.fields","name":"uniqueMark","label":null,"type":"textarea","value":null},"name":{"prefix":"objectMetadata.fields","name":"name","label":"名称","type":"textarea","value":null},"id":{"prefix":"objectMetadata.fields","name":"id","label":null,"type":"hidden","value":null},"label":{"prefix":"objectMetadata.fields","name":"label","label":"标签","type":"textarea","value":null},"linkedObject":{"prefix":"objectMetadata.fields","name":"linkedObject","label":null,"type":"textarea","value":null},"relationship":{"prefix":"objectMetadata.fields","name":"relationship","label":null,"type":"textarea","value":null},"type":{"prefix":"objectMetadata.fields","name":"type","label":null,"type":"textarea","value":0},"elementType":{"prefix":"objectMetadata.fields","name":"elementType","label":null,"type":"textarea","value":0}}]}};
-		//"name":{"prefix":"objectMetadata.fields","name":"name","label":"名称","type":"textarea","value":null}
-		//{type:{prefix:'objectMetadata.fields',name:'type',label:'字段类型',type:'select'}}
-		String typeDes = "{type:{prefix:'objectMetadata.fields',name:'type',label:'字段类型',value:field.type,"
+		//{"uniqueMark":{"prefix":"objectMetadata","name":"uniqueMark","label":null,"type":"textarea","value":null},"name":{"prefix":"objectMetadata","name":"name","label":"鍚嶇О","type":"textarea","value":null},"id":{"prefix":"objectMetadata","name":"id","label":null,"type":"hidden","value":null},"label":{"prefix":"objectMetadata","name":"label","label":"鏍囩","type":"textarea","value":null},"fields":{"item-labels":{"name":"鍚嶇О","label":"鏍囩"},"prefix":"objectMetadata","name":"fields","label":"瀛楁","type":"list","item-prefix":"objectMetadata.fields","value":[{"uniqueMark":{"prefix":"objectMetadata.fields","name":"uniqueMark","label":null,"type":"textarea","value":null},"name":{"prefix":"objectMetadata.fields","name":"name","label":"鍚嶇О","type":"textarea","value":null},"id":{"prefix":"objectMetadata.fields","name":"id","label":null,"type":"hidden","value":null},"label":{"prefix":"objectMetadata.fields","name":"label","label":"鏍囩","type":"textarea","value":null},"linkedObject":{"prefix":"objectMetadata.fields","name":"linkedObject","label":null,"type":"textarea","value":null},"relationship":{"prefix":"objectMetadata.fields","name":"relationship","label":null,"type":"textarea","value":null},"type":{"prefix":"objectMetadata.fields","name":"type","label":null,"type":"textarea","value":0},"elementType":{"prefix":"objectMetadata.fields","name":"elementType","label":null,"type":"textarea","value":0}}]}};
+		//"name":{"prefix":"objectMetadata.fields","name":"name","label":"鍚嶇О","type":"textarea","value":null}
+		//{type:{prefix:'objectMetadata.fields',name:'type',label:'瀛楁绫诲瀷',type:'select'}}
+		String typeDes = "{type:{prefix:'objectMetadata.fields',name:'type',label:'瀛楁绫诲瀷',value:field.type,"
 					+ "type:'select',options:each(fieldTypes){key:this.code,label:this.name}}}";
 		
 		Map<String,Object> params = new HashMap<String,Object>();
 		params.put("field",ofield);
 		params.put("fieldTypes",FieldType.values());
 		
-		String str = "name:{prefix:'objectMetadata',name:'name',label:'名称',type:'text',value:metadata.name},"
+		String str = "name:{prefix:'objectMetadata',name:'name',label:'鍚嶇О',type:'text',value:metadata.name},"
 				+ "id:{prefix:'objectMetadata',name:'id',label:null,type:'hidden',value:metadata.id},"
-				+ "label:{prefix:'objectMetadata',name:'label',label:'标签',type:'text',value:metadata.label},"
-				+ "fields:{item-labels:{name:'名称',label:'标签',type:'字段类型'},prefix:'objectMetadata',"
-					+ "name:'fields',label:'字段',type:'list',item-prefix:'objectMetadata.fields',"
-					+ "value:[each(metadata.fields){{name:{prefix:'objectMetadata.fields',name:'name',label:'名称',type:'text',value:this.name},"
+				+ "label:{prefix:'objectMetadata',name:'label',label:'鏍囩',type:'text',value:metadata.label},"
+				+ "fields:{item-labels:{name:'鍚嶇О',label:'鏍囩',type:'瀛楁绫诲瀷'},prefix:'objectMetadata',"
+					+ "name:'fields',label:'瀛楁',type:'list',item-prefix:'objectMetadata.fields',"
+					+ "value:[each(metadata.fields){{name:{prefix:'objectMetadata.fields',name:'name',label:'鍚嶇О',type:'text',value:this.name},"
 						+ "id:{prefix:'objectMetadata.fields',name:'id',label:null,type:'hidden',value:this.id},"
-						+ "label:{prefix:objectMetadata.fields,name:'label',label:'标签',type:'text',value:this.label},"
-						+ "type:{prefix:'objectMetadata.fields',name:'type',label:'字段类型',type:'select',value:this.type}}}}]}}";
+						+ "label:{prefix:objectMetadata.fields,name:'label',label:'鏍囩',type:'text',value:this.label},"
+						+ "type:{prefix:'objectMetadata.fields',name:'type',label:'瀛楁绫诲瀷',type:'select',value:this.type}}}}]}}";
 		
 		 return (Map<String,Object>)ArithmeticExpression.execute(typeDes, params);
 	}
@@ -688,12 +692,12 @@ public class ObjectMetadataController extends BasicController {
 
 		List<Map> options = new ArrayList<Map>();
 		Map result = new HashMap();
-		result.put("label", "1对多");
+		result.put("label", "1瀵瑰");
 		result.put("key", "1");
 		options.add(result);
 
 		result = new HashMap();
-		result.put("label", "1对1");
+		result.put("label", "1瀵�1");
 		result.put("key", "2");
 		options.add(result);
 
@@ -723,7 +727,7 @@ public class ObjectMetadataController extends BasicController {
 
 		Map<String, Object> fieldMap = new HashMap<String, Object>();
 		fieldsMap.put("name", fieldMap);
-		fieldMap.put("label", "名称");
+		fieldMap.put("label", "鍚嶇О");
 
 		Map<String, Object> infoMap = new HashMap<String, Object>();
 		infoMap.put("name", "field.name");
@@ -733,7 +737,7 @@ public class ObjectMetadataController extends BasicController {
 
 		fieldMap = new HashMap<String, Object>();
 		fieldsMap.put("label", fieldMap);
-		fieldMap.put("label", "标签");
+		fieldMap.put("label", "鏍囩");
 
 		infoMap = new HashMap<String, Object>();
 		infoMap.put("name", "field.label");
@@ -743,7 +747,7 @@ public class ObjectMetadataController extends BasicController {
 
 		fieldMap = new HashMap<String, Object>();
 		fieldsMap.put("type", fieldMap);
-		fieldMap.put("label", "类型");
+		fieldMap.put("label", "绫诲瀷");
 
 		infoMap = new HashMap<String, Object>();
 		infoMap.put("name", "field.type");
@@ -776,9 +780,9 @@ public class ObjectMetadataController extends BasicController {
 		Map result = new HashMap();
 
 		// String json =
-		// "{"label":"名称","type":"text","info":{"name":"Product.name","value":"天气丹华泫平衡化妆水150ml"}}";
-		// {"label":"分类","type":"select","info":{"name":"Product.product_type","options":[
-		// {"label":"洁面","key":"552e3362d27776926941e009"},{"label":"卸妆","key":"552e3362d27776926941e00a"},{"label":"爽肤水","key":"552e3362d27776926941e00b"},{"label":"保湿水","key":"552e3362d27776926941e00c"},{"label":"精华","key":"552e3362d27776926941e00d"},{"label":"面霜/乳液","key":"552e3362d27776926941e00e"},{"label":"眼霜","key":"552e3362d27776926941e00f"},{"label":"面膜","key":"552e3362d27776926941e010"},{"label":"去角质产品","key":"552e3362d27776926941e011"}]
+		// "{"label":"鍚嶇О","type":"text","info":{"name":"Product.name","value":"澶╂皵涓瑰崕娉钩琛″寲濡嗘按150ml"}}";
+		// {"label":"鍒嗙被","type":"select","info":{"name":"Product.product_type","options":[
+		// {"label":"娲侀潰","key":"552e3362d27776926941e009"},{"label":"鍗稿","key":"552e3362d27776926941e00a"},{"label":"鐖借偆姘�","key":"552e3362d27776926941e00b"},{"label":"淇濇箍姘�","key":"552e3362d27776926941e00c"},{"label":"绮惧崕","key":"552e3362d27776926941e00d"},{"label":"闈㈤湝/涔虫恫","key":"552e3362d27776926941e00e"},{"label":"鐪奸湝","key":"552e3362d27776926941e00f"},{"label":"闈㈣啘","key":"552e3362d27776926941e010"},{"label":"鍘昏璐ㄤ骇鍝�","key":"552e3362d27776926941e011"}]
 
 		result.put("id", metadata.getId().toString());
 		result.put("name", metadata.getName());
@@ -793,7 +797,7 @@ public class ObjectMetadataController extends BasicController {
 
 			Map<String, Object> fieldMap = new HashMap<String, Object>();
 			fieldsMap.put("name", fieldMap);
-			fieldMap.put("label", "名称");
+			fieldMap.put("label", "鍚嶇О");
 
 			Map<String, Object> infoMap = new HashMap<String, Object>();
 			infoMap.put("name", "field.name");
@@ -803,7 +807,7 @@ public class ObjectMetadataController extends BasicController {
 
 			fieldMap = new HashMap<String, Object>();
 			fieldsMap.put("label", fieldMap);
-			fieldMap.put("label", "标签");
+			fieldMap.put("label", "鏍囩");
 
 			infoMap = new HashMap<String, Object>();
 			infoMap.put("name", "field.label");
@@ -813,7 +817,7 @@ public class ObjectMetadataController extends BasicController {
 
 			fieldMap = new HashMap<String, Object>();
 			fieldsMap.put("type", fieldMap);
-			fieldMap.put("label", "类型");
+			fieldMap.put("label", "绫诲瀷");
 
 			infoMap = new HashMap<String, Object>();
 			infoMap.put("name", "field.type");

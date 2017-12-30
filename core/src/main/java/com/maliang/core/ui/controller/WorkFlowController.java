@@ -33,17 +33,30 @@ public class WorkFlowController extends BasicController {
 	static Map<String, Map<String, String>> CLASS_LABELS = new HashMap<String, Map<String, String>>();
 	
 	@RequestMapping(value = "flow.htm")
-	public String business(Model model, HttpServletRequest request) {
+	public String flow(Model model, HttpServletRequest request) {
 		try {
 			Workflow workFlow = readWorkFlow(request);
-			String resultJson = executeWorkFlow(workFlow, request);
+			String response = this.executeResponse(workFlow, request);
 
-			model.addAttribute("resultJson", resultJson);
+			String css = workFlow.getCss();
+			if(css == null)css = "";
+			
+			String js = workFlow.getJavaScript();
+			if(js == null)js = "";
+			
+			Object files = workFlow.getFiles();
+			if(files == null)files = "null";
+			
+			model.addAttribute("response", response);
+			model.addAttribute("js", js);
+			model.addAttribute("css",css);
+			model.addAttribute("files",files);
+			
 			return "/business/flow";
 		} catch (TurnToPage page) {
 			String result = new HtmlTemplateReplacer(json(page.getResult())).replace(null);
 			
-			model.addAttribute("resultJson", result);
+			model.addAttribute("response", result);
 			return "/business/flow";
 		} catch (TianmaException e) {
 			model.addAttribute("errorMsg", e.getMessage());
@@ -89,6 +102,15 @@ public class WorkFlowController extends BasicController {
 		}
 		
 		Workflow flow = business.workFlow(flowStep);
+		
+		List<Map> files = business.getFiles();
+		if(files == null){
+			files = flow.getFiles();
+		}else if(!Utils.isEmpty(flow.getFiles())) {
+			files.addAll(flow.getFiles());
+		}
+		flow.setFiles(files);
+		
 		businessService.readBlock(flow,business.getUniqueCode(),Block.TYPE_CODE);
 		
 		//Session cache
@@ -98,7 +120,7 @@ public class WorkFlowController extends BasicController {
 		return flow;
 	}
 	
-	private String executeWorkFlow(Workflow flow, HttpServletRequest request) {
+	private String executeResponse(Workflow flow, HttpServletRequest request) {
 		Map<String, Object> params = executeCode(flow, request);
 		Object responseMap = AE.execute(flow.getResponse(),
 				params);

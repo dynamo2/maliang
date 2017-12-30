@@ -30,12 +30,15 @@ public class BusinessDao extends ModelDao<Business> {
 		INNER_TYPE.put("Business.workflows",Workflow.class);
 		INNER_TYPE.put("Business.blocks",Block.class);
 		INNER_TYPE.put("Business.htmlTemplates",HtmlTemplate.class);
+		INNER_TYPE.put("Business.files",Map.class);
+		INNER_TYPE.put("Workflow.files",Map.class);
 	}
 	
 	public BusinessDao(){
 		super(COLLECTION_NAME,Business.class);
 	}
 
+	
 	
 	public Workflow getWorkFlowById(String oid){
 		List<DBObject> pipe = new ArrayList<DBObject>();

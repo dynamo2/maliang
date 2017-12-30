@@ -1,6 +1,7 @@
 package com.maliang.core.model;
 
 import java.util.List;
+import java.util.Map;
 
 public class Business extends MongodbModel {
 	private String name;
@@ -20,6 +21,8 @@ public class Business extends MongodbModel {
 	
 	@Mapped(type=HtmlTemplate.class)
 	private List<HtmlTemplate> htmlTemplates;
+	
+	private List<Map> files;
 	
 	public String getName() {
 		return name;
@@ -62,6 +65,12 @@ public class Business extends MongodbModel {
 	}
 	public void setHtmlTemplates(List<HtmlTemplate> htmlTemplates) {
 		this.htmlTemplates = htmlTemplates;
+	}
+	public List<Map> getFiles() {
+		return files;
+	}
+	public void setFiles(List<Map> files) {
+		this.files = files;
 	}
 	public Workflow workFlow(int step){
 		if(this.workflows == null || this.workflows.isEmpty()){

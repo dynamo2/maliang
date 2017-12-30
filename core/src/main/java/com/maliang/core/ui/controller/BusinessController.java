@@ -61,7 +61,7 @@ public class BusinessController extends BasicController {
 	@ResponseBody
 	public String delete(String id) {
 		this.businessDao.remove(id);
-		return "删除业务： " + id;
+		return "鍒犻櫎涓氬姟锛� " + id;
 	}
 	
 	@RequestMapping(value = "workFlow.htm")
@@ -115,16 +115,16 @@ public class BusinessController extends BasicController {
 		String s = "each(projects){["
 						+ "options.set(options+[{key:'Project,'+this.id,label:this.name}]),"
 						+ "each(this.subprojects){["
-							+ "options.set(options+[{key:'Subproject,'+this.id,label:'--[子项目]'+this.name}]),"
+							+ "options.set(options+[{key:'Subproject,'+this.id,label:'--[瀛愰」鐩甝'+this.name}]),"
 						+ "]}"
 					+ "]}";
 		AE.execute(s, params);
 
 		s = "{json:['form','business',"
 						+ "[['id','','hidden',business.id,'[n]'],"
-							+ "['project','所属项目',['select',options],metadata.project.id,'[n]'],"
-							+ "['name','名称','text',business.name,'[n]'],"
-							+ "['uniqueCode','唯一代码','text',business.uniqueCode,'[n]']]]}";
+							+ "['project','鎵�灞為」鐩�',['select',options],metadata.project.id,'[n]'],"
+							+ "['name','鍚嶇О','text',business.name,'[n]'],"
+							+ "['uniqueCode','鍞竴浠ｇ爜','text',business.uniqueCode,'[n]']]]}";
 		Object val = AE.execute(s, params);
 		
 		return this.json(val);
@@ -139,7 +139,7 @@ public class BusinessController extends BasicController {
 
 		String s = "{json:['form','business.htmlTemplates',"
 				+ "[['id','','hidden',htmlTemplate.id,'[n]'],"
-					+ "['name','名称','text',htmlTemplate.name,'[n]'],"
+					+ "['name','鍚嶇О','text',htmlTemplate.name,'[n]'],"
 					+ "['code','code','textarea',htmlTemplate.code,'[n]']]]}";
 		
 		return json(s,params);
@@ -161,14 +161,14 @@ public class BusinessController extends BasicController {
 		String s = "each(projects){["
 						+ "options.set(options+[{key:'Project,'+this.id,label:this.name}]),"
 						+ "each(this.subprojects){["
-							+ "options.set(options+[{key:'Subproject,'+this.id,label:'--[子项目]'+this.name}]),"
+							+ "options.set(options+[{key:'Subproject,'+this.id,label:'--[瀛愰」鐩甝'+this.name}]),"
 						+ "]}"
 					+ "]}";
 		AE.execute(s, params);
 		
 		s = "{json:['form','',"
 				+ "[['$id','','hidden',id,'[n]'],"
-					+ "['$pid','项目',['select',options],'','[n]']"
+					+ "['$pid','椤圭洰',['select',options],'','[n]']"
 					+ "]]}";
 		
 		Object val = AE.execute(s,params);
@@ -323,9 +323,9 @@ public class BusinessController extends BasicController {
 			form += "['"+f.getName()+"','"+f.getLabel()+"',"+type+","+omName+"."+f.getName()+",'[n]'],";//f.getName()+","+f.getLabel()+",";
 		}
 		
-		form += "['$submit','','submit','保存','[n]']]]";
+		form += "['$submit','','submit','淇濆瓨','[n]']]]";
 		
-		String responce = "{title:'编辑"+om.getLabel()+"',json:[${NAV},"+form+"]}";
+		String responce = "{title:'缂栬緫"+om.getLabel()+"',json:[${NAV},"+form+"]}";
 		System.out.println(responce);
 		
 		
@@ -343,10 +343,10 @@ public class BusinessController extends BasicController {
 			head += "'"+f.getLabel()+"',";
 			tbody += "this."+f.getName()+",";
 		}
-		head += "'操作']";
-		tbody += "[['a','编辑',{id:this.id}],['a','库存',{id:this.id,fid:5}]]]}";
+		head += "'鎿嶄綔']";
+		tbody += "[['a','缂栬緫',{id:this.id}],['a','搴撳瓨',{id:this.id,fid:5}]]]}";
 		String tableList = "['tableList',"+head+","+tbody+"]";
-		String listResponce = "{title:'"+om.getLabel()+"列表',date:{bid:bid},json:[${SYS.NAV},${NAV},"+tableList+"]}";
+		String listResponce = "{title:'"+om.getLabel()+"鍒楄〃',date:{bid:bid},json:[${SYS.NAV},${NAV},"+tableList+"]}";
 		System.out.println("============ List Responce ===============");
 		System.out.println(listResponce);
 	}

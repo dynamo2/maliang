@@ -11,6 +11,7 @@ import java.util.regex.Pattern;
 import org.apache.commons.lang.ArrayUtils;
 import org.bson.types.ObjectId;
 import org.springframework.util.StringUtils;
+import org.springframework.web.context.request.RequestContextListener;
 
 import com.maliang.core.arithmetic.AE;
 import com.maliang.core.arithmetic.ArithmeticExpression;
@@ -32,9 +33,11 @@ import com.mongodb.WriteResult;
 
 public class CollectionDao extends BasicDao {
 	public static void main2(String[] args) {
+		
+		RequestContextListener rc = null;
 
-		String str = "db.Region.aggregateOne([{$match:{province.name:'浙江'}},{ $unwind :'$province.cities'},"
-				+ "{$group:{_id:{$cond:{if:{$eq:['$province.cities.name','绍兴']},then:{ $ifNull:[ '$province.cities.districts',[]]},else:[]}}}},"
+		String str = "db.Region.aggregateOne([{$match:{province.name:'我是'}},{ $unwind :'$province.cities'},"
+				+ "{$group:{_id:{$cond:{if:{$eq:['$province.cities.name','缂佸秴鍙�']},then:{ $ifNull:[ '$province.cities.districts',[]]},else:[]}}}},"
 				+ "{$redact:{$cond:{if:{$gt:[{$size:'$_id'},0]},then:'$$DESCEND',else:'$$PRUNE'}}}])";
 		
 		str = "db.Warehouse.aggregateOne([{$unwind :'$stores'},{$group:{_id:'$stores.product',totalStore:{$sum:'$stores.num'}}},{$match:{_id:'574c02d87a779392fcea0c9b'}}])";
@@ -42,7 +45,6 @@ public class CollectionDao extends BasicDao {
 		str = "db.Warehouse.aggregate([{$unwind :'$stores'},{$match:{stores.product:{$in:['574c014f7a779392fcea0c93','574c01f07a779392fcea0c95']}}}])";
 		//str = "db.Cart.items.get('57517b1d8f77ee4257fe9f40')";
 		//str = "db.Cart.set([{items:{id:'57517b1d8f77ee4257fe9f40'}},{items.$:null}])";
-		
 		
 		//BasicDBObject query = new BasicDBObject("Cart.items._id",new ObjectId("57517b1d8f77ee4257fe9f40"));
 		//new BasicDBObject("$set", set));
@@ -87,7 +89,7 @@ public class CollectionDao extends BasicDao {
 		}
 		
 		/**
-		 * 新增数据时，自动设置createdDate,modifiedDate字段
+		 * 閺傛澘顤冮弫鐗堝祦閺冭绱濋懛顏勫З鐠佸墽鐤哻reatedDate,modifiedDate鐎涙顔�
 		 * **/
 		if(!(doc.containsKey("id") || doc.containsKey("_id"))){
 			doc.put("createdDate",new Date());
@@ -205,7 +207,7 @@ public class CollectionDao extends BasicDao {
 	}
 
 	/***
-	 * 分页查询
+	 * 閸掑棝銆夐弻銉嚄
 	 * **/
 	public List<Map<String, Object>> findByMap(Map<String, Object> query,
 			Map<String, Object> sort, Pager pg, String collName) {
@@ -231,7 +233,7 @@ public class CollectionDao extends BasicDao {
 	}
 	
 	/***
-	 * 子集的分页查询
+	 * 鐎涙劙娉﹂惃鍕瀻妞ゅ灚鐓＄拠锟�
 	 * 
 	 * "db.Warehouse.aggregateOne([{$unwind :'$stores'},
 	 * {$group:{_id:'$stores.product',totalStore:{$sum:'$stores.num'}}},{$match:{_id:'574c02d87a779392fcea0c9b'}}])";
@@ -244,8 +246,8 @@ public class CollectionDao extends BasicDao {
 		List<DBObject> countPipe = new ArrayList<DBObject>();
 		
 		/**
-		 * 筛选第一层数据
-		 * 粗选：迅速缩小数据范围
+		 * 缁涙盯锟藉顑囨稉锟界仦鍌涙殶閹癸拷
+		 * 缁锟藉绱版潻鍛达拷鐔虹級鐏忓繑鏆熼幑顔垮瘱閸ワ拷
 		 * ***/
 		if(match == null){
 			match = query;
@@ -265,7 +267,7 @@ public class CollectionDao extends BasicDao {
 		countPipe.add(new BasicDBObject("$unwind","$"+innerName+""));
 		
 		/**
-		 * 匹配$unwind后的数据
+		 * 閸栧綊鍘�$unwind閸氬海娈戦弫鐗堝祦
 		 * */
 		query = (Map<String, Object>)this.parseQueryData(query, collName);
 		BasicDBObject bquery = build(query);
@@ -343,7 +345,7 @@ public class CollectionDao extends BasicDao {
 	}
 	
 	/***
-	 * 分页查询
+	 * 閸掑棝銆夐弻銉嚄
 	 * **/
 	public List<Map<String, Object>> find(BasicDBObject query,
 			BasicDBObject sort, Pager pg, String collName) {
@@ -422,7 +424,7 @@ public class CollectionDao extends BasicDao {
 	public Map<String, Object> updateBySet(Map value, String collName) {
 		value = this.toDBModel(value, collName);
 		/**
-		 * 执行触发器
+		 * 閹笛嗩攽鐟欙箑褰傞崳锟�
 		 * **/
 		this.updateTrigger(value, collName);
 
@@ -465,14 +467,14 @@ public class CollectionDao extends BasicDao {
 	}
 	
 	/***
-	 * 处理关联对象的条件查找：
-	 * 例如 : db.Order.search({items.product.name:'AQ'})
-	 * 处理结果： pids: db.Product.find({name:'AQ'}).id
+	 * 婢跺嫮鎮婇崗瀹犱粓鐎电钖勯惃鍕蒋娴犺埖鐓￠幍鎾呯窗
+	 * 娓氬顩� : db.Order.search({items.product.name:'AQ'})
+	 * 婢跺嫮鎮婄紒鎾寸亯閿涳拷 pids: db.Product.find({name:'AQ'}).id
 	 * 			 db.Order.search(items.product:{$in:pids})
 	 * 
-	 * 支持递归，嵌套关联处理：
-	 * 例如：db.Order.search({items.product.brand.name:'AQ'})
-	 * 处理结果： bids:db.Brand.search({name:'AQ'}).id,
+	 * 閺�顖涘瘮闁帒缍婇敍灞界サ婵傛鍙ч懕鏂款槱閻炲棴绱�
+	 * 娓氬顩ч敍姝瀊.Order.search({items.product.brand.name:'AQ'})
+	 * 婢跺嫮鎮婄紒鎾寸亯閿涳拷 bids:db.Brand.search({name:'AQ'}).id,
 	 *           pids:db.Product.search({brand:{$in:bids}}).id,
 	 *           db.Order.search(items.product:{$in:pids})
 	 * 
@@ -574,7 +576,7 @@ public class CollectionDao extends BasicDao {
 		return null;
 	}
 	/**
-	 * 处理查询条件中的数据类型
+	 * 婢跺嫮鎮婇弻銉嚄閺夆�叉娑擃厾娈戦弫鐗堝祦缁鐎�
 	 * **/
 	protected Object parseQueryData(Object query,String collName){
 		if(query == null){
@@ -597,7 +599,7 @@ public class CollectionDao extends BasicDao {
 	}
 	
 	/**
-	 * 处理Map类型查询条件中的数据类型
+	 * 婢跺嫮鎮奙ap缁鐎烽弻銉嚄閺夆�叉娑擃厾娈戦弫鐗堝祦缁鐎�
 	 * **/
 	private Object parseQueryData(Map<String,Object>query,String collName){
 		if(query == null){
@@ -801,12 +803,12 @@ public class CollectionDao extends BasicDao {
 	}
 	
 	/***
-	 * 原则：
-	 * 1. 已设定的属性不重复计算
-	 * 2. insert模式时，不覆盖dbDataMap的值
+	 * 閸樼喎鍨敍锟�
+	 * 1. 瀹歌尪顔曠�规氨娈戠仦鐐达拷褌绗夐柌宥咁槻鐠侊紕鐣�
+	 * 2. insert濡�崇础閺冭绱濇稉宥堫洬閻╂潄bDataMap閻ㄥ嫬锟斤拷
 	 * 
 	 * Bug
-	 * 1. Utils.clone(): 不能进行深度clone
+	 * 1. Utils.clone(): 娑撳秷鍏樻潻娑滎攽濞ｅ崬瀹砪lone
 	 * 
 	 * ***/
 	private void trigger(Map<String,Object> value,Map<String,Object> dbDataMap, String collName,int triggerMode) {
@@ -939,22 +941,22 @@ public class CollectionDao extends BasicDao {
 	}
 	
 	/**
-	 * String fieldName：触发更新的字段名（在数组中的字段名）
-	 * Object fieldVal：触发更新的字段值
-	 * Object arrayItemData：触发更新的数组的DB原始记录
-	 * String arrayName：数组的完整字段名
-	 * Map<String,Object> updateVal：完整的待更新对象
+	 * String fieldName閿涙俺袝閸欐垶娲块弬鎵畱鐎涙顔岄崥宥忕礄閸︺劍鏆熺紒鍕厬閻ㄥ嫬鐡у▓闈涙倳閿涳拷
+	 * Object fieldVal閿涙俺袝閸欐垶娲块弬鎵畱鐎涙顔岄崐锟�
+	 * Object arrayItemData閿涙俺袝閸欐垶娲块弬鎵畱閺佹壆绮嶉惃鍑濨閸樼喎顫愮拋鏉跨秿
+	 * String arrayName閿涙碍鏆熺紒鍕畱鐎瑰本鏆ｇ�涙顔岄崥锟�
+	 * Map<String,Object> updateVal閿涙艾鐣弫瀵告畱瀵板懏娲块弬鏉款嚠鐠烇拷
 	 * 
-	 * 例子：
-	 * 更新Order: {id:'123456',status:3}
-	 * 触发更新字段：info.items.detail.num，触发更新值：20
-	 * fieldName：detail.num
+	 * 娓氬鐡欓敍锟�
+	 * 閺囧瓨鏌奜rder: {id:'123456',status:3}
+	 * 鐟欙箑褰傞弴瀛樻煀鐎涙顔岄敍姝﹏fo.items.detail.num閿涘矁袝閸欐垶娲块弬鏉匡拷纭风窗20
+	 * fieldName閿涙瓰etail.num
 	 * fieldVal: 20
 	 * arrayItemData
 	 * arrayName: info.items
 	 * updateVal: {id:'123456',status:3}
 	 * 
-	 * 运行结果：
+	 * 鏉╂劘顢戠紒鎾寸亯閿涳拷
 	 * updateVal: {id:'123456',status:3,info:{items:[{id:'654321',detail:{num:20}}]}}
 	 * 
 	 * ***/
@@ -977,11 +979,11 @@ public class CollectionDao extends BasicDao {
 	}
 	
 	/**
-	 * triggerField: 触发的字段
-	 * fieldVal: 字段的值
-	 * fields: 这个触发器所在对象的ObjectMetadata
-	 * dbDataMap: 启动触发器的原始数据库记录
-	 * triggerLinkedMap: 关联对象被触发的更新集合
+	 * triggerField: 鐟欙箑褰傞惃鍕摟濞堬拷
+	 * fieldVal: 鐎涙顔岄惃鍕拷锟�
+	 * fields: 鏉╂瑤閲滅憴锕�褰傞崳銊﹀閸︺劌顕挒锛勬畱ObjectMetadata
+	 * dbDataMap: 閸氼垰濮╃憴锕�褰傞崳銊ф畱閸樼喎顫愰弫鐗堝祦鎼存捁顔囪ぐ锟�
+	 * triggerLinkedMap: 閸忓疇浠堢�电钖勭悮顐バ曢崣鎴犳畱閺囧瓨鏌婇梿鍡楁値
 	 * ****/
 	private void doTriggerLinkedMap(String triggerField,Object fieldVal,List<ObjectField> fields,Map<String,Object> dbDataMap,
 			Map<String,Map<String,Map<String,Object>>> triggerLinkedMap){
@@ -1134,7 +1136,7 @@ public class CollectionDao extends BasicDao {
 				whenMap.put(key,true);
 				for(Object vo : Utils.toArray(val)){
 					if(vo instanceof Map){
-						//待实现
+						//瀵板懎鐤勯悳锟�
 					}else {
 						if(updateMode){
 							dbDataMap.put(key, val);

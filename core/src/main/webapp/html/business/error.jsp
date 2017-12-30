@@ -14,12 +14,14 @@
     </head>
     <body>
 		<script>
+		/*
 		var errorMsg = '${errorMsg}';
 
 		$(function(){
 			$("#error").text(errorMsg);
 		});
+		*/
 		</script>
-		<div id="error"></div>
+		<div id="error">${errorMsg}</div>
 	</body>
 </html>

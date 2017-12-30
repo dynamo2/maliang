@@ -25,20 +25,55 @@
 		<script src="../html/business/tianma.js"></script>
 		<link href="../html/business/style.css" rel="stylesheet" type="text/css"/> 
 		
-		<!-- bootstrap
+		<!-- bootstrap -->
 		<script src="/static/bootstrap/4.0/js/bootstrap.js"></script>
 		<link href="/static/bootstrap/4.0/css/bootstrap.css" rel="stylesheet" type="text/css"/> 
-		 -->
+		 
     </head>
     <body>
     
   <style>
-  .ui-tabs-vertical { width: 6em; }
-  .ui-tabs-vertical .ui-tabs-nav { padding: .2em .1em .2em .2em; float: left; width: 5em;}
-  .ui-tabs-vertical .ui-tabs-nav li { clear: left; width: 100%; border-bottom-width: 1px !important; border-right-width: 0 !important; margin: 0 -1px .2em 0; }
-  .ui-tabs-vertical .ui-tabs-nav li a { display:block; }
-  .ui-tabs-vertical .ui-tabs-nav li.ui-tabs-active { padding-bottom: 0; padding-right: .1em; border-right-width: 1px; }
-  .ui-tabs-vertical .ui-tabs-panel { padding: 1em; float: right; width: 0em;}
+  .ui-tabs-vertical {
+      border:0px;
+      background:none;
+      float:left;
+  }
+  
+  .ui-tabs-vertical .ui-tabs-nav { 
+      padding: .2em .1em .2em .2em; 
+      float: left; 
+      width: 8em;
+      background:none;
+      border:0px;
+  }
+  
+  .ui-tabs-vertical .ui-tabs-nav li {
+      clear: left; 
+      width: 100%;
+      background:none;
+      //border-bottom-width: 1px !important; 
+      //border-right-width: 0 !important;
+      margin: 0 -1px .2em 0;
+      border:0px;
+  }
+  
+  .ui-tabs-vertical .ui-tabs-nav li a {
+      display:block;
+  }
+  
+  .ui-tabs-vertical .ui-tabs-nav li.ui-tabs-active { 
+      padding-bottom: 0; 
+      padding-right: 0.1em; 
+      border:0px;
+      border-right:2px red solid;
+      background:#EEEEEE;
+  }
+  
+  .ui-tabs-vertical .ui-tabs-panel { 
+      padding: 1em; 
+      float: right; 
+      width: 50em;
+  }
   </style>
   
 		<script>
@@ -146,10 +181,12 @@
 				  }
 				});
 			
-			$("#blockTab").tabs();
+			//$("#blockTab").tabs();
 			
-			//$( "#blockTab" ).tabs().addClass( "ui-tabs-vertical ui-helper-clearfix" );
-		    //$( "#blockTab li" ).removeClass( "ui-corner-top" ).addClass( "ui-corner-left" );
+			blockEditerDialog.siblings('div.ui-dialog-titlebar').remove();
+			
+			$( "#blockTab" ).tabs().addClass( "ui-tabs-vertical ui-helper-clearfix" );
+		    $( "#blockTab li" ).removeClass( "ui-corner-top" ).addClass( "ui-corner-left" );
 		}
 		
 		function initHtmlTemplates(){
@@ -224,11 +261,12 @@
 				});
 			
 			
+			workflowEditerDialog.siblings('div.ui-dialog-titlebar').remove();
 			
-			$("#workflowTab").tabs();
+			//$("#workflowTab").tabs();
 			
-			//$( "#workflowTab" ).tabs().addClass( "ui-tabs-vertical ui-helper-clearfix" );
-		    //$( "#workflowTab li" ).removeClass( "ui-corner-top" ).addClass( "ui-corner-left" );
+			$( "#workflowTab" ).tabs().addClass( "ui-tabs-vertical ui-helper-clearfix" );
+		    $( "#workflowTab li" ).removeClass( "ui-corner-top" ).addClass( "ui-corner-left" );
 		}
 
 		function loadWorkFlow(id){
@@ -256,7 +294,7 @@
 			$("#workflowName").val(flow.name);
 			$("#code").val(flow.code);
 			$("#response").val(flow.response);
-			$("#requestType").val(flow.requestType);
+			$("#css").val(flow.css);
 			$("#javaScript").val(flow.javaScript);
 			$("#ajax").val(flow.ajax);
 			
@@ -402,7 +440,7 @@
 		<div>
 
 		<div id="blockEditerDialog" title="Block Editer">
-			<form id="blockEditForm">
+			<form id="blockEditForm" class="form-horizontal">
 				<div id="blockTab">
 					<ul>
 						<li id="nameDivLink"><a href="#nameDiv" onclick="blockEditor.hide();">Name</a></li>
@@ -410,14 +448,22 @@
 					</ul>
 					<div id="nameDiv">
 						<input type="hidden" name="business.blocks.id" id="blockId" />
-						<div>
-							<label>名称:</label>
-							<input type="text" name="business.blocks.name" id="blockName" value="" />
+						<div class="form-group">
+							<label class="col-sm-2 control-label">名称:</label>
+							<div class="col-sm-10">
+								<input type="text" style="width:500px;" class="form-control" name="business.blocks.name" id="blockName" value="" />
+							</div>
 						</div>
-						<div>
-							<label>类型:</label>
-							<input type="radio" name="business.blocks.type" value="1" />code
-							<input type="radio" name="business.blocks.type" value="2" />html
+						<div class="form-group">
+							<label class="col-sm-2 control-label">类型:</label>
+							<div class="col-sm-10">
+								<label class="radio-inline">
+								  <input type="radio" name="business.blocks.type" value="1" /> code
+								</label>
+								<label class="radio-inline">
+								  <input type="radio" name="business.blocks.type" value="2" /> html
+								</label>
+							</div>
 						</div>
 					</div>
 					<div id="blockCodeDiv">
@@ -426,38 +472,42 @@
 				</div>
 			</form>
 			
-			<div id="blockEditor" style="height:620px;"></div>
+			<div id="blockEditor" style="height:670px;"></div>
 		<div>
 		
 		<div id="workflowEditerDialog" title="Workflow Editer">
-			<form id="workflowEditForm">
+			<form id="workflowEditForm" class="form-horizontal">
 				<div id="workflowTab">
 					<ul>
 						<li id="stepDivLink"><a href="#stepDiv" onclick="aceEditor.hide();">Step</a></li>
-						<li id="requestTypeDivLink"><a href="#requestTypeDiv" onclick="aceEditor.edit('requestType');">RequestType</a></li>
 						<li id="codeDivLink"><a href="#codeDiv" onclick="aceEditor.edit('code');">Code</a></li>
 						<li id="responseDivLink"><a href="#responseDiv" onclick="aceEditor.edit('response');">Response</a></li>
 						<li id="javaScriptDivLink"><a href="#javaScriptDiv" onclick="aceEditor.edit('javaScript');">JavaScript</a></li>
+						<li id="cssDivLink"><a href="#cssDiv" onclick="aceEditor.edit('css');">CSS</a></li>
 						<li id="ajaxDivLink"><a href="#ajaxDiv" onclick="aceEditor.edit('ajax');">Ajax</a></li>
 						<p><a id="previewFlowLink" style="margin-left:15px;" href="www.sohu.com" target="_blank">预览</a></p>
 					</ul>
+					
 					<div id="stepDiv">
 						<input type="hidden" name="business.workflows.id" id="id" />
-						<div>
-							<label>ID:</label>
-							<input type="text" id="flowIDLabel" style="width:250px;" value="" />
+						<div class="form-group">
+							<label class="col-sm-2 control-label">ID:</label>
+							<div class="col-sm-10">
+								<input type="text" style="width:500px;" class="form-control" id="flowIDLabel" value="" />
+							</div>
 						</div>
-						<div>
-							<label>step:</label>
-							<input type="text" name="business.workflows.step" id="step" value="" />
+						<div class="form-group">
+							<label class="col-sm-2 control-label">step:</label>
+							<div class="col-sm-10">
+								<input type="text" style="width:500px;" name="business.workflows.step" class="form-control" id="step" value="" />
+							</div>
 						</div>
-						<div>
-							<label>名称:</label>
-							<input type="text" name="business.workflows.name" id="workflowName" value="" />
+						<div class="form-group">
+							<label class="col-sm-2 control-label">名称:</label>
+							<div class="col-sm-10">
+								<input type="text" style="width:500px;" name="business.workflows.name" class="form-control" id="workflowName" value="" />
+							</div>
 						</div>
-					</div>
-					<div id="requestTypeDiv">
-						<textarea id="requestType" name="business.workflows.requestType"></textarea>
 					</div>
 					<div id="codeDiv">
 						<textarea id="code" name="business.workflows.code"></textarea>
@@ -470,13 +520,16 @@
 					<div id="javaScriptDiv">
 						<textarea id="javaScript" name="business.workflows.javaScript"></textarea>
 					</div>
+					<div id="cssDiv">
+						<textarea id="css" name="business.workflows.css"></textarea>
+					</div>
 					<div id="ajaxDiv">
 						<textarea id="ajax" name="business.workflows.ajax"></textarea>
 					</div>
 				</div>
 			</form>
 			
-			<div id="editor" style="height:620px;"></div>
+			<div id="editor" style="height:670px;"></div>
 		<div>
 		
 		
@@ -520,9 +573,11 @@
 			},
 			show:function(){
 				$("#editor").show();
+				$(".ui-tabs-vertical").css("width","10em");
 			},
 			hide:function(){
 				$("#editor").hide();
+				$(".ui-tabs-vertical").css("width","60em");
 			}
 		};
 		
@@ -557,9 +612,11 @@
 				},
 				show:function(){
 					$("#blockEditor").show();
+					$(".ui-tabs-vertical").css("width","10em");
 				},
 				hide:function(){
 					$("#blockEditor").hide();
+					$(".ui-tabs-vertical").css("width","60em");
 				}
 		};
 		
