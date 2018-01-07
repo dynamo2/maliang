@@ -1264,7 +1264,6 @@ var MGenerator = HTMLGenerator.extend({
 		var dataIndex = 0;
 		var newDatas = [];
 		
-		
 		this.toArrayName = function(options){
 			var isInput = curr.isInput(options && options.type);
 			if(isInput && options && options.name){
@@ -1292,19 +1291,17 @@ var MGenerator = HTMLGenerator.extend({
 				return;
 			}
 		};
-
-		if($.isArray(options && options.body)){
-			if(options.body.length > 0){
-				newDatas = utils.clone(options.body[0]);
-				curr.clearInputValue(newDatas);
-			}
-			$.each(options.body,function(){
-				curr.toArrayName(this);
-				dataIndex++;
-			});
-		}
 		
-		var table = this.table(options);
+		this.deleteTD = function(){
+			var delBnt = $("<button class='red btn' type='button'><i class='fa fa-remove'></i></button>");
+			
+			delBnt.click(function(){
+				$(this).closest('tr').remove();
+			});
+			
+			return $('<td />').append(delBnt);
+		};
+
 		this.addButton = function(){
 			var addBnt = $("<button class='yellow btn' type='button' style='margin:5px;width:100px;'><i class='fa fa-plus'></i>新增</button>");
 			var tbody = $('tbody',table);
@@ -1318,6 +1315,10 @@ var MGenerator = HTMLGenerator.extend({
 						$("<td />").append(curr.build(this)).appendTo(row);
 					});
 					
+					if(hasDel){
+						curr.deleteTD().appendTo(row);
+					}
+					
 					$('input:text:first',row).focus();
 					dataIndex++;
 				}
@@ -1326,21 +1327,37 @@ var MGenerator = HTMLGenerator.extend({
 			$('thead',table).prepend(addBnt);
 		};
 		
-		this.deleteButton = function(){
+		this.appendDelete = function(){
 			var tbody = $('tbody',table);
 			var rows = $('tr',tbody);
 			$.each(rows,function(){
-				var delBnt = $("<button class='red btn' type='button'><i class='fa fa-remove'></i></button>");
-				($('<td />').append(delBnt)).appendTo($(this));
-				
-				delBnt.click(function(){
-					$(this).closest('tr').remove();
-				});
+				curr.deleteTD().appendTo($(this));
 			});
 		};
 		
+		if($.isArray(options && options.body)){
+			if(options.body.length > 0){
+				newDatas = utils.clone(options.body[0]);
+				curr.clearInputValue(newDatas);
+			}
+			$.each(options.body,function(){
+				curr.toArrayName(this);
+				dataIndex++;
+			});
+		}
+		
+		log('options : ' + JSON.stringify(options));
+		
+		var hasDel = options.deleteButton;
+		if(hasDel && $.isArray(options.head.heading)){
+			options.head.heading.push({text:''});
+		}
+		
+		var table = this.table(options);
+		if(hasDel){
+			this.appendDelete();
+		}
 		this.addButton();
-		//this.deleteButton();
 
 		return table;
 	},
@@ -1728,6 +1745,11 @@ var MGenerator = HTMLGenerator.extend({
 	    	}
 	    };
 	    
+	    /***
+	     * 样式优先遵从 bootstrap
+	     * 逐步移除metronic，icheck的特征样式
+	     * metronic，icheck的实现将放于另外的独立文件中
+	     * ***/
 	    this.checkElement = function(options){
 	    	var newOpts = utils.copy(options,null,['icheck','layout']);
 	    	var element = this._super(newOpts);
@@ -1748,24 +1770,68 @@ var MGenerator = HTMLGenerator.extend({
 	    	layoutDiv.addClass(layout);
 	    	
 	    	return goupDiv;
-	    }
+	    };
 	    
 	    this.radio = function(options){
+	    	var newOpts = utils.copy(options,null,['icheck','layout']);
+	    	var element = this._super(newOpts);
+	    	
+	    	var inline = options && options.layout === 'inline';
+	    	if(inline){
+	    		if($.isArray(element)){
+	    			$.each(element,function(){
+	    				this.addClass('radio-inline');
+		    		});
+	    		}else {
+	    			element.addClass('radio-inline');
+	    		}
+	    		
+	    		return element;
+	    	}else {
+	    		if($.isArray(element)){
+		    		var divs = [];
+		    		$.each(element,function(){
+		    			divs.push($("<div class='radio' />").append(this));
+		    		});
+		    		return divs;
+		    	}
+	    		
+	    		return $("<div class='radio' />").append(this);
+	    	}
+	    	
+	    	/*
+	    	var ele = $("<div class='radio' />");
+	    	ele.append(element);
+	    	
+	    	if(options && options.layout === 'inline'){
+	    		ele.find("label").addClass('radio-inline');
+	    	}
+	    	
+	    	return ele;
+	    	*/
+	    };
+	    
+	    this.radio22222 = function(options){
 	    	var ele = this.checkElement(options);
+	    	ele.addClass("radio");
 	    	
 	    	if(options && options.icheck){
 	    		this.icheck($(':radio',ele),options.icheck);
 	    	}
+	    	
+	    	ele.find("label").addClass('radio-inline');
 	    	
 	    	return ele;
 	    };
 	    
 	    this.checkbox = function(options){
 	    	var ele = this.checkElement(options);
+	    	ele.addClass("checkbox");
 	    	
 	    	if(options && options.icheck){
 	    		this.icheck($(':checkbox',ele),options.icheck);
 	    	}
+	    	ele.find("label").addClass('checkbox-inline');
 	    	
 	        return ele;
 	    };

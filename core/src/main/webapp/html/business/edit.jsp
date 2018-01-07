@@ -25,9 +25,15 @@
 		<script src="../html/business/tianma.js"></script>
 		<link href="../html/business/style.css" rel="stylesheet" type="text/css"/> 
 		
+		<script src="../js/tianma/processor.js?ddd"></script>
+		<script src="../js/tianma/metronic.js"></script>
+		
 		<!-- bootstrap -->
-		<script src="/static/bootstrap/4.0/js/bootstrap.js"></script>
-		<link href="/static/bootstrap/4.0/css/bootstrap.css" rel="stylesheet" type="text/css"/> 
+		<script src="/static/bootstrap/3.3.7/js/bootstrap.js"></script>
+		<link href="/static/bootstrap/3.3.7/css/bootstrap.css" rel="stylesheet" type="text/css"/> 
+		<link href="/static/bootstrap/3.3.7/css/bootstrap-theme.min.css" rel="stylesheet" type="text/css"/>
+		<link href="/static/metronic/theme/assets/global/plugins/font-awesome/css/font-awesome.min.css" rel="stylesheet" type="text/css"/>
+		<link rel="stylesheet" type="text/css" href="/static/metronic/theme/assets/global/plugins/icheck/skins/all.css"/>
 		 
     </head>
     <body>
@@ -72,15 +78,244 @@
   .ui-tabs-vertical .ui-tabs-panel { 
       padding: 1em; 
       float: right; 
-      width: 50em;
+      width: 70em;
   }
-  </style>
+
+		.title {
+			padding:15px 10px;
+			border-bottom:2px #77C9FF solid;
+			width:100%;
+		}
+		
+		.title label {
+			font-size:26px;
+			font-weight:bold;
+			color:#007ACC;
+			padding-right:20px;
+		}
+		
+		
+		#basicDiv {
+			padding:15px;
+			font-size:14px;
+		}
+		
+		#basicDiv div{
+			padding:5px;
+		}
+		
+		#basicDiv label{
+			padding-left:10px;
+		}
+		
+		#workflowEditerDialog textarea,
+		#blockEditerDialog textarea {
+			width:100%;
+			height:0px;
+		}
+		
+		#workflowEditerDialog input[type='text'],
+		#blockEditerDialog input[type='text'] {
+			width:200px;
+		}
+		
+		#basicTab,
+		#workflowTab,
+		#blockTab {
+			border:0px;
+			padding:0px;
+			width:100%;
+		}
+		
+		#workflowDiv,
+		#blockDiv,
+		#htmlTemplateDiv {
+			padding:15px;
+		}
+		
+		#workflowDiv input[type='button'],
+		#blockDiv input[type='button'],
+		#htmlTemplateDiv input[type='button'] {
+			margin:5px;
+		}
+		
+		#formDialog textarea {
+			width:100%;
+			height:150px;
+		}
+		
+		.ui-tabs .ui-tabs-panel{
+			padding:5px 5px;
+		}
+		</style>
   
-		<script>
+		
+
+		<div class="title">
+			<label>Basic</label>
+			<input type="button" value="编辑" onclick="showBasicEditer();" />
+			<input type="button" value="删除" onclick="deleteBusiness();" />
+			<a style="display:none;" id="refreshMainLink" href="/business/main.htm" target="_top">刷新</a>
+			<a id="previewLink" href="" target="_blank">预览</a>
+		</div>
+		<div id="basicDiv">
+			<div>ID:<label id="idLabel"></label></div>
+			<div>名称:<label id="nameLabel"></label></div>
+			<div>唯一代码:<label id="uniqueCodeLabel"></label></div>
+			<div>所属项目:<label id="projectLabel"></label></div>
+		</div>
+		
+		<div class="title">
+			<label>Block</label>
+			<input type="button" value="新增" onclick="showBlockEditer({});" />
+		</div>
+		<div id="blockDiv"></div>
+		
+		<div class="title">
+			<label>HtmlTemplate</label>
+			<input type="button" value="新增" onclick="htmlTemplate(null);" />
+		</div>
+		<div id="htmlTemplateDiv"></div>
+		
+		<div class="title">
+			<label>Workflow</label>
+			<input type="button" value="新增" onclick="showWorkflowEditer({});" />
+		</div>
+		
+		<div id="workflowDiv"></div>
+
+		
+		<!-- NEW CODE -->
+		
+		
+		<div id="basicEditerDialog" title="Basic info Editer">
+			<form id="basicEditForm" class="form-horizontal">
+				<div id="basicEditTab">
+					<ul>
+						<li id="basicDivLink"><a href="#basicDiv">基本信息</a></li>
+						<li id="busFilesDivLink"><a href="#busFilesDiv">引用文件</a></li>
+					</ul>
+					<div id="basicDiv">
+						<div class="form-group">
+							<label class="col-sm-2 control-label">名称:</label>
+							<div class="col-sm-10">
+								<input type="text" style="width:500px;" class="form-control" name="business.name" id="name" value="" />
+							</div>
+						</div>
+						<div class="form-group">
+							<label class="col-sm-2 control-label">唯一代码:</label>
+							<div class="col-sm-10">
+								<input type="text" style="width:500px;" class="form-control"  name="business.uniqueCode" id="uniqueCode" value="" />
+							</div>
+						</div>
+					</div>
+					<div id="busFilesDiv"></div>
+				</div>
+			</form>
+		<div>
+
+		<div id="blockEditerDialog" title="Block Editer">
+			<form id="blockEditForm" class="form-horizontal">
+				<div id="blockTab">
+					<ul>
+						<li id="nameDivLink"><a href="#nameDiv" onclick="blockEditor.hide();">Name</a></li>
+						<li id="blockCodeDivLink"><a href="#blockCodeDiv" onclick="blockEditor.edit('blockCode');">Code</a></li>
+					</ul>
+					<div id="nameDiv">
+						<input type="hidden" name="business.blocks.id" id="blockId" />
+						<div class="form-group">
+							<label class="col-sm-2 control-label">名称:</label>
+							<div class="col-sm-10">
+								<input type="text" style="width:500px;" class="form-control" name="business.blocks.name" id="blockName" value="" />
+							</div>
+						</div>
+						<div class="form-group">
+							<label class="col-sm-2 control-label">类型:</label>
+							<div class="col-sm-10">
+								<label class="radio-inline">
+								  <input type="radio" name="business.blocks.type" value="1" /> code
+								</label>
+								<label class="radio-inline">
+								  <input type="radio" name="business.blocks.type" value="2" /> html
+								</label>
+							</div>
+						</div>
+					</div>
+					<div id="blockCodeDiv">
+						<textarea id="blockCode" name="business.blocks.code"></textarea>
+					</div>
+				</div>
+			</form>
+			
+			<div id="blockEditor" style="height:670px;"></div>
+		<div>
+		
+		<div id="workflowEditerDialog" title="Workflow Editer">
+			<form id="workflowEditForm" class="form-horizontal">
+				<div id="workflowTab">
+					<ul>
+						<li id="stepDivLink"><a href="#stepDiv" onclick="aceEditor.hide();">Step</a></li>
+						<li id="fileDivLink"><a href="#fileDiv" onclick="aceEditor.hide();">引用文件</a></li>
+						<li id="codeDivLink"><a href="#codeDiv" onclick="aceEditor.edit('code');">Code</a></li>
+						<li id="responseDivLink"><a href="#responseDiv" onclick="aceEditor.edit('response');">Response</a></li>
+						<li id="javaScriptDivLink"><a href="#javaScriptDiv" onclick="aceEditor.edit('javaScript');">JavaScript</a></li>
+						<li id="cssDivLink"><a href="#cssDiv" onclick="aceEditor.edit('css');">CSS</a></li>
+						<li id="ajaxDivLink"><a href="#ajaxDiv" onclick="aceEditor.edit('ajax');">Ajax</a></li>
+						<p><a id="previewFlowLink" style="margin-left:15px;" href="www.sohu.com" target="_blank">预览</a></p>
+					</ul>
+					
+					<div id="stepDiv">
+						<input type="hidden" name="business.workflows.id" id="id" />
+						<div class="form-group">
+							<label class="col-sm-2 control-label">ID:</label>
+							<div class="col-sm-10">
+								<input type="text" style="width:500px;" class="form-control" id="flowIDLabel" value="" />
+							</div>
+						</div>
+						<div class="form-group">
+							<label class="col-sm-2 control-label">step:</label>
+							<div class="col-sm-10">
+								<input type="text" style="width:500px;" name="business.workflows.step" class="form-control" id="step" value="" />
+							</div>
+						</div>
+						<div class="form-group">
+							<label class="col-sm-2 control-label">名称:</label>
+							<div class="col-sm-10">
+								<input type="text" style="width:500px;" name="business.workflows.name" class="form-control" id="workflowName" value="" />
+							</div>
+						</div>
+					</div>
+					
+					<div id="fileDiv"></div>
+					<div id="codeDiv">
+						<textarea id="code" name="business.workflows.code"></textarea>
+					</div>
+					<div id="responseDiv">
+						<textarea id="response" name="business.workflows.response"></textarea>
+					</div>
+					
+					<div id="javaScriptDiv">
+						<textarea id="javaScript" name="business.workflows.javaScript"></textarea>
+					</div>
+					<div id="cssDiv">
+						<textarea id="css" name="business.workflows.css"></textarea>
+					</div>
+					<div id="ajaxDiv">
+						<textarea id="ajax" name="business.workflows.ajax"></textarea>
+					</div>
+				</div>
+			</form>
+			
+			<div id="editor" style="height:670px;"></div>
+		<div>
+	</body>
+	
+	<script>
 		var business = ${resultJson};
 		var basicEditerDialog = null;
 		var workflowEditerDialog = null;
 		var blockEditerDialog = null;
+		var generator = new MGenerator();
 		//var aceEditor = null;
 		
 		$(function(){
@@ -125,14 +360,17 @@
 			$("#name").val(business.name);
 			$("#uniqueCode").val(business.uniqueCode);
 			
+			$("#busFilesDiv").empty();
+			$("#busFilesDiv").append(createFilesForm(business.files,'business.files'));
+			
 			//预览
 			$("#previewLink").attr("href","/flows/flow.htm?bid="+business.id);
 
 			basicEditerDialog = $("#basicEditerDialog").dialog({
 				autoOpen: false,
 				modal:true,
-				width:800,
-				height:600,
+				width:'99%',
+				height:800,
 				buttons: {
 					"Save": function() {
 						save("basicEditForm");
@@ -142,7 +380,10 @@
 					  $(this).dialog("close");
 					}
 				  }
-				});
+			});
+			
+			$( "#basicEditTab" ).tabs().addClass( "ui-tabs-vertical ui-helper-clearfix" );
+		    $( "#basicEditTab li" ).removeClass( "ui-corner-top" ).addClass( "ui-corner-left" );
 		}
 		
 		function showBasicEditer(){
@@ -285,6 +526,7 @@
 			workflowEditerDialog.dialog("open");
 		}
 		
+		
 		function refreshWorkflowEditer(flow){
 			if(!flow)flow = {};
 			
@@ -298,8 +540,46 @@
 			$("#javaScript").val(flow.javaScript);
 			$("#ajax").val(flow.ajax);
 			
+			$("#fileDiv").empty();
+			$("#fileDiv").append(createFilesForm(flow.files,'business.workflows.files'));
+
 			$("#previewFlowLink").prop("href","/flows/flow.htm?bid="+business.id+"&fid="+flow.step);
 			$("#codeDivLink > a").trigger("click");
+		}
+		
+		function createFilesForm(options,key){
+			var filesForm = {
+		            type:'editTable',
+		            label:'文件列表',
+		            cols:[10,2],
+		            deleteButton:true,
+		            head:{
+		                heading:[
+		                    {width:'80%',text:'文件名'},
+		                    {width:'20%',text:'类型'}
+		                ]
+		            }
+			};
+			
+			var files = [];
+			if($.isArray(options)){
+				$.each(options,function(){
+					files.push([
+					    {type:'text',name:key+'.file',style:'width:100%',value:this.file},
+						{type:'radio',name:key+'.type',layout:'inline',options:[{key:1,label:'js'},{key:2,label:'css'}],value:this.type}
+					]);
+				});
+			}
+			
+			if(files.length == 0){
+				files.push([
+					{type:'text',name:key+'.file',style:'width:100%',value:''},
+					{type:'radio',name:key+'.type',layout:'inline',options:[{key:1,label:'js'},{key:2,label:'css'}],value:1}
+				]);
+			}
+			
+			filesForm.body = files;
+			return generator.build(filesForm);
 		}
 		
 		function deleteBusiness(){
@@ -321,227 +601,8 @@
 				}
 			});
 		}
-		</script>
-
-		<div class="title">
-			<label>Basic</label>
-			<input type="button" value="编辑" onclick="showBasicEditer();" />
-			<input type="button" value="删除" onclick="deleteBusiness();" />
-			<a style="display:none;" id="refreshMainLink" href="/business/main.htm" target="_top">刷新</a>
-			<a id="previewLink" href="" target="_blank">预览</a>
-		</div>
-		<div id="basicDiv">
-			<div>ID:<label id="idLabel"></label></div>
-			<div>名称:<label id="nameLabel"></label></div>
-			<div>唯一代码:<label id="uniqueCodeLabel"></label></div>
-			<div>所属项目:<label id="projectLabel"></label></div>
-		</div>
-		
-		<div class="title">
-			<label>Block</label>
-			<input type="button" value="新增" onclick="showBlockEditer({});" />
-		</div>
-		<div id="blockDiv"></div>
-		
-		<div class="title">
-			<label>HtmlTemplate</label>
-			<input type="button" value="新增" onclick="htmlTemplate(null);" />
-		</div>
-		<div id="htmlTemplateDiv"></div>
-		
-		<div class="title">
-			<label>Workflow</label>
-			<input type="button" value="新增" onclick="showWorkflowEditer({});" />
-		</div>
-		
-		<div id="workflowDiv"></div>
-
-		
-		<!-- NEW CODE -->
-		<style>
-		.title {
-			padding:15px 10px;
-			border-bottom:2px #77C9FF solid;
-			width:100%;
-		}
-		
-		.title label {
-			font-size:26px;
-			font-weight:bold;
-			color:#007ACC;
-			padding-right:20px;
-		}
 		
 		
-		#basicDiv {
-			padding:15px;
-			font-size:14px;
-		}
-		
-		#basicDiv div{
-			padding:5px;
-		}
-		
-		#basicDiv label{
-			padding-left:10px;
-		}
-		
-		#workflowEditerDialog textarea,
-		#blockEditerDialog textarea {
-			width:100%;
-			height:0px;
-		}
-		
-		#workflowEditerDialog input[type='text'],
-		#blockEditerDialog input[type='text'] {
-			width:200px;
-		}
-		
-		#workflowTab,
-		#blockTab {
-			border:0px;
-			padding:0px;
-			width:100%;
-		}
-		
-		#workflowDiv,
-		#blockDiv,
-		#htmlTemplateDiv {
-			padding:15px;
-		}
-		
-		#workflowDiv input[type='button'],
-		#blockDiv input[type='button'],
-		#htmlTemplateDiv input[type='button'] {
-			margin:5px;
-		}
-		
-		#formDialog textarea {
-			width:100%;
-			height:150px;
-		}
-		
-		.ui-tabs .ui-tabs-panel{
-			padding:5px 5px;
-		}
-		</style>
-		
-		<div id="basicEditerDialog" title="Basic info Editer">
-			<form id="basicEditForm">
-				<div>
-					<label>名称:</label>
-					<input type="text" name="business.name" id="name" value="" />
-				</div>
-				<div>
-					<label>唯一代码:</label>
-					<input type="text" name="business.uniqueCode" id="uniqueCode" value="" />
-				</div>
-			</form>
-		<div>
-
-		<div id="blockEditerDialog" title="Block Editer">
-			<form id="blockEditForm" class="form-horizontal">
-				<div id="blockTab">
-					<ul>
-						<li id="nameDivLink"><a href="#nameDiv" onclick="blockEditor.hide();">Name</a></li>
-						<li id="blockCodeDivLink"><a href="#blockCodeDiv" onclick="blockEditor.edit('blockCode');">Code</a></li>
-					</ul>
-					<div id="nameDiv">
-						<input type="hidden" name="business.blocks.id" id="blockId" />
-						<div class="form-group">
-							<label class="col-sm-2 control-label">名称:</label>
-							<div class="col-sm-10">
-								<input type="text" style="width:500px;" class="form-control" name="business.blocks.name" id="blockName" value="" />
-							</div>
-						</div>
-						<div class="form-group">
-							<label class="col-sm-2 control-label">类型:</label>
-							<div class="col-sm-10">
-								<label class="radio-inline">
-								  <input type="radio" name="business.blocks.type" value="1" /> code
-								</label>
-								<label class="radio-inline">
-								  <input type="radio" name="business.blocks.type" value="2" /> html
-								</label>
-							</div>
-						</div>
-					</div>
-					<div id="blockCodeDiv">
-						<textarea id="blockCode" name="business.blocks.code"></textarea>
-					</div>
-				</div>
-			</form>
-			
-			<div id="blockEditor" style="height:670px;"></div>
-		<div>
-		
-		<div id="workflowEditerDialog" title="Workflow Editer">
-			<form id="workflowEditForm" class="form-horizontal">
-				<div id="workflowTab">
-					<ul>
-						<li id="stepDivLink"><a href="#stepDiv" onclick="aceEditor.hide();">Step</a></li>
-						<li id="codeDivLink"><a href="#codeDiv" onclick="aceEditor.edit('code');">Code</a></li>
-						<li id="responseDivLink"><a href="#responseDiv" onclick="aceEditor.edit('response');">Response</a></li>
-						<li id="javaScriptDivLink"><a href="#javaScriptDiv" onclick="aceEditor.edit('javaScript');">JavaScript</a></li>
-						<li id="cssDivLink"><a href="#cssDiv" onclick="aceEditor.edit('css');">CSS</a></li>
-						<li id="ajaxDivLink"><a href="#ajaxDiv" onclick="aceEditor.edit('ajax');">Ajax</a></li>
-						<p><a id="previewFlowLink" style="margin-left:15px;" href="www.sohu.com" target="_blank">预览</a></p>
-					</ul>
-					
-					<div id="stepDiv">
-						<input type="hidden" name="business.workflows.id" id="id" />
-						<div class="form-group">
-							<label class="col-sm-2 control-label">ID:</label>
-							<div class="col-sm-10">
-								<input type="text" style="width:500px;" class="form-control" id="flowIDLabel" value="" />
-							</div>
-						</div>
-						<div class="form-group">
-							<label class="col-sm-2 control-label">step:</label>
-							<div class="col-sm-10">
-								<input type="text" style="width:500px;" name="business.workflows.step" class="form-control" id="step" value="" />
-							</div>
-						</div>
-						<div class="form-group">
-							<label class="col-sm-2 control-label">名称:</label>
-							<div class="col-sm-10">
-								<input type="text" style="width:500px;" name="business.workflows.name" class="form-control" id="workflowName" value="" />
-							</div>
-						</div>
-					</div>
-					<div id="codeDiv">
-						<textarea id="code" name="business.workflows.code"></textarea>
-					</div>
-					
-					<div id="responseDiv">
-						<textarea id="response" name="business.workflows.response"></textarea>
-					</div>
-					
-					<div id="javaScriptDiv">
-						<textarea id="javaScript" name="business.workflows.javaScript"></textarea>
-					</div>
-					<div id="cssDiv">
-						<textarea id="css" name="business.workflows.css"></textarea>
-					</div>
-					<div id="ajaxDiv">
-						<textarea id="ajax" name="business.workflows.ajax"></textarea>
-					</div>
-				</div>
-			</form>
-			
-			<div id="editor" style="height:670px;"></div>
-		<div>
-		
-		
-		
-		
-		
-		
-		
-		
-	</body>
-	
-	<script>
 		var aceEditor = {
 			bindTextarea:null,
 			editor:null,
@@ -577,7 +638,7 @@
 			},
 			hide:function(){
 				$("#editor").hide();
-				$(".ui-tabs-vertical").css("width","60em");
+				$(".ui-tabs-vertical").css("width","80em");
 			}
 		};
 		

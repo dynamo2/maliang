@@ -78,6 +78,8 @@ public class BusinessController extends BasicController {
 		Map<String, Object> reqMap = this.readRequestMapNotJSONFilter(request);
 		
 		Map<String,Object> business = (Map<String,Object>)reqMap.get("business");
+		
+		System.out.println("------------ business : " + business);
 		this.businessDao.updateBySet(business);
 
 		Business nb = businessDao.getByID(business.get("id").toString());
