@@ -117,16 +117,16 @@ public class BusinessController extends BasicController {
 		String s = "each(projects){["
 						+ "options.set(options+[{key:'Project,'+this.id,label:this.name}]),"
 						+ "each(this.subprojects){["
-							+ "options.set(options+[{key:'Subproject,'+this.id,label:'--[瀛愰」鐩甝'+this.name}]),"
+							+ "options.set(options+[{key:'Subproject,'+this.id,label:'--子项目'+this.name}]),"
 						+ "]}"
 					+ "]}";
 		AE.execute(s, params);
 
 		s = "{json:['form','business',"
 						+ "[['id','','hidden',business.id,'[n]'],"
-							+ "['project','鎵�灞為」鐩�',['select',options],metadata.project.id,'[n]'],"
-							+ "['name','鍚嶇О','text',business.name,'[n]'],"
-							+ "['uniqueCode','鍞竴浠ｇ爜','text',business.uniqueCode,'[n]']]]}";
+							+ "['project','项目',['select',options],metadata.project.id,'[n]'],"
+							+ "['name','名称','text',business.name,'[n]'],"
+							+ "['uniqueCode','唯一代码','text',business.uniqueCode,'[n]']]]}";
 		Object val = AE.execute(s, params);
 		
 		return this.json(val);
@@ -141,7 +141,7 @@ public class BusinessController extends BasicController {
 
 		String s = "{json:['form','business.htmlTemplates',"
 				+ "[['id','','hidden',htmlTemplate.id,'[n]'],"
-					+ "['name','鍚嶇О','text',htmlTemplate.name,'[n]'],"
+					+ "['name','名称','text',htmlTemplate.name,'[n]'],"
 					+ "['code','code','textarea',htmlTemplate.code,'[n]']]]}";
 		
 		return json(s,params);
@@ -163,14 +163,14 @@ public class BusinessController extends BasicController {
 		String s = "each(projects){["
 						+ "options.set(options+[{key:'Project,'+this.id,label:this.name}]),"
 						+ "each(this.subprojects){["
-							+ "options.set(options+[{key:'Subproject,'+this.id,label:'--[瀛愰」鐩甝'+this.name}]),"
+							+ "options.set(options+[{key:'Subproject,'+this.id,label:'--子项目'+this.name}]),"
 						+ "]}"
 					+ "]}";
 		AE.execute(s, params);
 		
 		s = "{json:['form','',"
 				+ "[['$id','','hidden',id,'[n]'],"
-					+ "['$pid','椤圭洰',['select',options],'','[n]']"
+					+ "['$pid','项目',['select',options],'','[n]']"
 					+ "]]}";
 		
 		Object val = AE.execute(s,params);
