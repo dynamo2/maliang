@@ -57,6 +57,10 @@ public class WorkFlowController extends BasicController {
 			String result = new HtmlTemplateReplacer(json(page.getResult())).replace(null);
 			
 			model.addAttribute("response", result);
+			model.addAttribute("js", "");
+			model.addAttribute("css","");
+			model.addAttribute("files","null");
+
 			return "/business/flow";
 		} catch (TianmaException e) {
 			model.addAttribute("errorMsg", e.getMessage());
@@ -101,6 +105,9 @@ public class WorkFlowController extends BasicController {
 			return null;
 		}
 		
+		//Session cache
+		SessionUtil.put(request,SessionUtil.BUSINESS,business);
+		
 		Workflow flow = business.workFlow(flowStep);
 		
 		List<Map> files = business.getFiles();
@@ -114,7 +121,6 @@ public class WorkFlowController extends BasicController {
 		businessService.readBlock(flow,business.getUniqueCode(),Block.TYPE_CODE);
 		
 		//Session cache
-		SessionUtil.put(request,SessionUtil.BUSINESS,business);
 		SessionUtil.put(request,SessionUtil.FLOW,flow);
 		
 		return flow;

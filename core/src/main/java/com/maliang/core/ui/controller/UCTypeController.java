@@ -29,7 +29,7 @@ public class UCTypeController extends BasicController {
 		Map<String,Object> params = new HashMap<String,Object>();
 		params.put("types",types);
 		
-		String json = "['tableList',['åç§°','key','units','æ“ä½œ'],each(types){[this.name,this.key,this.units+'',[['button','ç¼–è¾‘','edit(\"'+this.id+'\")']]]}]";
+		String json = "['tableList',['Ãû³Æ','key','units','²Ù×÷'],each(types){[this.name,this.key,this.units+'',[['button','±à¼­','edit(\"'+this.id+'\")']]]}]";
 		List list = (List)AE.execute(json, params);
 		
 		Map resultMap = new HashMap();

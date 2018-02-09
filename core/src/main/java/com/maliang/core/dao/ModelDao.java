@@ -10,6 +10,7 @@ import org.bson.types.ObjectId;
 
 import com.maliang.core.model.MongodbModel;
 import com.maliang.core.model.ObjectField;
+import com.maliang.core.util.Utils;
 import com.mongodb.AggregationOutput;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
@@ -87,6 +88,18 @@ public class ModelDao<T extends MongodbModel> extends AbstractDao {
 	public List<T> list(Map query){
 		BasicDBObject dbQuery = new BasicDBObject(query);
 		return readCursor(this.dbColl.find(dbQuery),this.modelClass);
+	}
+	
+	@SuppressWarnings("rawtypes")
+	public List<T> listByProject(String pid){
+		pid = "Project,"+pid;
+		return this.list(Utils.newMap("project",pid));
+	}
+	
+	@SuppressWarnings("rawtypes")
+	public List<T> listBySubproject(String pid){
+		pid = "Subproject,"+pid;
+		return this.list(Utils.newMap("project",pid));
 	}
 	
 	public <T extends MongodbModel> T getArrayInnerById(String fname,ObjectId aId,Class<T> t){

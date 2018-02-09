@@ -30,13 +30,17 @@
 		<script src="../js/tianma/bind.js"></script>
 		<script src="../js/tianma/build.js"></script>
 		<script src="../js/tianma/inputs.js"></script>
-		<script src="../html/business/tianma.js"></script>
+		<script src="../html/business/tianma.js?dds"></script>
 		
 		<script src="../js/tianma/processor.js?ddDdsddp"></script>
+		<script src="../js/tianma/bootstrapG.js?ddddd"></script>
 		<script src="../js/tianma/metronic.js"></script>
 	
 
+		<!-- 
 		<script src="http://localhost:8080/static/metronic/theme/assets/global/plugins/bootstrap/js/bootstrap.min.js" type="text/javascript"></script>
+		 -->
+		 
 		<style>
 		.page-content {
 			min-height:1000px;
@@ -99,7 +103,6 @@
 		
 		if(jsUrl){
 			$.getScript(jsUrl,function(){
-				console.log('jsUrl : ' + jsUrl);
 				if(result.generator){
 					newInit();
 				}else {
@@ -115,16 +118,37 @@
 				}
 			});
 		}
+
+
+		function initGenerator(){
+			if(result.generator){
+				try {
+					var gc = eval(result.generator);
+					if(gc){
+					    return createObject(gc);
+					}
+				}catch(e){}
+			}
+		}
 		
-		var generator = new MGenerator();
+		function createObject(obj){
+			function F(){}
+		    F.prototype = obj.prototype;
+		    return new F();
+		}
+		
+		//var generator = new MGenerator();
+		var generator = initGenerator();
+		if(!generator){
+			generator = new MGenerator();
+		}
+
 		function newInit(){
 			var ele = generator.build(htmlCode);
 			if(ele){
 				$("body").append(ele);
 			}
-			
-			
-			
+
 			/*
 			// modal 自动渲染icheck
 			$("body").delegate(".modal", "show.bs.modal", function(){

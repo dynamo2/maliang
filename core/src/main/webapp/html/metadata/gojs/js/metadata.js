@@ -158,7 +158,7 @@ function newMetadataDiagram(digramId, fieldTreeNodes) {
 		font : "bold 13px Helvetica, bold Arial, sans-serif",
 		stroke : "white",
 		margin : 5
-	}, new go.Binding("text", "key"))), G_Make("TreeExpanderButton"));
+	}, new go.Binding("text", "name"))), G_Make("TreeExpanderButton"));
 
 	objDiagram.toolManager.dragSelectingTool.delay = 100;
 	objDiagram.toolManager.hoverDelay = 50;

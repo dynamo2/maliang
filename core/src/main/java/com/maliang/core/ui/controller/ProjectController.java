@@ -66,7 +66,7 @@ public class ProjectController extends BasicController {
 		String s = "{json:['form','subproject',"
 						+ "[['$pid','','hidden',project.id,'[n]'],"
 							+ "['id','','hidden',subproject.id,'[n]'],"
-							+ "['$pname','所属项目','label',project.name,'[n]'],"
+							+ "['$pname','项目','label',project.name,'[n]'],"
 							+ "['name','子项目名称','text',subproject.name,'[n]'],"
 							+ "['key','key','text',subproject.key,'[n]']]]}";
 		Object val = AE.execute(s, params);
@@ -88,6 +88,11 @@ public class ProjectController extends BasicController {
 	@ResponseBody
 	public String deleteSubproject(HttpServletRequest request) {
 		String id = request.getParameter("id");
+		
+		List<Business> bs = this.businessDao.listBySubproject(id);
+		if(!Utils.isEmpty(bs)){
+			return this.json("{result:0,error:'不能删除，还有业务模块"+bs.size()+"个'}");
+		}
 		
 		this.projectDao.deleteSubproject(id);
 		return this.json("{result:1}");
@@ -114,7 +119,7 @@ public class ProjectController extends BasicController {
 		
 		String s = "{json:['form','',"
 				+ "[['$id','','hidden',id,'[n]'],"
-					+ "['$pid','项目',['select',each(projects){{key:this.id,label:this.name}}],'','[n]']"
+					+ "['$pid','所属项目',['select',each(projects){{key:this.id,label:this.name}}],'','[n]']"
 					+ "]]}";
 		
 		Object val = AE.execute(s,params);
@@ -139,7 +144,7 @@ public class ProjectController extends BasicController {
 			Object val = AE.execute(s,params);
 			results.add(val);
 			
-			//子项目节点
+			//瀛愰」鐩妭鐐�
 			if(!Utils.isEmpty(p.getSubprojects())){
 				for(Subproject sp:p.getSubprojects()){
 					String spid = sp.getId().toString();
@@ -150,7 +155,7 @@ public class ProjectController extends BasicController {
 					val = AE.execute(s,params);
 					results.add(val);
 					
-					//子项目的business节点
+					//瀛愰」鐩殑business鑺傜偣
 					String bspid = "Subproject,"+sp.getId().toString();
 					pids.add(bspid);
 					results.addAll(this.businessNodes(newMap("project",bspid),newMap("parent",spid)));
@@ -160,7 +165,7 @@ public class ProjectController extends BasicController {
 			results.addAll(this.businessNodes(newMap("project",bpid),newMap("parent",pid)));
 		}
 		
-		//加载剩余的business节点
+		//鍔犺浇鍓╀綑鐨刡usiness鑺傜偣
 		Map query = (Map)AE.execute("{project:{$nin:pids}}",newMap("pids",pids));
 		results.addAll(businessNodes(query,newMap("parent","root")));
 
@@ -179,12 +184,12 @@ public class ProjectController extends BasicController {
 			Map<String,Object> params = newMap("project",p);
 			String pid = p.getId().toString();
 			
-			//项目节点
+			//椤圭洰鑺傜偣
 			String s = "{text:project.name+'('+project.key+')',category:'project',key:project.id,parent:'root'}";
 			Object val = AE.execute(s,params);
 			results.add(val);
 			
-			//子项目节点
+			//瀛愰」鐩妭鐐�
 			if(!Utils.isEmpty(p.getSubprojects())){
 				for(Subproject sp:p.getSubprojects()){
 					params = newMap("subproject",sp);
@@ -196,7 +201,7 @@ public class ProjectController extends BasicController {
 				}
 			}
 
-			//对象模型节点
+			//瀵硅薄妯″瀷鑺傜偣
 			results.addAll(metadataNodes(newMap("project",pid),newMap("parent",pid)));
 		}
 		

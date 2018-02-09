@@ -70,7 +70,7 @@ public class DateFunction {
 		Map<String,String> formatNames = new HashMap<String,String>();
 		formatNames.put("/", "yyyy/MM/dd");
 		formatNames.put("-","yyyy-MM-dd");
-		formatNames.put("cn","yyyy年MM月dd日");
+		formatNames.put("cn","yyyy年M月d日");
 		
 		return doFormat(function,params,CollectionService.dateFormat,formatNames);
 	}
@@ -79,7 +79,7 @@ public class DateFunction {
 		Map<String,String> formatNames = new HashMap<String,String>();
 		formatNames.put("/", "yyyy/MM/dd HH:mm:ss");
 		formatNames.put("-","yyyy-MM-dd HH:mm:ss");
-		formatNames.put("cn","yyyy年MM月dd日 HH:mm:ss");
+		formatNames.put("cn","yyyy年M月d日 HH:mm:ss");
 		
 		return doFormat(function,params,CollectionService.timestampFormat,formatNames);
 	}
@@ -99,7 +99,7 @@ public class DateFunction {
 					}else if("-".equals(fs)){
 						fs = "yyyy-MM-dd HH:mm:ss";
 					}else if("cn".equals(fs)){
-						fs = "yyyy年MM月dd日 HH:mm:ss";
+						fs = "yyyy年M月d日 HH:mm:ss";
 					}
 					
 					if(fs != null){
@@ -126,13 +126,13 @@ public class DateFunction {
 		Map<String,Object> params = new HashMap<String,Object>();
 		params.put("d",new Date());
 		
-		String s = "D'2003年11月30日 12时21分22秒'.df('/')";
+		String s = "D'2003骞�11鏈�30鏃� 12鏃�21鍒�22绉�'.df('/')";
 		s = "d.time";
 		Object u = ArithmeticExpression.execute(s,params);
 		
 		System.out.println("u : " + u);
 		
-		DateFormat format = new SimpleDateFormat("yyyy年MM月dd日 HH:mm:ss");
+		DateFormat format = new SimpleDateFormat("yyyy骞碝M鏈坉d鏃� HH:mm:ss");
 		String ss = format.format(new Date());
 		System.out.println(ss);
 		

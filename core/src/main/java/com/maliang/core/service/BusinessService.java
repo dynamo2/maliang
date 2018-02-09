@@ -122,7 +122,12 @@ public class BusinessService {
 		
 		void replace(int start,int end){
 			String label = this.readLabel(start+2,end);
+			
 			Block block = businessDao.getBlock(label);
+			if(block == null){
+				this.source.replace(start, end+1,"");
+				return;
+			}
 			
 			this.cursor = end+1;
 			if(matchType(block)){

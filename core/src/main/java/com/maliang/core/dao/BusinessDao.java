@@ -79,8 +79,22 @@ public class BusinessDao extends ModelDao<Business> {
 	public List<Business> listByProject(){
 		Object bus = Utils.getSessionValue("SYS_BUSINESS");
 		if(bus != null && bus instanceof Business){
+			return this.list(sysProjectQuery(false));
+		}
+		
+		return null;
+	}
+	
+	/**
+	 * recursion:
+	 * 		true:添加父项目条件
+	 * **/
+	private BasicDBObject sysProjectQuery(boolean recursion){
+		Object bus = Utils.getSessionValue("SYS_BUSINESS");
+		BasicDBObject projectQuery = new BasicDBObject();
+		if(bus != null && bus instanceof Business){
 			MongodbModel bpro = ((Business)bus).getProject();
-			BasicDBObject projectQuery = new BasicDBObject();
+			
 			
 			String val = null;
 			if(bpro instanceof Project){
@@ -89,13 +103,31 @@ public class BusinessDao extends ModelDao<Business> {
 				val = "Subproject,";
 			}
 			val += bpro.getId().toString();
-			
 			projectQuery.put("project",val);
+
+			if(recursion && bpro instanceof Subproject){
+				List<BasicDBObject> orVal = new ArrayList<BasicDBObject>();
+				orVal.add(projectQuery);
+				
+				Subproject sbp = (Subproject)bpro;
+				BasicDBObject query = new BasicDBObject();
+				query.put("subprojects._id", sbp.getId());
+				Project project = this.projectDao.findOne(query);
+				
+				projectQuery = new BasicDBObject();
+				projectQuery.put("project","Project,"+project.getId());
+				orVal.add(projectQuery);
+
+				projectQuery = new BasicDBObject();
+				projectQuery.put("$or", orVal);
+			}else {
+				projectQuery.put("project",val);
+			}
 			
-			return this.list(projectQuery);
+			return projectQuery;
 		}
 		
-		return null;
+		return projectQuery;
 	}
 	
 	private <T> T getSubObjectByName(String canonicalName,String subName,Class<T> subCls){
@@ -103,15 +135,22 @@ public class BusinessDao extends ModelDao<Business> {
 		
 		List<DBObject> pipe = new ArrayList<DBObject>();
 		
-		pipe.add(new BasicDBObject("$match",new BasicDBObject("uniqueCode",names[0])));
+		BasicDBObject match = sysProjectQuery(true);
+		match.put("uniqueCode", names[0]);
+
+		//pipe.add(new BasicDBObject("$match",new BasicDBObject("uniqueCode",names[0])));
+		pipe.add(new BasicDBObject("$match",match));
 		pipe.add(new BasicDBObject("$unwind","$"+subName));
 		pipe.add(new BasicDBObject("$match",new BasicDBObject(subName+".name",names[1])));
 		pipe.add(new BasicDBObject("$project",new BasicDBObject().append(subName,1).append("_id",0)));
 		
+		
 		AggregationOutput aout = dbColl.aggregate(pipe);
 		Iterator<DBObject> ie = aout.results().iterator();
 		while(ie.hasNext()){
-			return decode((BasicDBObject)ie.next().get(subName), subCls);
+			BasicDBObject dbObj = (BasicDBObject)ie.next().get(subName);
+			
+			return decode(dbObj, subCls);
 		}
 		
 		return null;

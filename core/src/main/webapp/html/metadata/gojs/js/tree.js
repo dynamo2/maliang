@@ -227,7 +227,11 @@ var treeContextMenu = {
 			var id = obj.diagram.selection.first().data.key;
 			
 			ajaxNoData('/project/deleteSubproject.htm?id='+id,function(result,status){
-				refreshProjectTree();
+				if(result.result === 0){
+					alert(result.error);
+				}else {
+					refreshProjectTree();
+				}
 			});
 		},
 		

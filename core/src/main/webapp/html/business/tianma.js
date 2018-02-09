@@ -105,10 +105,14 @@ function HtmlBuilder(){
 			var val = $.trim(this.key);
 			var radio = builder.newInput(data)
 				.prop("type","radio")
+				.prop("id",data.name+'_'+val)
 				.val(val)
 				.prop("checked",utils.eq(val,data.value));
 			
-			eles.push($("<label />").append(radio).append(this.label));
+			//eles.push(radio);
+			
+			var label = $("<label />").append(this.label).prop("for",radio.prop('id'));
+			eles.push($("<div />").append(radio).append(label));
 		});
 		
 		return eles;
@@ -122,6 +126,7 @@ function HtmlBuilder(){
 			var val = $.trim(this.key);
 			var box = builder.newInput(data)
 						.val(val)
+						.prop("id",data.name+'_'+val)
 						.prop("type","checkbox");
 			
 			if(utils.isString(data.value)){
@@ -130,7 +135,10 @@ function HtmlBuilder(){
 				box.prop("checked",$.inArray(val,data.value) >= 0);
 			}
 			
-			eles.push($("<label />").append(box).append(this.label));
+			//eles.push($("<label />").append(box).append(this.label));
+			
+			var label = $("<label />").append(this.label).prop("for",box.prop('id'));
+			eles.push($("<div />").append(box).append(label));
 		});
 		
 		return eles;

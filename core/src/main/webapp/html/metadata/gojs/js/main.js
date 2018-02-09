@@ -15,6 +15,7 @@ function DM(){
 		_.getEvents(data,ename).push([target,fun]);
 	};
 	
+	
 	this.change = function(data,newData){
 		utils.copy(newData,data,null);
 		
@@ -207,9 +208,17 @@ function objectMetadataModel(){
 	
 	this.buildFieldTreeNode = function(field,parent,omId){
 		var node = {};
-		node.key = field.name.value+'('+field.label.value+')';
+		//node.key = field.name.value+'('+field.label.value+')';
+		
+		/**
+		 * 新代码
+		 * **/
+		node.key = field.name.value;
+		node.name = field.name.value+'('+field.label.value+')';
+		
 		if(parent){
 			node.parent = parent.key;
+			node.key = parent.key+'.'+node.key;
 		}
 		node.field = field;
 		node.omId = omId;
