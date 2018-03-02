@@ -157,10 +157,23 @@ function Utils(){
 		return is;
 	};
 	
+	this.readValue = function (obj, key,dv) {
+		var val = this.readValue(obj,key);
+		if(!val){
+			return dv;
+		}
+		return val;
+	};
+	
 	/**
-	 * eq.: obj : {"name":"臻秀修护美颜水125ML","brand":{"id":"aaaaa","name":"雪花秀"}} if key =
-	 * "name" return："臻秀修护美颜水125ML" if key = "brand"
-	 * return：{"id":"aaaaa","name":"雪花秀"}
+	 * eq.: 
+	 *   obj : {"name":"臻秀修护美颜水125ML","brand":{"id":"aaaaa","name":"雪花秀"}} ,
+	 *   if key = "name" 
+	 *     return:"臻秀修护美颜水125ML" 
+	 *   if key = "brand"
+	 *     return:{"id":"aaaaa","name":"雪花秀"}
+	 *   if key = 'brand.id'
+	 *     return:'aaaaa'
 	 */
 	this.readValue = function (obj, key) {
 		if(!obj || !key)return null;

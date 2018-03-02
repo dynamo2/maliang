@@ -187,6 +187,14 @@ var HTMLGenerator = Class.extend({
 			return ele;
 		}
 		
+		if(!type){
+			if(opts.html){
+				if($.type(opts.html) === 'string'){
+					return $(opts.html);
+				}
+			}
+		}
+		
 		return this.htmlElement(opts);
 	},
 	

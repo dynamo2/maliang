@@ -502,7 +502,7 @@ var BootstrapGenerator = HTMLGenerator.extend({
 	form:function(options){
 		var _ = this;
 
-		var action = "/flow/flow.jsp";
+		var action = "/flows/flow.htm";
 		if(options && options.action){
 			action = options.action;
 		}
@@ -514,7 +514,9 @@ var BootstrapGenerator = HTMLGenerator.extend({
 			form.addClass("form-horizontal");
 		}
 		if(options && options.body){
-			options.body.layout = options.layout;
+			if(!options.body.layout){
+				options.body.layout = options.layout;
+			}
 			form.append(_.build(options.body));
 		}
 		
@@ -522,11 +524,11 @@ var BootstrapGenerator = HTMLGenerator.extend({
 	},
 	
 	isInlineLayout:function(options){
-		return options && options.layout && options.layout === 'inline'; 
+		return options && options.layout && (options.layout === 'inline' || options.layout === 'i'); 
 	},
 	
 	isHorizontalLayout:function(options){
-		return options && options.layout && options.layout === 'horizontal';
+		return options && options.layout && (options.layout === 'horizontal' || options.layout === 'h');
 	},
 	
 	icon:function(icon){
@@ -534,71 +536,166 @@ var BootstrapGenerator = HTMLGenerator.extend({
 	},
 	
 	/*
-	 * productEditForm:{
-		  type:'form',
-		  css:'form-horizontal',
-		  id:'productEditForm',
-		  body:{
-		      type:'formBody',
-		      groups:[
-		        {
-		            section:'Basic Info',
-		            group-cols:[3,9],
-		            rows:[
-		                {type:'text',name:'product.name',label:'名称',value:product.name},
-		                {type:'text',name:'product.price',label:'价格',value:product.price}
-		            ]
-		        },
-		        {
-		            section:'postage Info',
-		            group-cols:[3,9],
-		            row-col:6,
-		            rows:[
-		                [
-		                    {type:'select',css:'input-medium',name:'product.postage',label:'邮递策略',
-		                            value:product.postage,options:[{key:'',label:'默认'}]+each(posts){{key:this.id,label:this.name}}},
-		                    {type:'text',name:'product.stock',label:'库存',value:product.stock}
-		                ],
-		                [
-		                    {type:'text',name:'product.orderStock',label:'订单库存',value:product.orderStock}
-		                ]
-		            ]
-		        }
-		      ]
-		}
+	 * editForm:{
+        type:'formBody',
+        groups:[
+            {type:'hidden',name:'bid',value:bid},
+            {type:'hidden',name:'fid',value:2},
+            {type:'hidden',name:'task.id',value:task.id},
+            
+            {
+                label:'收货地址',
+                type:'formBody',
+                layout:[1],
+
+                groups:[
+                    [
+                        {type:'text',name:'task.title',label:'收件人'},
+                        {type:'text',name:'task.dateDue',label:'手机号码'}
+                    ],
+                    [
+                        {type:'text',name:'task.title',label:'省份'},
+                        {type:'text',name:'task.dateDue',label:'城市'},
+                        {type:'text',name:'task.title',label:'区'}
+                    ],
+                    {type:'text',name:'task.title',label:'详细地址'}
+                ]
+            },
+            
+            {type:'text',name:'task.title',label:'主题',placeholder:'主题',value:task.title,
+                help:'任务的主题，非空'
+            },
+            {type:'radio',name:'task.type',label:'问题类型',layout:'inline',
+                    value:task.type,options:each(taskTypes){{key:this.id,label:this.name}},
+                help:'请选择问题类型'
+            },
+            
+            {type:'checkbox',layout:'inline',name:'task.priority',label:'优先级',
+                    value:task.priority,options:each(taskPrioritys){{key:this.id,label:this.name}}},
+            {type:'date',name:'task.dateDue',label:'到期日',value:task.dateDue.df('-')},
+            {type:'select',name:'task.operator',label:'经办人',value:task.operator,options:each(users){{key:this.id,label:this.name}}},
+            {type:'select',name:'task.reporter',label:'报告人',value:task.reporter,options:each(users){{key:this.id,label:this.name}}},
+            {type:'text',name:'task.environment',label:'环境',value:task.environment},
+            {type:'text',name:'task.description',label:'描述',value:task.description},
+            {type:'text',name:'task.estimatedTime',label:'预估时间',value:task.estimatedTime},
+            {type:'text',name:'task.remainingTime',label:'剩余时间',value:task.remainingTime},
+            {type:'text',name:'task.remark',label:'备注',value:task.remark},
+            {type:'select',name:'task.parentTask',label:'父任务',value:task.parentTask,options:each(tasks){{key:this.id,label:this.title}}},
+            {type:'text',name:'task.workLogs',label:'工作日志',value:task.workLogs},
+            {type:'text',name:'task.t1',label:'测试1',value:task.t1},
+            {type:'text',name:'task.t2',label:'测试2',value:task.t2}
+    ]},
 	 * **/
 	formBody:function(options){
-		var curr = this;
-		var fbody = $('<div class="form-body" />');
-		var hiddenDiv = $("<div style='display:none;' />").appendTo(fbody);
-		var isHorizontalLayout = this.isHorizontalLayout(options);
-		
+		this.appendHidden = function(options){
+			hiddenDiv.append(curr.build(options));
+			return null;
+		};
 		
 		/**
-		 * {
-		 * 	type:'text',
-		 * 	name:'product.orderStock',
-		 * 	cols:[3,9],
-		 * 	label:'订单库存',
-		 * 	value:product.orderStock,
-		 * 	required:true,
-		 *  help:'产品的可购买库存',
-		 *  icon:add
-		 * }
+		 * options: {type:'text',name:'task.title',label:'主题',placeholder:'主题',value:task.title,help:'任务的主题，非空'},
+		 * <div class="form-group">
+		 * 		<label>主题</label>
+		 * 		<input type="text" name="task.title" help="任务的主题，非空" placeholder="主题" class="form-control">
+		 * 		<small class="text-muted form-text">任务的主题，非空</small>
+		 * </div>
 		 * **/
-		this.formGroup = function(options){
+		this.basicFormGroup = function(options){
+			var _ = this;
+			var excludeFields = ['label','cols','isInline','isHorizontalLayout','help'];
+			
+			if($.isArray(options)){
+				var elements = [];
+				$.each(options,function(){
+					elements.push(_.basicFormGroup(this));
+				});
+				return elements;
+			}
+			
 			if(options.type === 'hidden'){
-				var opts = utils.copy(options,{},['label']);
-				var input = curr.build(opts);
-				hiddenDiv.append(input);
-				return null;
+				return curr.appendHidden(utils.copy(options,{},excludeFields));
 			}
 			
 			var fg = $('<div class="form-group" />');
+			
+			var labelText = utils.readValue(options,'label','');
+			var label = $('<label />').text(labelText);
+			if(options.type === 'radio' || options.type === 'checkbox'){
+				if(!options.isInline){
+					label.css("display","block");
+				}
+			}
+
+			var opts = utils.copy(options,{},excludeFields);
+			var inputDiv = curr.build(opts);
+			
+			if(options && options.postposition){
+				fg.append(inputDiv).append(label);
+			}else {
+				fg.append(label).append(inputDiv);
+			}
+			
+			var help = options && options.help;
+			if(help){
+				fg.append($('<small class="text-muted" />').text(help));
+			}
+			return fg;
+		};
+
+		/**
+		 * options: {type:'text',name:'task.title',label:'主题',placeholder:'主题',value:task.title,help:'任务的主题，非空'},
+		 * <div class="form-group row">
+		 * 		<label class="col-md-2">主题</label>
+		 * 		<div class="col-md-10">
+		 * 			<input type="text" name="task.title" help="任务的主题，非空" placeholder="主题" class="form-control">
+		 * 			<small class="text-muted form-text">任务的主题，非空</small>
+		 * 		</div>
+		 * </div>
+		 * **/
+		this.formGroup = function(options){
+			var group = curr.basicFormGroup(options);
+			if(!group){
+				return;
+			}
+			
+			if($.isArray(group)){
+				var elements = [];
+				
+				$.each(group,function(){
+					var e = curr.doLayout(this,options);
+					elements.push(e);
+				});
+				
+				return elements;
+			}
+			return curr.doLayout(group,options);
+		};
+		
+		this.doLayout = function(group,options){
+			if(options.isHorizontalLayout){
+				return this.doHorizontalLayout(group,options && options.cols);
+			}
+			
+			if(options.isInline){
+				return this.doInlineLayout(group);
+			}
+
+			return group;
+		};
+		
+		this.doInlineLayout = function(group){
+			return group;
+		};
+
+		this.doHorizontalLayout = function(group,cols){
+			/***
+			 * columns
+			 * **/
+			var label = group.children('label');
 			var labelCol = "col-md-2";
 			var inputCol = "col-md-10";
-			if($.isArray(options && options.cols)){
-				if(options.cols.length > 0){
+			if($.isArray(cols)){
+				if(cols.length > 0){
 					labelCol = options.cols[0];
 				}
 				
@@ -612,148 +709,95 @@ var BootstrapGenerator = HTMLGenerator.extend({
 			if($.isNumeric(inputCol)){
 				inputCol = "col-md-"+inputCol;
 			}
-
-			var labelText = options && options.label;
-			if(!labelText)labelText = '';
-			var label = $('<label class="control-label"></label>').text(labelText);
 			
-			if(isHorizontalLayout){
-				fg.addClass('row');
-				label.addClass(labelCol);
-			}
-			if(options && options.required){
-				label.append($('<span class="required"></span>').text(' * '));
-			}
-
-			var opts = utils.copy(options,{},['label','cols']);
-			var inputDiv = curr.build(opts);
-			if(inputDiv){
-				if(options.required){
-					inputDiv.attr("data-required",1);
-					inputDiv.attr("required",1);
-				}
-				if(options && options.icon){
-					inputDiv = $('<div class="input-icon"></div>').append(curr.icon(options.icon)).append(inputDiv);
-					//inputDiv = $('<div class="input-icon"><i class="fa fa-'+options.icon+'"></i></div>').append(inputDiv);
-				}
-			}
-			if(isHorizontalLayout){
-				inputDiv = $('<div />').addClass(inputCol).append(inputDiv);
-			}
-			
-			if(options && options.help){
-				inputDiv.append($('<span class="help-block"></span>').text(options.help));
-			}
-			
-			if(options && options.postposition){
-				return fg.append(inputDiv).append(label);
-			}
-			
-			return fg.append(label).append(inputDiv);
+			group.addClass('row');
+			label.addClass(labelCol);
+			label.nextAll().wrapAll("<div class='"+inputCol+"'></div>");
+			group.find('.text-muted').addClass('form-text');
+			return group;
 		};
 		
-		
 		this.formRow = function(rowOpts){
-			if(!$.isArray(rowOpts.rows) || rowOpts.rows.length == 0){
+			var rows = rowOpts && rowOpts.groups;
+			if(!$.isArray(rows) || rows.length == 0){
 				return null;
 			}
 
-			var rc = 12/rowOpts.rows.length;
-			if(rowOpts && rowOpts['row-col']){
-				rc = rowOpts['row-col'];
-			}
-			if($.isNumeric(rc)){
-				rc = 'col-md-'+rc;
-			}
-			
-			var gc = null;
-			if(rowOpts && rowOpts['group-cols']){
-				gc = rowOpts['group-cols'];
-			}
-			
-			var row = null;
-			var rows = null;
-			$.each(rowOpts.rows,function(){
-				if($.isArray(this)){
-					var newOpts = {
-						'row-col':rc,
-						'group-cols':gc,
-						rows:this
-					}
-					
-					var r = curr.formRow(newOpts);
-					if(r){
-						if(!rows){
-							rows = [];
+			var pre = 'col-md-';
+			var defaultCss = "col";
+			var layout = rowOpts && rowOpts.layout
+			var rowElements = [];
+			$.each(rows,function(k,v){
+				var cl = 1;
+				if($.isArray(layout) && layout.length > k){
+					cl = layout[k];
+				}
+				
+				var cnames = defaultCss;
+				if($.isArray(cl)){
+					cnames = [];
+					$.each(cl,function(){
+						if($.isNumeric(this)){
+							cnames.push(pre+this);
+						}else {
+							cnames.push(this);
 						}
-						rows.push(r);
-					}
-					return;
+					});
 				}
 
-				if(!row){
-					row = $("<div class='row' />");
-				}
-				if(gc){
-					this['cols'] = gc;
-				}
-				var group = curr.formGroup(this);
-				if(group){
-					$("<div />").addClass(rc).appendTo(row).append(group);
+				var els = curr.basicFormGroup(v);
+				if($.isArray(els)){
+					var row = $("<div class='form-row' />");
+					rowElements.push(row);
+					
+					$.each(els,function(idx,group){
+						var css = defaultCss;
+						if($.isArray(cnames) && cnames.length > idx){
+							css = cnames[idx];
+						}
+						
+						group.addClass(css);
+						row.append(group);
+					});
+				}else {
+					rowElements.push(els);
 				}
 			});
 			
-			if(row){
-				return row;
-			}
-			return rows;
+			return rowElements;
 		};
 		
-		var defaultValidateOptions = {
-			errorElement: "span", //default input error message container
-			errorClass: 'help-block help-block-error', // default input error message class
-            focusInvalid: false, // do not focus the last invalid input
-            ignore: "", // validate all fields including form hidden input
-
-            errorPlacement: function (error, element) { // render error placement for each input type
-                if (element.parent(".input-group").size() > 0) {
-                    error.insertAfter(element.parent(".input-group"));
-                } else if (element.attr("data-error-container")) { 
-                    error.appendTo(element.attr("data-error-container"));
-                } else if (element.parents('.radio-list').size() > 0) { 
-                    error.appendTo(element.parents('.radio-list').attr("data-error-container"));
-                } else if (element.parents('.radio-inline').size() > 0) { 
-                    error.appendTo(element.parents('.radio-inline').attr("data-error-container"));
-                } else if (element.parents('.checkbox-list').size() > 0) {
-                    error.appendTo(element.parents('.checkbox-list').attr("data-error-container"));
-                } else if (element.parents('.checkbox-inline').size() > 0) { 
-                    error.appendTo(element.parents('.checkbox-inline').attr("data-error-container"));
-                } else {
-                    error.insertAfter(element); // for other inputs, just perform default behavior
-                }
-            },
-
-
-            highlight: function (element) { // hightlight error inputs
-               $(element)
-                    .closest('.form-group').addClass('has-error'); // set error class to the control group
-            },
-
-            unhighlight: function (element) { // revert the change done by hightlight
-                $(element)
-                    .closest('.form-group').removeClass('has-error'); // set error class to the control group
-            },
-
-            success: function (label) {
-                label
-                    .closest('.form-group').removeClass('has-error'); // set success class to the control group
-            },
-
-            submitHandler: function (form) {
-                form[0].submit(); // submit the form
-            }
-        };
+		var curr = this;
+		//var fbody = $('<div class="form-body" />');
 		
+		var fbody = curr.build(utils.copy(options,{tag:"div"},['groups','type','layout','label']));
+		fbody.addClass('form-body');
+		
+		var hiddenDiv = $("<div style='display:none;' />").appendTo(fbody);
+		var isHorizontalLayout = this.isHorizontalLayout(options);
+		var isInline = this.isInlineLayout(options);
+		
+		if(options && options.groups && $.isArray(options.groups)){
+			var layout = options && options.layout;
+			if($.isArray(layout)){
+				var res = curr.formRow(options);
+				if(res){
+					fbody.append(res);
+				}
+			}else {
+				$.each(options.groups,function(){
+					this.isHorizontalLayout = isHorizontalLayout;
+					this.isInline = isInline;
+					
+					var group = curr.formGroup(this);
+					if(group){
+						fbody.append(group);
+					}
+				});
+			}
+		}
+		
+		/*
 		if(options && options.groups && $.isArray(options.groups)){
 			$.each(options.groups,function(){
 				if(this.section){
@@ -769,7 +813,7 @@ var BootstrapGenerator = HTMLGenerator.extend({
 					}
 				}
 			});
-		}
+		}*/
 
 		return fbody;
 	},
@@ -1166,14 +1210,12 @@ var BootstrapGenerator = HTMLGenerator.extend({
 	        		return ele.append(this.build(opts));
 	        	}
 	        	
-	        	if(opts.text){
-	        		ele.text(opts.text);
+	        	if(opts.html){
+	        		return ele.append(this.build(opts));
 	        	}
 	        	
-	        	if($.isPlainObject(opts.html)){
-	        		ele.append(this.build(opts.html));
-	        	}else if($.type(opts.html) === 'string'){
-	        		ele.html(opts.html);
+	        	if(opts.text){
+	        		ele.text(opts.text);
 	        	}
 	        	
 	        	if(opts.class){
@@ -1183,6 +1225,9 @@ var BootstrapGenerator = HTMLGenerator.extend({
 	        	var newOpts = utils.copy(opts,{},['type','text','html','class']);
 	            ele.attr(newOpts);
 	        }else {
+	        	if(opts == null || opts == undefined){
+	        		opts = "";
+	        	}
 	            ele.text(opts);
 	        }
 	        return ele;
@@ -1199,7 +1244,10 @@ var BootstrapGenerator = HTMLGenerator.extend({
 	        var thead = $("<thead />");
 	        var row = $('<tr role="row" class="heading" />').appendTo(thead);
 	        
-	        $.each(opts.heading,function(){
+	        var head = opts;
+	        //head = opts.heading;
+	        
+	        $.each(head,function(){
 	            if(this.type == 'checker'){
 	            }
 	            
@@ -1331,7 +1379,9 @@ var BootstrapGenerator = HTMLGenerator.extend({
 //	        	dateDIV.datepicker();
 //	        });
 	        
-	        return dateDIV;
+	        //return dateDIV;
+	        
+	        return $("<input class='form-control' type='date' />");
 	    };
 	    
 	    /**
@@ -1579,6 +1629,46 @@ var BootstrapGenerator = HTMLGenerator.extend({
 			
 			return [textarea,element];
 		};
+		
+		this.pend = function(input,options){
+			var prepend = options && options.prepend;
+			var append = options && options.append;
+			if(!prepend && !append){
+				return input;
+			}
+			
+			var inputDiv = $('<div class="input-group mb-3" />');
+			
+			if(prepend){
+				var preDiv = $('<div class="input-group-prepend" />').append(this.doPend(prepend));
+				inputDiv.append(preDiv);
+			}
+			
+			inputDiv.append(input);
+			
+			if(append){
+				var appDiv = $('<div class="input-group-append" />').append(this.doPend(append));
+				inputDiv.append(appDiv);
+			}
+			
+			return inputDiv;
+		};
+		
+		this.doPend = function(body){
+			var _ = this;
+			if($.isArray(body)){
+				var eles = [];
+				$.each(body,function(){
+					eles.push(_.doPend(this));
+				});
+				return eles;
+			}
+			
+			if(utils.isString(body)){
+				return $("<span class='input-group-text' />").text(body);
+			}
+			return this.build(body);
+		};
 
 	    if(opts.type === "between"){
 	    	return this.between(opts);
@@ -1614,10 +1704,14 @@ var BootstrapGenerator = HTMLGenerator.extend({
 	    
 	    var input = this._super(opts);
 	    this.defaultClass(input);
+	    input = this.pend(input,opts);
 
-	    if(opts && opts.icon){
+	    /**
+	     *if(opts && opts.icon){
 	    	input.prepend($("<i class='fa fa-"+opts.icon+"' />"));
-	    }
+	    } 
+	     * **/
+	    
 	    
 		return input;
 	},

@@ -197,7 +197,7 @@ public class BasicDao extends AbstractDao{
 	}
 	
 	/***
-	 * 将{items:{product:{name:'AQ'}}}转成：{items.product.name:'AQ'}
+	 * 灏唟items:{product:{name:'AQ'}}}杞垚锛歿items.product.name:'AQ'}
 	 * **/
 	protected static Map<String,Object> buildDBQueryMap(Map<String,Object> queryMap,String prefix){
 		Map<String,Object> daoMap = new HashMap<String,Object>();
@@ -456,20 +456,20 @@ public class BasicDao extends AbstractDao{
 	}
 	
 	/**
-	 * 关于内联的“array.innerObject”类型的更新：
-	 * 第一层array的更新：
-	 * 	1. 新数据，使用$push插入
-	 *  2. 旧数据，逐条采用$set:array.field方式更新
-	 *  例子：Province.cities.update([{city:'杭州',zipCode:'310000',id:1},{city:'金华',zipCode:'320000',id:2}])
-	 *  更新代码： $set:[{Province.cities.$.city:'杭州'},{Province.cities.$.zipCode:'310000'}]
+	 * 鍏充簬鍐呰仈鐨勨�渁rray.innerObject鈥濈被鍨嬬殑鏇存柊锛�
+	 * 绗竴灞俛rray鐨勬洿鏂帮細
+	 * 	1. 鏂版暟鎹紝浣跨敤$push鎻掑叆
+	 *  2. 鏃ф暟鎹紝閫愭潯閲囩敤$set:array.field鏂瑰紡鏇存柊
+	 *  渚嬪瓙锛歅rovince.cities.update([{city:'鏉窞',zipCode:'310000',id:1},{city:'閲戝崕',zipCode:'320000',id:2}])
+	 *  鏇存柊浠ｇ爜锛� $set:[{Province.cities.$.city:'鏉窞'},{Province.cities.$.zipCode:'310000'}]
 	 *            $query:{id:1}
-	 *            $set:[{Province.cities.$.city:'金华'},{Province.cities.$.zipCode:'320000'}]
+	 *            $set:[{Province.cities.$.city:'閲戝崕'},{Province.cities.$.zipCode:'320000'}]
 	 *            $query:{id:2}
-	 * 多层array的更新：
-	 *  1. 使用$set:parent.arrayField方式更新
-	 *  例子:Province.cities.update({city:'杭州',id:1,counties:[{id:11,county:'上城区'},{id:12,county:'下城区'}]})
-	 *  更新代码: $set:[{Province.cities.$.city:'杭州'},
-	 *  					{Province.cities.$.counties:[{id:11,county:'上城区'},{id:12,county:'下城区'}]
+	 * 澶氬眰array鐨勬洿鏂帮細
+	 *  1. 浣跨敤$set:parent.arrayField鏂瑰紡鏇存柊
+	 *  渚嬪瓙:Province.cities.update({city:'鏉窞',id:1,counties:[{id:11,county:'涓婂煄鍖�'},{id:12,county:'涓嬪煄鍖�'}]})
+	 *  鏇存柊浠ｇ爜: $set:[{Province.cities.$.city:'鏉窞'},
+	 *  					{Province.cities.$.counties:[{id:11,county:'涓婂煄鍖�'},{id:12,county:'涓嬪煄鍖�'}]
 	 *  			   }]
 	 *  		  $query:{id:1}
 	 * **/
@@ -685,11 +685,11 @@ public class BasicDao extends AbstractDao{
 	}
 	
 	/**
-	 * 将数据转换为DB存储模式
-	 * 1. 'id' (String类型) 转成'_id'(ObjectId类型)
-	 * 2. LINK_COLLECTION字段类型：值若为Map，转成id(String类型)
-	 * 3. 去掉meta数据
-	 * 4. 去掉list里的null数据
+	 * 灏嗘暟鎹浆鎹负DB瀛樺偍妯″紡
+	 * 1. 'id' (String绫诲瀷) 杞垚'_id'(ObjectId绫诲瀷)
+	 * 2. LINK_COLLECTION瀛楁绫诲瀷锛氬�艰嫢涓篗ap锛岃浆鎴恑d(String绫诲瀷)
+	 * 3. 鍘绘帀meta鏁版嵁
+	 * 4. 鍘绘帀list閲岀殑null鏁版嵁
 	 * ***/
 	public Map toDBModel(Map dataMap,String collName){
 		ObjectMetadata metadata = this.metaDao.getByName(collName);

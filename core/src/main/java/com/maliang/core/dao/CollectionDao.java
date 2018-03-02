@@ -507,6 +507,21 @@ public class CollectionDao extends BasicDao {
 		}
 		return query;
 	}
+	
+	private ObjectField readField(List<ObjectField> fields,String fname){
+		if(Utils.isEmpty(fields)){
+			return null;
+		}
+		
+		for(ObjectField of : fields){
+			if(of.getName().equals(fname)){
+				return of;
+			}
+		}
+		
+		return null;
+	}
+	
 	private BasicDBObject parseLinkedQuery(String fieldKey,Object fieldMatch,String collName){
 		String[] keys = null;
 		if(fieldKey.contains(".")){
@@ -521,13 +536,7 @@ public class CollectionDao extends BasicDao {
 		for(int i = 0; i < keys.length; i++){
 			String key = keys[i];
 			
-			ObjectField oField = null;
-			for(ObjectField of : fields){
-				if(of.getName().equals(key)){
-					oField = of;
-					break;
-				}
-			}
+			ObjectField oField = readField(fields,key);
 			
 			if(oField != null && FieldType.LINK_COLLECTION.is(oField.getType())){
 				String linkedCollName = oField.getLinkedObject();
@@ -551,6 +560,9 @@ public class CollectionDao extends BasicDao {
 				}
 				
 				String linkedKey = sb.toString();
+				if(linkedKey.equals("id")){
+					linkedKey = "_id";
+				}
 				BasicDBObject linkedQuery = new BasicDBObject(linkedKey,fieldMatch);
 				linkedQuery = (BasicDBObject)this.parseLinkedQuery(linkedQuery, linkedCollName);
 				
@@ -561,9 +573,13 @@ public class CollectionDao extends BasicDao {
 					ids.add(false);
 				}
 				
-				return new BasicDBObject(fieldKey,new BasicDBObject("$in",ids));
+				BasicDBObject qq = new BasicDBObject(fieldKey,new BasicDBObject("$in",ids));
+				return qq;
 			}
 			
+			if(key.equals("id")){
+				key = "_id";
+			}
 			if(parentKey == null){
 				parentKey = key;
 			}else parentKey += "."+key;

@@ -232,7 +232,7 @@ function HtmlBuilder(){
 		}
 	
 		var options = utils.copy(data,null,["type"]);
-		return this.props($("<button />"),options);
+		return this.props($("<button type='button' />"),options);
 	};
 	
 	this.newSubmit = function(data){

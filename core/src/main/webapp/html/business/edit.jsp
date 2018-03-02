@@ -565,7 +565,11 @@
 			if($.isArray(options)){
 				$.each(options,function(){
 					files.push([
-					    {type:'text',name:key+'.file',style:'width:100%',value:this.file},
+					    [
+{type:'hidden',name:key+'.id',style:'width:100%',value:this.id},
+{type:'text',name:key+'.file',style:'width:100%',value:this.file}
+					    ],
+						
 						{type:'radio',name:key+'.type',layout:'inline',options:[{key:1,label:'js'},{key:2,label:'css'}],value:this.type}
 					]);
 				});
