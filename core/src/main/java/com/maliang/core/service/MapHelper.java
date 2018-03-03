@@ -2,12 +2,12 @@ package com.maliang.core.service;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import com.maliang.core.arithmetic.ArithmeticExpression;
+import com.maliang.core.call.CallBack;
 import com.maliang.core.util.BeanUtil;
 import com.maliang.core.util.StringUtil;
 import com.maliang.core.util.Utils;
@@ -165,7 +165,15 @@ public class MapHelper {
 				value = readBeanValue(value,k);
 			}
 		}
-		return value;
+		
+		return doCall(value);
+	}
+
+	private static Object doCall(Object call){
+		if(call instanceof CallBack){
+			return ((CallBack)call).doCall();
+		}
+		return call;
 	}
 	
 	public static Object[] expand(Object[] expandList,String[] names){
@@ -175,6 +183,8 @@ public class MapHelper {
 		int end = 0;
 		List<Object> newDatas = new ArrayList<Object>();
 		for(Object obj:expandList){
+			obj = doCall(obj);
+			
 			boolean isExpand = false;
 			List<String> expands = new ArrayList<String>();
 			end = 0;
@@ -182,9 +192,14 @@ public class MapHelper {
 			for(String n: names){
 				expands.add(n);
 				Object val = MapHelper.readValue(parent,n);
+				MapHelper.setValue(parent,n,val);
+
 				if(val instanceof List){
 					for(Object listObj : (List)val){
 						Object nd = Utils.clone(obj);
+						
+						nd = doCall(nd);
+						
 						MapHelper.setValue(nd,expands,listObj);
 						newDatas.add(nd);
 					}
@@ -196,6 +211,7 @@ public class MapHelper {
 				end++;
 				parent = val;
 			}
+
 			if(!isExpand){
 				newDatas.add(obj);
 			}

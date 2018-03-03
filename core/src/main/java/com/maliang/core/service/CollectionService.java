@@ -26,7 +26,7 @@ public class CollectionService {
 	public final static DateFormat timeFormat = new SimpleDateFormat("HH:mm:ss");
 	
 	/**
-	 * DB 查询方法的别名
+	 * DB 鏌ヨ鏂规硶鐨勫埆鍚�
 	 * **/
 	private static List<String> QUERIES_ALIAS = new ArrayList<String>();
 	private String collection;
@@ -153,7 +153,7 @@ public class CollectionService {
 		return this.collectionDao.aggregateOne(query, this.collection);
 	}
 	
-	//待优化
+	//寰呬紭鍖�
 	public Map<String,Object> save(Object obj){
 		if(obj == null || !(obj instanceof Map))return null;
 		
@@ -172,7 +172,7 @@ public class CollectionService {
 	}
 	
 	/**
-	 * 检索该对象中是否有有效ID值，支持递归检索
+	 * 妫�绱㈣瀵硅薄涓槸鍚︽湁鏈夋晥ID鍊硷紝鏀寔閫掑綊妫�绱�
 	 * ***/
 	private boolean hasId(Map<String,Object> dataMap){
 		try {
@@ -240,7 +240,7 @@ public class CollectionService {
 		String s = "db.User.save({birthday:'1981-4-9', real_name:'www', password:'123456', user:'wmx', id:'', user_grade:'55c8be3f1b970b1ff3fc2f6c'})";
 		//s = "db.Product.search({})";
 		
-		s = "addToParams({uname:'wmx',password:'jjj',user:db.User.get({user:uname}),c1:check([notNull(user),'用户名不存在']),c2:check([user.password=password,'密码错误',['注册新用户','忘记密码']])})";
+		s = "addToParams({uname:'wmx',password:'jjj',user:db.User.get({user:uname}),c1:check([notNull(user),'鐢ㄦ埛鍚嶄笉瀛樺湪']),c2:check([user.password=password,'瀵嗙爜閿欒',['娉ㄥ唽鏂扮敤鎴�','蹇樿瀵嗙爜']])})";
 		//s = "db.User.get({user:'wmx'})";
 		Object u = ArithmeticExpression.execute(s, new HashMap());
 		System.out.println(u);

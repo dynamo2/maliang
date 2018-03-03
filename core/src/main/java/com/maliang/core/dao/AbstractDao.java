@@ -57,8 +57,6 @@ public class AbstractDao  {
 			//Test  电商项目
 			//name = "EB_"+name;
 		}
-
-		//System.out.println(" ----- getDBCollection name : " + name);
 		return db.getCollection(name);
 	}
 	

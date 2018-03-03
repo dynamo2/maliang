@@ -10,6 +10,7 @@ import java.util.Map;
 import org.bson.types.ObjectId;
 
 import com.maliang.core.arithmetic.AE;
+import com.maliang.core.call.CallBack;
 import com.maliang.core.model.FieldType;
 import com.maliang.core.model.Log;
 import com.maliang.core.model.ObjectField;
@@ -903,7 +904,32 @@ public class BasicDao extends AbstractDao{
 		return DaoHelper.correctFieldValue(of.getType(),fieldValue);
 	}
 	
-	public Object getLinkedObject(Object oid,String collName){
+	public Object getLinkedObject(final Object oid,final String collName){
+		if(oid instanceof String && !StringUtil.isEmpty((String)oid)){
+			final String linkOid = ((String)oid).trim();
+			
+			return new CallBack(){
+				private Object obj;
+				private int num = 0;
+				public Object doCall(){
+					if(obj == null && num < 3){
+						this.obj = getByID(linkOid, collName);
+					}
+					
+					num++;
+					return this.obj;
+				}
+				
+				public String toString(){
+					return "--------- linkedObject callback : " + linkOid;
+				}
+			};
+		}
+		
+		return oid;
+	}
+	
+	public Object getLinkedObject22(Object oid,String collName){
 		if(oid instanceof String && !StringUtil.isEmpty((String)oid)){
 			String linkOid = ((String)oid).trim();
 			return this.getByID(linkOid, collName);
@@ -1010,8 +1036,30 @@ public class BasicDao extends AbstractDao{
 				}
 			}else if(FieldType.ARRAY.is(field.getType())){
 				if(fieldValue instanceof List){
-					List list = (List)fieldValue;
+					List list = new ArrayList();
+					for(Object obj : (List)fieldValue){
+						if(FieldType.INNER_COLLECTION.is(field.getElementType())){
+							if(obj instanceof DBObject){
+								obj = ((DBObject)obj).toMap();
+								//correctField((Map<String,Object>)fieldValue,field.getFields(),meta(meta,field));
+							}
+							
+							if(obj instanceof Map){
+								correctField((Map)obj,field.getFields(),meta(meta,field));
+							}
+
+							
+							list.add(obj);
+						}else if(FieldType.LINK_COLLECTION.is(field.getElementType())){
+							list.add(getLinkedObject(obj,field.getLinkedObject()));
+						}else if(FieldType.VARIABLE_LINK.is(field.getType())){
+							list.add(this.getVariableLinkedObject(fieldValue));
+						}
+						
+						dataMap.put(fieldName, list);
+					}
 					
+					/*
 					for(int i = 0; i < list.size(); i++){
 						Object obj = list.get(i);
 						
@@ -1031,7 +1079,7 @@ public class BasicDao extends AbstractDao{
 						}else if(FieldType.VARIABLE_LINK.is(field.getType())){
 							list.set(i, this.getVariableLinkedObject(fieldValue));
 						}
-					}
+					}*/
 				}
 			}else if(field.getType() >= 100){
 				if(fieldValue != null){

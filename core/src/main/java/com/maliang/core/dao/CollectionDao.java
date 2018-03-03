@@ -15,6 +15,7 @@ import org.springframework.web.context.request.RequestContextListener;
 
 import com.maliang.core.arithmetic.AE;
 import com.maliang.core.arithmetic.ArithmeticExpression;
+import com.maliang.core.call.CallBack;
 import com.maliang.core.model.FieldType;
 import com.maliang.core.model.ObjectField;
 import com.maliang.core.model.ObjectMetadata;
@@ -135,16 +136,49 @@ public class CollectionDao extends BasicDao {
 		return dataMap;
 	}
 
-	public Map<String, Object> getByID(String oid, String collName) {
-		DBCursor cursor = this.getDBCollection(collName).find(
-				this.getObjectId(oid));
-
+	public Map<String, Object> getByID(final String oid, String collName) {
+		final DBCollection dbc = this.getDBCollection(collName);
+		DBCursor cursor = dbc.find(this.getObjectId(oid));
 		while (cursor.hasNext()) {
 			BasicDBObject doc = (BasicDBObject) cursor.next();
+			
 			return toMap(doc, collName);
+			/*
+			Map<String, Object> map = toMap(doc, collName);
+			map.put("doCall", new CallBack(){
+				public Object doCall(){
+					DBCursor obj = dbc.find(getObjectId("584a15ba0fb88812e8357394"));
+					System.out.println("------------------- doCall S");
+					while (obj.hasNext()) {
+						System.out.println(obj.next());
+					}
+					System.out.println("------------------- doCall E");
+					
+					return obj;
+				}
+				
+				public String toString(){
+					return "----getByID.doCall()";
+				}
+			});
+			
+			return map;
+			*/
 		}
 
 		return this.emptyResult();
+	}
+	
+	public static void main(String[] args) {
+		String s = "addToParams({ol:db.Order.get('5937d229961fdd8b899f4d7c'),ps:ol.items.product})";
+		s = "db.Order.get('5937d229961fdd8b899f4d7c')";
+		
+		Object o = AE.execute(s);
+
+		Object os = MapHelper.readValue(o,"items.product");
+		System.out.println(os);
+		//System.out.println(MapHelper.readValue(o,"ps"));
+		//System.out.println(MapHelper.readValue(o,"p.items.product"));
 	}
 	
 	//================ aggregate ==================
@@ -791,23 +825,7 @@ public class CollectionDao extends BasicDao {
 		
 		return false;
 	}
-	
-	
 
-	
-	
-	
-
-	public static void main(String[] args) {
-		String s = "info.items.product";
-		int idx = s.indexOf(".",4+1);
-		
-		System.out.println(idx);
-		System.out.println(s.substring(4+1,idx));
-		System.out.println(s.substring(idx+1));
-		
-	}
-	
 	public void insertTrigger(Map<String,Object> insertValue, String collName) {
 		Map<String,Object> dbDataMap = this.correctData(insertValue, collName, false, true);
 		trigger(insertValue,dbDataMap,collName,Trigger.INSERT);
