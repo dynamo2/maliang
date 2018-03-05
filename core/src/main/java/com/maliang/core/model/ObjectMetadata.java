@@ -10,6 +10,9 @@ public class ObjectMetadata extends MongodbModel {
 	@Linked
 	private Project project;
 	
+	//模型类型
+	private Integer modelType;
+	
 	@Mapped(type=ObjectField.class)
 	private List<ObjectField> fields;
 	
@@ -51,5 +54,11 @@ public class ObjectMetadata extends MongodbModel {
 	}
 	public void setTriggers(List<Trigger> triggers) {
 		this.triggers = triggers;
+	}
+	public Integer getModelType() {
+		return modelType;
+	}
+	public void setModelType(Integer modelType) {
+		this.modelType = modelType;
 	}
 }

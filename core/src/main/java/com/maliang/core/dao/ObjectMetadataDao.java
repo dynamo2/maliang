@@ -7,6 +7,8 @@ import java.util.Map;
 import org.bson.types.ObjectId;
 
 import com.maliang.core.model.Business;
+import com.maliang.core.model.FieldType;
+import com.maliang.core.model.ModelType;
 import com.maliang.core.model.ObjectField;
 import com.maliang.core.model.ObjectMetadata;
 import com.maliang.core.model.Project;
@@ -14,6 +16,7 @@ import com.maliang.core.model.Trigger;
 import com.maliang.core.model.TriggerAction;
 import com.maliang.core.util.Utils;
 import com.mongodb.BasicDBObject;
+import com.mongodb.DBCursor;
 
 public class ObjectMetadataDao  extends ModelDao<ObjectMetadata> {
 	protected static String COLLECTION_NAME = "object_metadata";
@@ -43,6 +46,27 @@ public class ObjectMetadataDao  extends ModelDao<ObjectMetadata> {
 		}
 		
 		return this.findOne(new BasicDBObject(query));
+	}
+	
+	public ObjectMetadata findOne(BasicDBObject query){
+		ObjectMetadata meta = super.findOne(query);
+		
+		if(meta != null && ModelType.TREE.is(meta.getModelType())){
+			ObjectField field = new ObjectField();
+			field.setName("_parent_");
+			field.setType(FieldType.LINK_COLLECTION.getCode());
+			field.setLinkedObject(meta.getName());
+			meta.getFields().add(field);
+			
+			field = new ObjectField();
+			field.setName("_path_");
+			field.setType(FieldType.ARRAY.getCode());
+			field.setElementType(FieldType.LINK_COLLECTION.getCode());
+			field.setLinkedObject(meta.getName());
+			meta.getFields().add(field);
+		}
+		
+		return meta;
 	}
 
 	public void saveFields(String oid,ObjectField field) {
@@ -77,7 +101,7 @@ public class ObjectMetadataDao  extends ModelDao<ObjectMetadata> {
 	}
 
 	/**
-	 * 判断fields.unique_mark是否有重复的值
+	 * 鍒ゆ柇fields.unique_mark鏄惁鏈夐噸澶嶇殑鍊�
 	 * **/
 	protected boolean isDuplicateMark(String oid,ObjectField field){
 		return isDuplicate(oid,"fields","unique_mark",field.getUniqueMark(),field);

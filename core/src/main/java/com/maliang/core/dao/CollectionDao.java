@@ -143,27 +143,6 @@ public class CollectionDao extends BasicDao {
 			BasicDBObject doc = (BasicDBObject) cursor.next();
 			
 			return toMap(doc, collName);
-			/*
-			Map<String, Object> map = toMap(doc, collName);
-			map.put("doCall", new CallBack(){
-				public Object doCall(){
-					DBCursor obj = dbc.find(getObjectId("584a15ba0fb88812e8357394"));
-					System.out.println("------------------- doCall S");
-					while (obj.hasNext()) {
-						System.out.println(obj.next());
-					}
-					System.out.println("------------------- doCall E");
-					
-					return obj;
-				}
-				
-				public String toString(){
-					return "----getByID.doCall()";
-				}
-			});
-			
-			return map;
-			*/
 		}
 
 		return this.emptyResult();
