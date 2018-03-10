@@ -57,6 +57,7 @@ public class AbstractDao  {
 			//Test  电商项目
 			//name = "EB_"+name;
 		}
+		//System.out.println("name : " + name);
 		return db.getCollection(name);
 	}
 	
@@ -78,7 +79,7 @@ public class AbstractDao  {
 		}
 		
 		Project testProject = new Project();
-		testProject.setKey("EB");
+		testProject.setKey("JIRA");
 		testProject.setId(new ObjectId("583d197675f52cd7f03a78dc"));
 		return testProject;
 	}

@@ -338,6 +338,22 @@ public class Function {
 			return DBFunction.oid(this, params);
 		}
 		
+		if("parent".equals(key)){
+			return TreeModelFunction.parent(this, params);
+		}
+		
+		if("parents".equals(key)){
+			return TreeModelFunction.parents(this, params);
+		}
+		
+		if("children".equals(key)){
+			return TreeModelFunction.children(this, params);
+		}
+		
+		if("allChildren".equals(key)){
+			return TreeModelFunction.allChildren(this, params);
+		}
+		
 //		if("filter".equals(key)){
 //			return FilterFunction.execute(this, params);
 //		}

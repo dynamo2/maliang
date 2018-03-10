@@ -46,8 +46,8 @@ public class Utils {
 		formats.add("yyyy-MM-dd");
 		formats.add("yyyy/MM/dd HH:mm:ss");
 		formats.add("yyyy/MM/dd");
-		formats.add("yyyy年MM月dd日 HH:mm:ss");
-		formats.add("yyyy年MM月dd日");
+		formats.add("yyyy骞碝M鏈坉d鏃� HH:mm:ss");
+		formats.add("yyyy骞碝M鏈坉d鏃�");
 		
 		for(String f: formats){
 			try {
@@ -119,10 +119,35 @@ public class Utils {
 	}
 	
 	public static List<Object> toList(Object ob){
-		Object[] obs = toArray(ob);
-		if(isEmpty(obs))return null;
+		return toList(ob,false);
+	}
+	
+	
+	/***
+	 * 将数据转换成List类型
+	 * 1. 如果数据已经是List类型，直接类型转换并返回
+	 * 2. 如果数据不是List类型，新建List，将数据插入List，并返回List
+	 * 3. 如果数据为Null，根据returnEmpty返回：
+	 * 	  returnEmpty == true ：返回空的List
+	 *    returnEmpty == false：返回Null
+	 * **/
+	public static List<Object> toList(Object ob,boolean returnEmpty){
+		if(ob == null){
+			if(returnEmpty){
+				return new ArrayList<Object>();
+			}
+			
+			return null;
+		}
 		
-		return Arrays.asList(obs);
+		if(ob instanceof List){
+			return (List<Object>)ob;
+		}
+		
+		List<Object> list = new ArrayList<Object>();
+		list.add(ob);
+		
+		return list;
 	}
 	
 	public static List<Object> clearNull(List<Object> list){

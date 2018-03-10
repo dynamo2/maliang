@@ -153,22 +153,28 @@ public class CollectionService {
 		return this.collectionDao.aggregateOne(query, this.collection);
 	}
 	
-	//寰呬紭鍖�
+	//保存
 	public Map<String,Object> save(Object obj){
 		if(obj == null || !(obj instanceof Map))return null;
 		
 		Map<String,Object> dataMap = (Map<String,Object>)obj;
-		dataMap = this.collectionDao.toDBModel(dataMap, this.collection);
-//		System.out.println("service save dataMap : " + dataMap);
-//		System.out.println("service save has id : " + hasId(dataMap));
+		//dataMap = this.collectionDao.toDBModel(dataMap, this.collection);
 		
+		System.out.println("-------- hasId(dataMap) : " + hasId(dataMap));
 		if(hasId(dataMap)){// Update
 			dataMap = this.collectionDao.correctData(dataMap, this.collection,false,false);
+			//dataMap = this.collectionDao.toDBModel(dataMap, this.collection);
+			
 			return this.collectionDao.updateBySet(dataMap, this.collection);
 		}else { // Save
 			dataMap = this.collectionDao.correctData(dataMap, this.collection,true,false);
+			//dataMap = this.collectionDao.toDBModel(dataMap, this.collection);
 			return this.collectionDao.save(dataMap, this.collection);
 		}
+		
+		//System.out.println("-------- dataMap 2 : " + dataMap);
+		
+		//return dataMap;
 	}
 	
 	/**
@@ -288,6 +294,7 @@ public class CollectionService {
 		}
 		
 		if("convert".equals(method)){
+			System.out.println("------- covert "+(Map<String,Object>)value);
 			if(value != null && value instanceof Map){
 				return this.convert((Map<String,Object>)value);
 			}

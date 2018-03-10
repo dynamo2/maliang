@@ -173,6 +173,13 @@ public class MapHelper {
 		if(call instanceof CallBack){
 			return ((CallBack)call).doCall();
 		}
+		
+		if(call instanceof List && !Utils.isEmpty(call)){
+			int i = 0;
+			for(Object obj : (List)call){
+				((List)call).set(i++,doCall(obj));
+			}
+		}
 		return call;
 	}
 	

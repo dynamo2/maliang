@@ -42,9 +42,10 @@ public class ObjectMetadataDao  extends ModelDao<ObjectMetadata> {
 		
 		if(!this.isSystemCollection(name)){
 			Project project = getSessionProject();
-			query.put("project", project.getId().toString());
+			
+			//用于测试，暂时注释。调试完后解除注释
+			//query.put("project", project.getId().toString());
 		}
-		
 		return this.findOne(new BasicDBObject(query));
 	}
 	
@@ -52,18 +53,18 @@ public class ObjectMetadataDao  extends ModelDao<ObjectMetadata> {
 		ObjectMetadata meta = super.findOne(query);
 		
 		if(meta != null && ModelType.TREE.is(meta.getModelType())){
-			ObjectField field = new ObjectField();
-			field.setName("_parent_");
-			field.setType(FieldType.LINK_COLLECTION.getCode());
-			field.setLinkedObject(meta.getName());
-			meta.getFields().add(field);
+			ObjectField parent = new ObjectField();
+			parent.setName("_parent_");
+			parent.setType(FieldType.LINK_COLLECTION.getCode());
+			parent.setLinkedObject(meta.getName());
+			meta.getFields().add(parent);
 			
-			field = new ObjectField();
-			field.setName("_path_");
-			field.setType(FieldType.ARRAY.getCode());
-			field.setElementType(FieldType.LINK_COLLECTION.getCode());
-			field.setLinkedObject(meta.getName());
-			meta.getFields().add(field);
+			ObjectField path = new ObjectField();
+			path.setName("_path_");
+			path.setType(FieldType.ARRAY.getCode());
+			path.setElementType(FieldType.LINK_COLLECTION.getCode());
+			path.setLinkedObject(parent.getLinkedObject());
+			meta.getFields().add(path);
 		}
 		
 		return meta;

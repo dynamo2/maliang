@@ -13,6 +13,7 @@ import com.maliang.core.arithmetic.AE;
 import com.maliang.core.call.CallBack;
 import com.maliang.core.model.FieldType;
 import com.maliang.core.model.Log;
+import com.maliang.core.model.ModelType;
 import com.maliang.core.model.ObjectField;
 import com.maliang.core.model.ObjectMetadata;
 import com.maliang.core.model.Project;
@@ -27,7 +28,7 @@ import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
 
 public class BasicDao extends AbstractDao{
-	private static String META_KEY = ".meta";
+	private static String META_KEY = "_meta";
 	
 	protected ObjectMetadataDao metaDao = new ObjectMetadataDao();
 	protected UCTypeDao uctypeDao = new UCTypeDao();
@@ -48,27 +49,14 @@ public class BasicDao extends AbstractDao{
 		return false;
 	}
 	
-	public void insertLog(BasicDBObject doc,String collName){
-		Log log = new Log();
-		log.setActionId(doc.getObjectId("_id"));
-		log.setActionType(Log.INSERT_ACTION);
-		log.setActionObject(collName);
-		//log.setOperator(Utils.getSessionValue("user"));
-		
-		logDao.save(log);
+	protected static Map<String,Object> newMap(){
+		return new HashMap<String,Object>();
 	}
 	
-	public void updateLog(ObjectId id,Map<String,Object> doc,String collName){
-		Log log = new Log();
-		log.setActionId(id);
-		log.setActionType(Log.UPDATE_ACTION);
-		log.setActionObject(collName);
-		
-		System.out.println("log doc : " + doc);
-		log.setContent(doc);
-		//log.setOperator(Utils.getSessionValue("user"));
-		
-		logDao.save(log);
+	protected static Map<String,Object> newMap(String key,Object val){
+		Map<String,Object> map = new HashMap<String,Object>();
+		map.put(key, val);
+		return map;
 	}
 
 	public void save(BasicDBObject doc,String collName) {
@@ -188,6 +176,8 @@ public class BasicDao extends AbstractDao{
 		}
 		return returnObject;
 	}
+	
+	
 
 	protected BasicDBObject build(Map<String,Object> query){
 		if(query == null || query.isEmpty()){
@@ -677,11 +667,53 @@ public class BasicDao extends AbstractDao{
 		
 		return null;
 	}
+	
+	/***
+	 * 处理Tree模型的专属字段：_parent_, _path_
+	 * **/
+	private void doTreeModel(Map val,ObjectMetadata metadata){
+		if(metadata == null || !ModelType.TREE.is(metadata.getModelType())){
+			return;
+		}
+		
+		ObjectField field = this.readObjectField(metadata.getFields(),"_parent_");
+		String parentCollection = field.getLinkedObject();
+		
+		Map<String,Object> parent = null;
+		Object p = MapHelper.readValue(val,"parent");
+		val.remove("parent");
+		if(p != null){
+			if(p instanceof Map){
+				parent = (Map<String,Object>)p;
+			}else {
+				parent = this.getByID(p.toString(), parentCollection);
+			}
+		}
+		val.put("_parent_",parent);
+		
+		List<Object> paths = null;
+		if(parent != null){
+			paths = (List<Object>)MapHelper.readValue(parent,"_path_");
+			if(paths == null){
+				paths = new ArrayList<Object>();
+			}
+			paths.add(parent);
+		}
+		val.put("_path_",paths);
+	}
+	
+	private void doModel(Map val,ObjectMetadata metadata){
+		if(metadata != null && ModelType.TREE.is(metadata.getModelType())){
+			doTreeModel(val,metadata);
+		}
+	}
 
 	public Map<String,Object> correctData(Map<String,Object> dataMap,String collName,boolean dealWithId,boolean isDeep){
 		if(dataMap == null)return null;
 		
 		ObjectMetadata metadata = this.metaDao.getByName(collName);
+		doModel(dataMap,metadata);
+		
 		return correctData(dataMap,metadata.getFields(),dealWithId,isDeep);
 	}
 	
@@ -730,6 +762,10 @@ public class BasicDao extends AbstractDao{
 		}
 		
 		if(FieldType.LINK_COLLECTION.is(field.getType())){
+			if(fieldValue instanceof CallBack){
+				fieldValue = ((CallBack)fieldValue).doCall();
+			}
+			
 			if(fieldValue instanceof Map){
 				fieldValue = readObjectIdToString((Map)fieldValue);
 			}

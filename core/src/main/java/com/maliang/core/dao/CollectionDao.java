@@ -17,6 +17,7 @@ import com.maliang.core.arithmetic.AE;
 import com.maliang.core.arithmetic.ArithmeticExpression;
 import com.maliang.core.call.CallBack;
 import com.maliang.core.model.FieldType;
+import com.maliang.core.model.ModelType;
 import com.maliang.core.model.ObjectField;
 import com.maliang.core.model.ObjectMetadata;
 import com.maliang.core.model.Trigger;
@@ -33,6 +34,8 @@ import com.mongodb.DBObject;
 import com.mongodb.WriteResult;
 
 public class CollectionDao extends BasicDao {
+	private TreeModelDao treeDao = new TreeModelDao();
+	
 	public static void main2(String[] args) {
 		
 		RequestContextListener rc = null;
@@ -81,8 +84,9 @@ public class CollectionDao extends BasicDao {
 	}
 	
 	
+
 	public Map<String, Object> save(Map value, String collName) {
-		//value = this.toDBModel(value, collName);
+		value = this.toDBModel(value, collName);
 		
 		BasicDBObject doc = this.build(value);
 		if (doc == null) {
@@ -90,7 +94,7 @@ public class CollectionDao extends BasicDao {
 		}
 		
 		/**
-		 * 閺傛澘顤冮弫鐗堝祦閺冭绱濋懛顏勫З鐠佸墽鐤哻reatedDate,modifiedDate鐎涙顔�
+		 * 添加createdDate，modifiedDate
 		 * **/
 		if(!(doc.containsKey("id") || doc.containsKey("_id"))){
 			doc.put("createdDate",new Date());
@@ -105,7 +109,7 @@ public class CollectionDao extends BasicDao {
 		/***
 		 * Log
 		 * **/
-		this.insertLog(doc,collName);
+		this.logDao.insertLog(doc,collName);
 
 		return toMap(doc, collName);
 	}
@@ -433,19 +437,93 @@ public class CollectionDao extends BasicDao {
 	public int updateAll(Map value, String collName) {
 		return this.update(null, value, collName);
 	}
+	
+	/***
+	 * 移动树结构下某节点的所有子节点
+	 * **/
+//	protected void moveChildTree(Map oldVal,Map newVal,String collName){
+//		/***
+//		 * 判断节点的父对象是否有改变(oldVal.parent==newVal.parent)
+//		 * 改变：变更其所有子节点的路径（_path_）
+//		 * 未改变：不操作
+//		 * **/
+//		Object oldParent = MapHelper.readValue(oldVal,"_parent_.id");
+//		Object newParent = MapHelper.readValue(oldVal,"_parent_");
+//		if(oldParent.equals(newParent)){
+//			return;
+//		}
+//		
+//		/***
+//		 * 读取路径：
+//		 * 旧路径：oldVal._path_
+//		 * 新路径：newVal._path_
+//		 * **/
+//		String oid = this.readObjectIdToString(oldVal);
+//		Object oldPath = MapHelper.readValue(oldVal,"_path_.id");
+//		Object newPath = MapHelper.readValue(newVal,"_path_");
+//		
+//		((List)oldPath).add(oid);
+//		((List)newPath).add(oid);
+//		
+//		System.out.println("moveChildTree oldPath : " + oldPath);
+//		System.out.println("moveChildTree newPath : " + newPath);
+//		
+//		/**
+//		 * 根据旧路径获得要操作的所有子节点的ID
+//		 * **/
+//		//String query = "{_path_:{$all:oldPath}}";
+//		BasicDBObject query = new BasicDBObject(
+//				this.newMap("_path_",this.newMap("$all",oldPath)));
+//		
+//		List<Map<String,Object>> list = this.find(query, collName);
+//		if(Utils.isEmpty(list)){
+//			return;
+//		}
+//		
+//		List<ObjectId> ids = new ArrayList<ObjectId>();
+//		for(Map<String,Object> data : list){
+//			ids.add(new ObjectId((String)data.get("id")));
+//		}
+//		query = this.build(this.newMap("_id",this.newMap("$in",ids)));
+//		
+//		
+//		/***
+//		 * 删除子节点的旧路径
+//		 * **/
+//		//String pull = "{$pull:{_path_:{$in:oldPath}}}";
+//		BasicDBObject pull = new BasicDBObject(
+//				this.newMap("$pull", this.newMap("_path_",this.newMap("$in",oldPath))));
+//		
+//		/***
+//		 * 增加新路径
+//		 * **/
+//		//String push = "{$push:{_path_:{$each:newPath,$position:0}}}";
+//		Map pushPath = this.newMap("$each",newPath);
+//		pushPath.put("$position",0);
+//		BasicDBObject push = new BasicDBObject(
+//				this.newMap("$push",this.newMap("_path_",pushPath)));
+//
+//		DBCollection db = this.getDBCollection(collName);
+//		db.updateMulti(query, pull);
+//		db.updateMulti(query, push);
+//		
+//		System.out.println("moveChildTree query : " + query);
+//		System.out.println("moveChildTree pull : " + pull);
+//		System.out.println("moveChildTree push : " + push);
+//		System.out.println("moveChildTree id query list : " + this.find(query, collName));
+//	}
 
 	public Map<String, Object> updateBySet(Map value, String collName) {
 		value = this.toDBModel(value, collName);
+		
 		/**
-		 * 閹笛嗩攽鐟欙箑褰傞崳锟�
+		 * 触发器
 		 * **/
 		this.updateTrigger(value, collName);
 
 		String id = (String) value.remove("id");
 		BasicDBObject query = this.getObjectId(id);
 		
-		
-
 		ObjectMetadata meta = this.metaDao.getByName(collName);
 		List<Map<String, BasicDBObject>> updates = new ArrayList<Map<String, BasicDBObject>>();
 		Map<String, Object> daoMap = buildUpdates(meta.getFields(), value,
@@ -469,10 +547,16 @@ public class CollectionDao extends BasicDao {
 			}
 		}
 		
+		/**
+		 * 变更树结构中，操作节点的所有子节点的路径
+		 * **/
+		this.treeDao.updateChildrenPaths(oldVal, value, meta);
+		
+		
 		/***
 		 * update log
 		 * ***/
-		this.updateLog(new ObjectId(id),logVal, collName);
+		this.logDao.updateLog(new ObjectId(id),logVal, collName);
 
 		value.put("id", id);
 
@@ -1116,15 +1200,7 @@ public class CollectionDao extends BasicDao {
 		return "id".equals(key) || "_id".equals(key);
 	}
 	
-	private static Map<String,Object> newMap(){
-		return new HashMap<String,Object>();
-	}
 	
-	private static Map<String,Object> newMap(String key,Object val){
-		Map<String,Object> map = new HashMap<String,Object>();
-		map.put(key, val);
-		return map;
-	}
 	
 	private static void triggerParams(Map<String,Object> whenMap,
 			Map<String,Object> dbDataMap,Map<String,Object> updateValue,int triggerMode){
