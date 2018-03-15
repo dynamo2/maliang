@@ -25,6 +25,7 @@ import com.maliang.core.arithmetic.AE;
 import com.maliang.core.arithmetic.ArithmeticExpression;
 import com.maliang.core.dao.ObjectMetadataDao;
 import com.maliang.core.model.FieldType;
+import com.maliang.core.model.ModelType;
 import com.maliang.core.model.MongodbModel;
 import com.maliang.core.model.ObjectField;
 import com.maliang.core.model.ObjectMetadata;
@@ -34,7 +35,6 @@ import com.maliang.core.model.TriggerAction;
 import com.maliang.core.model.UCType;
 import com.maliang.core.util.StringUtil;
 import com.maliang.core.util.Utils;
-import com.mongodb.util.Util;
 
 @Controller
 @RequestMapping(value = "metadata")
@@ -49,11 +49,13 @@ public class ObjectMetadataController extends BasicController {
 		blMap.put("name", "名称");
 		blMap.put("label", "标签");
 		blMap.put("fields", "字段");
+		blMap.put("modelType", "模型结构");
 		CLASS_LABELS.put(ObjectMetadata.class.getCanonicalName(), blMap);
 		
 		Map<String,String> wfMap = new LinkedHashMap<String,String>();
 		wfMap.put("name", "名称");
 		wfMap.put("label", "标签");
+		wfMap.put("modelType", "模型结构");
 		
 		/*
 		wfMap.put("type", "瀛楁绫诲瀷");
@@ -92,6 +94,7 @@ public class ObjectMetadataController extends BasicController {
 		EDIT_CODE2 = "{"
 				+ "global:{"
 					+ "fieldTypes:each(types){{key:this.code,label:this.name}},"
+					+ "modelTypes:each(modelTypes){{key:this.code,label:this.name}},"
 					+ "fieldTemplate:{"
 						+ "name:{},label:{},type:{type:'select',options:'fieldTypes'}"
 					+ "}"
@@ -100,6 +103,7 @@ public class ObjectMetadataController extends BasicController {
 					+ "name:{value:md.name},"
 					+ "id:{value:md.id+''},"
 					+ "label:{value:md.label},"
+					+ "modelType:{type:'select',value:md.modelType,options:'modelTypes'},"
 					+ "fields:each(md.fields){tree([this,'fields']){{"
 						+ "name:{value:this.name},"
 						+ "label:{value:this.label},"
@@ -110,6 +114,7 @@ public class ObjectMetadataController extends BasicController {
 		METADATA_LIST = "metadataList:each(list){{"
 					+ "name:this.name,"
 					+ "label:this.label,"
+					+ "modelType:this.modelType,"
 					+ "id:this.id+''"
 				+ "}}";
 	}
@@ -125,7 +130,8 @@ public class ObjectMetadataController extends BasicController {
 			result.put("id", data.getId().toString());
 			result.put("name", data.getName());
 			result.put("label", data.getLabel());
-
+			result.put("modelType", data.getModelType());
+			
 			datas.add(result);
 		}
 
@@ -189,7 +195,8 @@ public class ObjectMetadataController extends BasicController {
 				+ "[['$id','','hidden',metadata.id,'[n]'],"
 					+ "['$project.id','项目',['select',each(projects){{key:this.id,label:this.name}}],metadata.project.id,'[n]'],"
 					+ "['$name','名称','text',metadata.name,'[n]'],"
-					+ "['$label','标签','text',metadata.label,'[n]']]]}";
+					+ "['$label','标签','text',metadata.label,'[n]'],"
+					+ "['$modelType','模型结构',['select',[{key:'',label:'默认'},{key:'2',label:'Tree'}]],metadata.modelType,'[n]']]]}";
 		
 		Object val = AE.execute(s,params);
 
@@ -376,11 +383,14 @@ public class ObjectMetadataController extends BasicController {
 	}
 
 	private String jsonEditCode2(ObjectMetadata metadata){
+		this.metadataDao.removeModelTypeFields(metadata);
+		
 		Map<String,Object> params = new HashMap<String,Object>();
 		params.put("md",metadata);
 		params.put("types",fieldTypes());
+		params.put("modelTypes",this.modelTypes());
 		
-		Object editMap =  ArithmeticExpression.execute(EDIT_CODE2, params);
+		Object editMap =  AE.execute(EDIT_CODE2, params);
 		return this.json(editMap);
 	}
 	
@@ -397,6 +407,15 @@ public class ObjectMetadataController extends BasicController {
 			types.put("code",t.getKey());
 			types.put("name",t.getName());
 			fts.add(types);
+		}
+		
+		return fts;
+	}
+	
+	private List<ModelType> modelTypes(){
+		List<ModelType> fts = new ArrayList<ModelType>();
+		for(ModelType ft : ModelType.values()){
+			fts.add(ft);
 		}
 		
 		return fts;

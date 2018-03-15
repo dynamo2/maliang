@@ -31,7 +31,7 @@
 		
 		<script src="../../html/metadata/gojs/js/tree.js?d"></script>
 		<script src="../../html/metadata/gojs/js/metadata.js?d"></script>
-		<script src="../../html/metadata/gojs/js/main.js?ddd"></script>
+		<script src="../../html/metadata/gojs/js/main.js?ddddd"></script>
 		
 		<script src="../../html/business/tianma.js"></script>
 		<link href="../../html/business/style.css" rel="stylesheet" type="text/css"/> 
@@ -102,7 +102,8 @@
 		function addObjectMetadata(){
 			var json = ['form','metadata',
 			            	[['$name','名称','','[n]'],
-			            	 ['$label','标签','','[n]']]];
+			            	 ['$label','标签','','[n]'],
+			            	 ['$modelType','模型类型','','[n]']]];
 			 var form = build(json);
 
 			 $("#dialogContent").empty();

@@ -83,7 +83,7 @@ function objectMetadataModel(){
 		_.dataPool = {};
 		_.metadataFieldTreeNodesMap = {};
 		
-		_.labels = {name:'名称',label:'标签',type:'类型',operate:'操作'};
+		_.labels = {name:'名称',label:'标签',type:'类型',modelType:'模型结构',operate:'操作'};
 		
 		_.INNER = 7;
 		_.ARRAY = 9;

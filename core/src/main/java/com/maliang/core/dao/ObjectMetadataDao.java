@@ -1,24 +1,21 @@
 package com.maliang.core.dao;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import org.bson.types.ObjectId;
 
-import com.maliang.core.model.Business;
-import com.maliang.core.model.FieldType;
-import com.maliang.core.model.ModelType;
 import com.maliang.core.model.ObjectField;
 import com.maliang.core.model.ObjectMetadata;
 import com.maliang.core.model.Project;
 import com.maliang.core.model.Trigger;
 import com.maliang.core.model.TriggerAction;
-import com.maliang.core.util.Utils;
 import com.mongodb.BasicDBObject;
-import com.mongodb.DBCursor;
 
 public class ObjectMetadataDao  extends ModelDao<ObjectMetadata> {
+	
 	protected static String COLLECTION_NAME = "object_metadata";
 	
 	static {
@@ -28,12 +25,18 @@ public class ObjectMetadataDao  extends ModelDao<ObjectMetadata> {
 		INNER_TYPE.put("Trigger.actions",TriggerAction.class);
 	}
 	
+	protected TreeModelDao treeDao = new TreeModelDao();
+	
 	public ObjectMetadataDao(){
 		super(COLLECTION_NAME,ObjectMetadata.class);
 	}
 
 	public ObjectMetadata getByUniqueMark(String mark){
 		return this.getByField("unique_mark", mark);
+	}
+	
+	public void removeModelTypeFields(ObjectMetadata meta){
+		this.treeDao.removeTreeFields(meta);
 	}
 	
 	public ObjectMetadata getByName(String name){
@@ -52,19 +55,13 @@ public class ObjectMetadataDao  extends ModelDao<ObjectMetadata> {
 	public ObjectMetadata findOne(BasicDBObject query){
 		ObjectMetadata meta = super.findOne(query);
 		
-		if(meta != null && ModelType.TREE.is(meta.getModelType())){
-			ObjectField parent = new ObjectField();
-			parent.setName("_parent_");
-			parent.setType(FieldType.LINK_COLLECTION.getCode());
-			parent.setLinkedObject(meta.getName());
-			meta.getFields().add(parent);
-			
-			ObjectField path = new ObjectField();
-			path.setName("_path_");
-			path.setType(FieldType.ARRAY.getCode());
-			path.setElementType(FieldType.LINK_COLLECTION.getCode());
-			path.setLinkedObject(parent.getLinkedObject());
-			meta.getFields().add(path);
+		if(treeDao.isTreeModel(meta)){
+			List<ObjectField> tFields = treeDao.treeFields(meta.getName());
+			if(meta.getFields() == null){
+				meta.setFields(tFields);
+			}else {
+				meta.getFields().addAll(tFields);
+			}
 		}
 		
 		return meta;

@@ -550,7 +550,7 @@ public class CollectionDao extends BasicDao {
 		/**
 		 * 变更树结构中，操作节点的所有子节点的路径
 		 * **/
-		this.treeDao.updateChildrenPaths(oldVal, value, meta);
+		this.treeDao.updateChildrenPaths(oldVal, value, meta,this);
 		
 		
 		/***
