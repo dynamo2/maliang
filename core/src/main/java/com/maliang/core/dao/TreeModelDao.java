@@ -17,6 +17,43 @@ import com.mongodb.DBCollection;
 
 public class TreeModelDao {
 	
+	/***
+	 * 处理Tree模型的专属字段：_parent_, _path_
+	 *
+	protected void doTreeModel(Map val,ObjectMetadata metadata,BasicDao dao){
+		if(metadata == null || !ModelType.TREE.is(metadata.getModelType())){
+			return;
+		}
+		
+		ObjectField field = dao.readObjectField(metadata.getFields(),ObjectMetadata.TREE_MODEL_PARENT_KEY);
+		String parentCollection = field.getLinkedObject();
+		
+		Map<String,Object> parent = null;
+		Object p = MapHelper.readValue(val,ObjectMetadata.TREE_MODEL_PARENT_KEY);
+		if(p == null){
+			p = MapHelper.readValue(val,"parent");
+			val.remove("parent");
+		}
+		if(p != null){
+			if(p instanceof Map){
+				parent = (Map<String,Object>)p;
+			}else {
+				parent = dao.getByID(p.toString(), parentCollection);
+			}
+		}
+		val.put(ObjectMetadata.TREE_MODEL_PARENT_KEY,parent);
+		
+		List<Object> paths = null;
+		if(parent != null){
+			paths = (List<Object>)MapHelper.readValue(parent,ObjectMetadata.TREE_MODEL_PATH_KEY);
+			if(paths == null){
+				paths = new ArrayList<Object>();
+			}
+			paths.add(parent);
+		}
+		val.put(ObjectMetadata.TREE_MODEL_PATH_KEY,paths);
+	} **/
+	
 	public boolean isTreeModel(ObjectMetadata meta){
 		if(meta == null || meta.getModelType() == null){
 			return false;
@@ -102,8 +139,8 @@ public class TreeModelDao {
 		 * 新路径：newVal._path_
 		 * **/
 		String oid = dao.readObjectIdToString(oldVal);
-		List<Object> oldPath = Utils.toList(MapHelper.readValue(oldVal,"_path_.id"),true);
-		List<Object> newPath = Utils.toList(MapHelper.readValue(newVal,"_path_"),true);
+		List<Object> oldPath = Utils.toList(MapHelper.readValue(oldVal,ObjectMetadata.TREE_MODEL_PATH_KEY+".id"),true);
+		List<Object> newPath = Utils.toList(MapHelper.readValue(newVal,ObjectMetadata.TREE_MODEL_PATH_KEY),true);
 		
 		oldPath.add(oid);
 		newPath.add(oid);
@@ -115,7 +152,7 @@ public class TreeModelDao {
 		 * 根据旧路径获得要操作的所有子节点的ID
 		 * **/
 		//String query = "{_path_:{$all:oldPath}}";
-		BasicDBObject query = new BasicDBObject(dao.newMap("_path_",dao.newMap("$all",oldPath)));
+		BasicDBObject query = new BasicDBObject(dao.newMap(ObjectMetadata.TREE_MODEL_PATH_KEY,dao.newMap("$all",oldPath)));
 		
 		String collName = meta.getName();
 		List<Map<String,Object>> list = dao.find(query, collName);
@@ -134,7 +171,7 @@ public class TreeModelDao {
 		 * 删除子节点的旧路径
 		 * **/
 		//String pull = "{$pull:{_path_:{$in:oldPath}}}";
-		BasicDBObject pull = new BasicDBObject(dao.newMap("$pull", dao.newMap("_path_",dao.newMap("$in",oldPath))));
+		BasicDBObject pull = new BasicDBObject(dao.newMap("$pull", dao.newMap(ObjectMetadata.TREE_MODEL_PATH_KEY,dao.newMap("$in",oldPath))));
 		
 		/***
 		 * 增加新路径
@@ -142,7 +179,7 @@ public class TreeModelDao {
 		//String push = "{$push:{_path_:{$each:newPath,$position:0}}}";
 		Map<String,Object> pushPath = dao.newMap("$each",newPath);
 		pushPath.put("$position",0);
-		BasicDBObject push = new BasicDBObject(dao.newMap("$push",dao.newMap("_path_",pushPath)));
+		BasicDBObject push = new BasicDBObject(dao.newMap("$push",dao.newMap(ObjectMetadata.TREE_MODEL_PATH_KEY,pushPath)));
 
 		DBCollection db = dao.getDBCollection(collName);
 		db.updateMulti(query, pull);

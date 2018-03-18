@@ -149,7 +149,7 @@ public class MapHelper {
 
 				value = expand(Utils.toArray(value),new String[]{k});
 				for(Object item : (Object[])value){
-					Object val = readBeanValue(item,k);
+					Object val = doCall(readBeanValue(item,k));
 					
 					// 待定
 					if(val != null){
@@ -162,7 +162,7 @@ public class MapHelper {
 					value = tempVal;
 				}
 			}else {
-				value = readBeanValue(value,k);
+				value = doCall(readBeanValue(value,k));
 			}
 		}
 		

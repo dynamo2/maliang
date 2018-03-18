@@ -1162,7 +1162,61 @@ var BootstrapGenerator = HTMLGenerator.extend({
 		return this.table(options);
 	},
 	
+	doText:function(jqObj,text){
+		if(text == null || text == undefined){
+			text = '';
+		}
+		
+		console.log(' text : ' + text);
+		jqObj.text(text);
+	},
+	
 	table:function (options){
+		var _ = this;
+		
+		var table = $("<table class='table' />");
+		_.attr(table,utils.copy(options,null,['head','body']));
+		
+		this.tr = function(trDatas,colTag){
+			var tr = $('<tr />');
+			
+			if($.isArray(trDatas)){
+				$.each(trDatas,function(){
+					if($.isArray(this) || $.isPlainObject(this)){
+						$("<"+colTag+" />").appendTo(tr).append(_.build(this));
+					}else {
+						_.doText($("<"+colTag+" />").appendTo(tr),this);
+					}
+				});
+			}else {
+				if($.isPlainObject(this)){
+					$("<"+colTag+" />").appendTo(tr).append(_.build(this));
+				}else {
+					_.doText($("<"+colTag+" />").appendTo(tr),this);
+				}
+			}
+
+			return tr;
+		};
+		
+		var head = options && options.head;
+		if($.isArray(head)){
+			$('<thead />').appendTo(table).append(_.tr(head,"th"));
+		}
+		
+		var body = options && options.body;
+		if($.isArray(body)){
+			var tbody = $('<tbody />').appendTo(table);
+			
+			$.each(body,function(){
+				tbody.append(_.tr(this,"td"));
+			});
+		}
+		
+		return table;
+	},
+	
+	table22222:function (options){
 	    var _ = this;
 	    
 	    this.table = function(opts){

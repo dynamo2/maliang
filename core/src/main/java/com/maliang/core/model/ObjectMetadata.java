@@ -3,8 +3,8 @@ package com.maliang.core.model;
 import java.util.List;
 
 public class ObjectMetadata extends MongodbModel {
-	public final static String TREE_MODEL_PARENT_KEY = "_parent_";
-	public final static String TREE_MODEL_PATH_KEY = "_path_";
+	public final static String TREE_MODEL_PARENT_KEY = "_parent";
+	public final static String TREE_MODEL_PATH_KEY = "_path";
 	
 	private String name;
 	private String uniqueMark;

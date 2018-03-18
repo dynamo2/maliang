@@ -437,7 +437,7 @@ public class BasicDao extends AbstractDao{
 		return vs;
 	}
 	
-	private ObjectField readObjectField(List<ObjectField> fields,String fname){
+	protected ObjectField readObjectField(List<ObjectField> fields,String fname){
 		for(ObjectField f:fields){
 			if(f.getName().equals(fname)){
 				return f;
@@ -676,12 +676,15 @@ public class BasicDao extends AbstractDao{
 			return;
 		}
 		
-		ObjectField field = this.readObjectField(metadata.getFields(),"_parent_");
+		ObjectField field = this.readObjectField(metadata.getFields(),ObjectMetadata.TREE_MODEL_PARENT_KEY);
 		String parentCollection = field.getLinkedObject();
 		
 		Map<String,Object> parent = null;
-		Object p = MapHelper.readValue(val,"parent");
-		val.remove("parent");
+		Object p = MapHelper.readValue(val,ObjectMetadata.TREE_MODEL_PARENT_KEY);
+		if(p == null){
+			p = MapHelper.readValue(val,"parent");
+			val.remove("parent");
+		}
 		if(p != null){
 			if(p instanceof Map){
 				parent = (Map<String,Object>)p;
@@ -689,17 +692,17 @@ public class BasicDao extends AbstractDao{
 				parent = this.getByID(p.toString(), parentCollection);
 			}
 		}
-		val.put("_parent_",parent);
+		val.put(ObjectMetadata.TREE_MODEL_PARENT_KEY,parent);
 		
 		List<Object> paths = null;
 		if(parent != null){
-			paths = (List<Object>)MapHelper.readValue(parent,"_path_");
+			paths = (List<Object>)MapHelper.readValue(parent,ObjectMetadata.TREE_MODEL_PATH_KEY);
 			if(paths == null){
 				paths = new ArrayList<Object>();
 			}
 			paths.add(parent);
 		}
-		val.put("_path_",paths);
+		val.put(ObjectMetadata.TREE_MODEL_PATH_KEY,paths);
 	}
 	
 	private void doModel(Map val,ObjectMetadata metadata){
@@ -949,7 +952,10 @@ public class BasicDao extends AbstractDao{
 				private int num = 0;
 				public Object doCall(){
 					if(obj == null && num < 3){
+						
 						this.obj = getByID(linkOid, collName);
+						
+						System.out.println("---------- do callback : " + this.obj);
 					}
 					
 					num++;

@@ -180,15 +180,6 @@ public class DBFunction {
 	}
 	
 	private static Map eq(Function function,Map<String,Object> params){
-//		Map map = readMapValue(function,params);
-//		if(map.isEmpty())return null;
-//		
-//		String key = map.keySet().iterator().next().toString();
-//		Object value = map.get(key);
-//		if(Utils.isEmpty(value))return null;
-//		
-//		return comparisonMap(key,value,"$eq");
-		
 		return doComparison(function,params,"$eq");
 	}
 	
@@ -220,21 +211,40 @@ public class DBFunction {
 	}
 	
 	/***
-	 * 生成“比较”操作命令的条件Map
+	 * 鐢熸垚鈥滄瘮杈冣�濇搷浣滃懡浠ょ殑鏉′欢Map
 	 * **/
 	private static Map<String,Object> comparisonMap(String key,Object val,String cmd){
-		if("id".equals(key)){
+		if("id".equals(key) || "_id".equals(key)){
 			key = "_id";
-			if(val == null || !(val instanceof ObjectId)){
-				try {
-					val = new ObjectId(val.toString());
-				}catch(Exception e){
-					val = new ObjectId();
-				}
-			}
+			
+			val = toObjectID(val);
 		}
 		
 		return queryMap(key,queryMap(cmd,val));
+	}
+	
+	private static Object toObjectID(Object val){
+		if(val == null){
+			return new ObjectId();
+		}
+		
+		if(val instanceof ObjectId){
+			return val;
+		}
+		
+		if(val instanceof List){
+			List<Object> nv = new ArrayList<Object>();
+			for(Object v : (List)val){
+				nv.add(toObjectID(v));
+			}
+			return nv;
+		}
+		
+		try {
+			return new ObjectId(val.toString());
+		}catch(Exception e){
+			return new ObjectId();
+		}
 	}
 	
 	private static Map like(Function function,Map<String,Object> params){

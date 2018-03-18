@@ -32,7 +32,7 @@
 		<script src="../js/tianma/inputs.jsd"></script>
 		<script src="../html/business/tianma.js?ddsd"></script>
 		
-		<script src="../js/tianma/processor.js?dd"></script>
+		<script src="../js/tianma/processor.js?ddhhddd"></script>
 		<script src="../js/tianma/bootstrapG.js?dd"></script>
 		<script src="../js/tianma/metronic.js"></script>
 	

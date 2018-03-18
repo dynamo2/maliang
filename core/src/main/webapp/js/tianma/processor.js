@@ -218,6 +218,23 @@ var HTMLGenerator = Class.extend({
 		return element;
 	},
 	
+	attr:function(jqObj,opts){
+		opts = utils.copy(opts,null,['type','head','body']);
+		if(opts && opts.css){
+			if(!opts['class']){
+				opts['class'] = '';
+			}
+			if($.type(opts['class']) != 'string'){
+				opts['class'] = JSON.stringify(opts['class']);
+			}
+			opts["class"] += opts.css;
+			
+			opts.css = undefined;
+		}
+		
+		setHtmlProperties(jqObj,opts);
+	},
+	
 	buildArray:function(opts){
 		var curr = this;
 		var els = [];

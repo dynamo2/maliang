@@ -3,6 +3,7 @@ package com.maliang.core.arithmetic.function;
 import java.util.Map;
 
 import com.maliang.core.dao.CollectionDao;
+import com.maliang.core.model.ObjectMetadata;
 import com.maliang.core.service.MapHelper;
 import com.mongodb.BasicDBObject;
 
@@ -13,7 +14,7 @@ class TreeModelFunction {
 			return null;
 		}
 		
-		return MapHelper.readValue(value,"_parent_");
+		return MapHelper.readValue(value,ObjectMetadata.TREE_MODEL_PARENT_KEY);
 	}
 	
 	public static Object parents(Function function,Map<String,Object> params){
@@ -22,7 +23,7 @@ class TreeModelFunction {
 			return null;
 		}
 		
-		return MapHelper.readValue(value,"_path_");
+		return MapHelper.readValue(value,ObjectMetadata.TREE_MODEL_PATH_KEY);
 	}
 	
 	public static Object children(Function function,Map<String,Object> params){
@@ -36,7 +37,7 @@ class TreeModelFunction {
 		
 		CollectionDao dao = new CollectionDao();
 		BasicDBObject query = new BasicDBObject();
-		query.put("_parent_",id.toString());
+		query.put(ObjectMetadata.TREE_MODEL_PARENT_KEY,id.toString());
 		
 		Object list = dao.find(query, collName);
 		
@@ -58,13 +59,13 @@ class TreeModelFunction {
 		
 		CollectionDao dao = new CollectionDao();
 		BasicDBObject query = new BasicDBObject();
-		query.put("_path_",id.toString());
+		query.put(ObjectMetadata.TREE_MODEL_PATH_KEY,id.toString());
 		
 		Object list = dao.find(query, collName);
 		
-		System.out.println("allChildren query : " + query);
-		System.out.println("allChildren collName : " + collName);
-		System.out.println("allChildren list : " + list);
+//		System.out.println("allChildren query : " + query);
+//		System.out.println("allChildren collName : " + collName);
+//		System.out.println("allChildren list : " + list);
 		
 		return list;
 	}
