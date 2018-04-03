@@ -380,8 +380,16 @@ public class BasicDao extends AbstractDao{
 			}
 			
 			if(FieldType.LINK_COLLECTION.is(field.getType())){
+				if(ov != null && ov instanceof CallBack){
+					ov = ((CallBack)ov).doCall();
+				}
+				
 				if(ov != null && ov instanceof Map){
 					ov = readObjectIdToString((Map)ov);
+				}
+				
+				if(nv != null && nv instanceof CallBack){
+					nv = ((CallBack)nv).doCall();
 				}
 				
 				if(nv != null && nv instanceof Map){
@@ -685,6 +693,8 @@ public class BasicDao extends AbstractDao{
 			p = MapHelper.readValue(val,"parent");
 			val.remove("parent");
 		}
+		
+		//System.out.println("-------- doTreeModel p : " + p);
 		if(p != null){
 			if(p instanceof Map){
 				parent = (Map<String,Object>)p;
@@ -692,6 +702,8 @@ public class BasicDao extends AbstractDao{
 				parent = this.getByID(p.toString(), parentCollection);
 			}
 		}
+		
+		//System.out.println("-------- doTreeModel parent : " + parent);
 		val.put(ObjectMetadata.TREE_MODEL_PARENT_KEY,parent);
 		
 		List<Object> paths = null;
@@ -753,7 +765,8 @@ public class BasicDao extends AbstractDao{
 			Object fieldValue = dataMap.get(fieldName);
 			if(fieldValue == null)continue;
 
-			newMap.put(fieldName, toDBModel(fieldValue,of));
+			fieldValue =  toDBModel(fieldValue,of);
+			newMap.put(fieldName,  fieldValue);
 		}
 		
 		return newMap;
@@ -851,16 +864,27 @@ public class BasicDao extends AbstractDao{
 	}
 	
 	public String readObjectIdToString(Map dataMap){
-		String id = StringUtil.getNotEmptyValue(dataMap,"id");
-		if(id == null){
-			id = StringUtil.getNotEmptyValue(dataMap,"_id");
+		Object id = MapHelper.readValue(dataMap, "id");
+		if(Utils.isEmpty(id)){
+			id = MapHelper.readValue(dataMap, "_id");
 		}
-
+		
 		if(id != null){
-			return id.trim();
+			return id.toString().trim();
 		}
 		
 		return null;
+//		
+//		String id = StringUtil.getNotEmptyValue(dataMap,"id");
+//		if(id == null){
+//			id = StringUtil.getNotEmptyValue(dataMap,"_id");
+//		}
+//
+//		if(id != null){
+//			return id.trim();
+//		}
+//		
+//		return null;
 	}
 	
 	public Map<String,Object> correctData(Map<String,Object> dataMap,List<ObjectField> fields,boolean dealWithId,boolean isDeep){
@@ -955,7 +979,7 @@ public class BasicDao extends AbstractDao{
 						
 						this.obj = getByID(linkOid, collName);
 						
-						System.out.println("---------- do callback : " + this.obj);
+						//System.out.println("---------- do callback : " + this.obj);
 					}
 					
 					num++;

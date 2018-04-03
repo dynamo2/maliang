@@ -208,6 +208,10 @@ public class Function {
 			return ListFunction.contains(this, params);
 		}
 		
+		if("join".equalsIgnoreCase(key)){
+			return ListFunction.join(this, params);
+		}
+		
 		if("sum".equalsIgnoreCase(key)){
 			return Sum.execute(this, params);
 		}

@@ -20,7 +20,8 @@ public class BusinessFunction {
 		if(value != null && value instanceof Map){
 			params.putAll((Map<String,Object>)value);
 		}
-		throw new TurnToPage(service.business(params));
+		//throw new TurnToPage(service.business(params));
+		throw new TurnToPage(params);
 	}
 	
 	public static List<Map<String,Object>> businesses(Function function,Map<String,Object> params){

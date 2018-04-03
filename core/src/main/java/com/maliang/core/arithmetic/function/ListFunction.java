@@ -6,6 +6,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.lang.StringUtils;
+
 import com.maliang.core.arithmetic.AE;
 import com.maliang.core.arithmetic.ArithmeticExpression;
 import com.maliang.core.arithmetic.node.Parentheses;
@@ -105,7 +107,26 @@ public class ListFunction {
 		List<Object> l = new ArrayList<Object>();
 		l.add(value);
 		
+		Collection col = null;
+		Arrays a = null;
+		
 		return l;
+	}
+	
+	public static String join(Function function ,Map<String,Object> params){
+		Object keyVal = function.getKeyValue();
+		Object value = function.executeExpression(params);
+		if(value == null)value = ",";
+		
+		if(keyVal instanceof List){
+			return String.join(value.toString(),(List)keyVal);
+		}
+		
+		if(keyVal == null){
+			return "";
+		}
+
+		return keyVal.toString();
 	}
 }
 

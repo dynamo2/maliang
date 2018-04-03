@@ -12,6 +12,7 @@ import com.maliang.core.dao.BusinessDao;
 import com.maliang.core.model.Block;
 import com.maliang.core.model.Business;
 import com.maliang.core.model.Workflow;
+import com.maliang.core.util.SessionUtil;
 import com.maliang.core.util.Utils;
 
 public class BusinessService {
@@ -61,7 +62,12 @@ public class BusinessService {
 		}
 		
 		int fid = (Integer)MapHelper.readValue(params,"fid",-1);
+		
+		System.out.println("---------- fid : " + fid);
+		
 		Workflow flow = business.workFlow(fid);
+		
+		System.out.println("---------- flow id : " + flow.getId());
 		readBlock(flow,business.getUniqueCode(),Block.TYPE_CODE);
 		
 		AE.execute(flow.getCode(), params);
@@ -71,6 +77,33 @@ public class BusinessService {
 			return AE.execute(flow.getAjax(), params);
 		}
 		return AE.execute(flow.getResponse(), params);
+	}
+	
+	public Business readBusiness(Map<String,Object> params){
+		String key = (String)MapHelper.readValue(params,"bid");
+		Business business = null;
+		if(key != null && !key.isEmpty()){
+			business = this.businessDao.getByID(key);
+		}
+		
+		if(business == null){
+			key = (String)MapHelper.readValue(params,"bn");
+			business = this.businessDao.getByName(key);
+		}
+		
+		return business;
+	}
+	
+	public Workflow readWorkflow(Business business,Map<String,Object> params){
+		if(business == null){
+			return null;
+		}
+		
+		int fid = (Integer)MapHelper.readValue(params,"fid",-1);
+		
+		Workflow flow = business.workFlow(fid);
+		
+		return flow;
 	}
 	
 	public void readBlock(Workflow flow,String defaultUniqueCode,int blockType){

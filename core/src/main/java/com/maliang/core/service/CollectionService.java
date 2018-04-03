@@ -160,7 +160,7 @@ public class CollectionService {
 		Map<String,Object> dataMap = (Map<String,Object>)obj;
 		//dataMap = this.collectionDao.toDBModel(dataMap, this.collection);
 		
-		System.out.println("-------- hasId(dataMap) : " + hasId(dataMap));
+		System.out.println("-------- dataMap : " + dataMap);
 		if(hasId(dataMap)){// Update
 			dataMap = this.collectionDao.correctData(dataMap, this.collection,false,false);
 			//dataMap = this.collectionDao.toDBModel(dataMap, this.collection);

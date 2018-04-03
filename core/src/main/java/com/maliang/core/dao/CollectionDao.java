@@ -86,7 +86,11 @@ public class CollectionDao extends BasicDao {
 	
 
 	public Map<String, Object> save(Map value, String collName) {
+		System.out.println("---------------- save value 1 : " + value);
+		
 		value = this.toDBModel(value, collName);
+		
+		System.out.println("---------------- save value 2 : " + value);
 		
 		BasicDBObject doc = this.build(value);
 		if (doc == null) {

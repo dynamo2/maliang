@@ -47,7 +47,7 @@ public class ObjectMetadataDao  extends ModelDao<ObjectMetadata> {
 			Project project = getSessionProject();
 			
 			//用于测试，暂时注释。调试完后解除注释
-			//query.put("project", project.getId().toString());
+			query.put("project", project.getId().toString());
 		}
 		return this.findOne(new BasicDBObject(query));
 	}

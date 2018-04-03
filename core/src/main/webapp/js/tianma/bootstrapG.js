@@ -845,15 +845,15 @@ var BootstrapGenerator = HTMLGenerator.extend({
 		return null;
 	},
 	
-	appendTo:function(element,options){
+	appendTo:function(jqObj,options){
 		if(options){
-			if(utils.isString(options)){
-				element.text(options);
+			if($.isArray(options) || $.isPlainObject(options)){
+				jqObj.append(this.build(options));
 			}else {
-				element.append(this.build(options));
+				jqObj.text(options);
 			}
 		}
-		return element;
+		return jqObj;
 	},
 	
 	/**
@@ -881,7 +881,7 @@ var BootstrapGenerator = HTMLGenerator.extend({
 	 * {
       type:'row',
       column-css:['col-sm-2','col-sm-4','col-sm-2','col-sm-4'],
-      colums:[
+      body:[
         {type:'text',name:'price',value:49},
         {
           type:'column',
@@ -897,42 +897,85 @@ var BootstrapGenerator = HTMLGenerator.extend({
       ]
     }
 	 * **/
-	row222:function(options){
+	row:function(options){
 		var _ = this;
-		var row = $("<div class='row' />");
-		var columns = options && options.columns;
+		
+		var body = options && options.body;
 		var columnCss = options && options['column-css'];
-		if($.isArray(columns)){
-			var colEles = [];
-			var idx = 0;
-			$.each(columns,function(){
-				var colOpts = this;
-				var type = this && this.type;
-				if(!(type === 'column')){
-					colOpts = {
-						type:'column',
-						css:'col-md-auto',
-						body:this
-					};
-					
-					if($.isArray(columnCss)){
-						if(idx >= columnCss.length){
-							idx = idx%columnCss.length;
-						}
-						colOpts['css'] = columnCss[idx]; 
-					}else if(utils.isString(columnCss)){
-						colOpts['css'] = columnCss;
-					}
-				}
+		var rows = [];
+		if($.isArray(body)){
+			$.each(body,function(){
+				var row = $("<div class='row' />");
+				rows.push(row);
 				
-				_.appendTo(row,colOpts);
-				idx++;
+				var idx = 0;
+				$.each(this,function(){
+					var colOpts = this;
+					var type = this && this.type;
+					if(!(type === 'column')){
+						colOpts = {
+							type:'column',
+							css:'col',
+							body:this
+						};
+						
+						if($.isArray(columnCss)){
+							if(idx >= columnCss.length){
+								idx = idx%columnCss.length;
+							}
+							colOpts['css'] = columnCss[idx]; 
+						}else if(utils.isString(columnCss)){
+							colOpts['css'] = columnCss;
+						}
+					}
+					
+					_.appendTo(row,colOpts);
+					idx++;
+				});
 			});
+			
 		}
+		return rows;
 	},
 	
 	
 	
+	
+	/**
+	 * <div class="row">
+    <div class="col-sm">
+      One of three columns
+    </div>
+    <div class="col-sm">
+      One of three columns
+    </div>
+    <div class="col-sm">
+      One of three columns
+    </div>
+  </div>
+	 * 
+	 * ***/
+	row222ddd:function(options){
+		var _ = this;
+		
+		var row = $("<div class='row' />");
+		_.attr(row,utils.copy(options,null,['body']));
+		
+		var body = options && options.body;
+		if($.isArray(body)){
+			$.each(body,function(){
+				var columns = this;
+				if($.isArray(columns)){
+					$.each(columns,function(){
+						var col = $("<div />");
+						col.addClass('col');
+						
+						col.append();
+					});
+				}
+			})
+		}
+	},
 	
 	/**
 	 * <div class="row static-info">
@@ -942,7 +985,7 @@ var BootstrapGenerator = HTMLGenerator.extend({
     </div>
 </div>
 	 * **/
-	row:function(options){
+	row222:function(options){
 		var curr = this;
 		
 		var rowElement = $('<div class="row" style="margin-bottom:15px;" />');

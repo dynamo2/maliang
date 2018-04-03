@@ -23,6 +23,7 @@ import com.maliang.core.model.Block;
 import com.maliang.core.model.Business;
 import com.maliang.core.model.Workflow;
 import com.maliang.core.service.BusinessService;
+import com.maliang.core.service.MapHelper;
 import com.maliang.core.util.SessionUtil;
 import com.maliang.core.util.Utils;
 
@@ -34,38 +35,55 @@ public class WorkFlowController extends BasicController {
 	
 	@RequestMapping(value = "flow.htm")
 	public String flow(Model model, HttpServletRequest request) {
+		Workflow workFlow = null;
+		String response = null;
 		try {
-			Workflow workFlow = readWorkFlow(request);
-			String response = this.executeResponse(workFlow, request);
-
-			String css = workFlow.getCss();
-			if(css == null)css = "";
-			
-			String js = workFlow.getJavaScript();
-			if(js == null)js = "";
-			
-			Object files = workFlow.getFiles();
-			if(files == null)files = "null";
-			
-			model.addAttribute("response", response);
-			model.addAttribute("js", js);
-			model.addAttribute("css",css);
-			model.addAttribute("files",files);
-			
-			return "/business/flow";
-		} catch (TurnToPage page) {
-			String result = new HtmlTemplateReplacer(json(page.getResult())).replace(null);
-			
-			model.addAttribute("response", result);
-			model.addAttribute("js", "");
-			model.addAttribute("css","");
-			model.addAttribute("files","null");
-
-			return "/business/flow";
+			 workFlow = readWorkFlow(request);
+			 response = this.executeResponse(workFlow, request);
+		}catch (TurnToPage page) {
+			boolean breakOut = false;
+			while(!breakOut){
+				try {
+					SessionUtil.put(request,SessionUtil.BUSINESS,page.getBusiness());
+					
+					workFlow = page.getWorkflow();
+					response = this.executeResponse(workFlow, page.getParams());
+					breakOut = true;
+				}catch (TurnToPage p) {
+					page = p;
+					breakOut = false;
+				}
+			}
 		} catch (TianmaException e) {
 			model.addAttribute("errorMsg", e.getMessage());
 			return "/business/error";
 		}
+		
+		
+		model.addAttribute("response", response);
+		
+		setStaticData(workFlow,model);
+		
+		return "/business/flow";
+		
+	}
+	
+	/***
+	 * 设置静态数据：CSS,JS,files（*.css,*.js）
+	 * **/
+	private void setStaticData(Workflow flow,Model model){
+		String css = flow.getCss();
+		if(css == null)css = "";
+		
+		String js = flow.getJavaScript();
+		if(js == null)js = "";
+		
+		Object files = flow.getFiles();
+		if(files == null)files = "null";
+		
+		model.addAttribute("js", js);
+		model.addAttribute("css",css);
+		model.addAttribute("files",files);
 	}
 	
 	@RequestMapping(value = "ajax.htm")
@@ -87,7 +105,6 @@ public class WorkFlowController extends BasicController {
 		Map<String, Object> params = executeCode(flow, request);
 		Object ajaxMap = AE.execute(flow.getAjax(), params);
 		String rs = this.json(ajaxMap);
-		System.out.println("------------- ajax result :" + rs);
 		return rs;
 	}
 	
@@ -110,6 +127,23 @@ public class WorkFlowController extends BasicController {
 		
 		Workflow flow = business.workFlow(flowStep);
 		
+		//Session cache
+		SessionUtil.put(request,SessionUtil.FLOW,flow);
+		
+		return flow;
+	}
+
+	private String executeResponse(Workflow flow, Map<String, Object> params) {
+		if(flow == null){
+			throw new TianmaException("页面出错！");
+		}
+		
+		Business business = (Business)Utils.getSessionValue(SessionUtil.BUSINESS);
+		businessService.readBlock(flow,business.getUniqueCode(),Block.TYPE_CODE);
+		
+		/***
+		 * add files from business
+		 * **/
 		List<Map> files = business.getFiles();
 		if(files == null){
 			files = flow.getFiles();
@@ -118,16 +152,23 @@ public class WorkFlowController extends BasicController {
 		}
 		flow.setFiles(files);
 		
-		businessService.readBlock(flow,business.getUniqueCode(),Block.TYPE_CODE);
+		AE.execute(flow.getCode(), params);
 		
-		//Session cache
-		SessionUtil.put(request,SessionUtil.FLOW,flow);
+		Object responseMap = AE.execute(flow.getResponse(),params);
+
+		String response = JSONObject.fromObject(responseMap).toString();
 		
-		return flow;
+		response = businessService.readBlock(response,business.getUniqueCode(),Block.TYPE_HTML);
+		
+		return new HtmlTemplateReplacer(response).replace(null);
 	}
 	
 	private String executeResponse(Workflow flow, HttpServletRequest request) {
-		Map<String, Object> params = executeCode(flow, request);
+		Map<String, Object> params = readRequestParameters(request);
+		return this.executeResponse(flow, params);
+		
+		/*
+		 * Map<String, Object> params = executeCode(flow, request);
 		Object responseMap = AE.execute(flow.getResponse(),
 				params);
 
@@ -137,6 +178,7 @@ public class WorkFlowController extends BasicController {
 		response = businessService.readBlock(response,business.getUniqueCode(),Block.TYPE_HTML);
 		
 		return new HtmlTemplateReplacer(response).replace(null);
+		*/
 	}
 	
 	private Map<String, Object> executeCode(Workflow flow,
