@@ -587,10 +587,6 @@ var BootstrapGenerator = HTMLGenerator.extend({
     ]},
 	 * **/
 	formBody:function(options){
-		this.appendHidden = function(options){
-			hiddenDiv.append(curr.build(options));
-			return null;
-		};
 		
 		/**
 		 * options: {type:'text',name:'task.title',label:'主题',placeholder:'主题',value:task.title,help:'任务的主题，非空'},
@@ -613,28 +609,40 @@ var BootstrapGenerator = HTMLGenerator.extend({
 			}
 			
 			if(options.type === 'hidden'){
-				return curr.appendHidden(utils.copy(options,{},excludeFields));
+				var hidden = _.build(utils.copy(options,{},excludeFields));
+				return hidden;
+				//return curr.appendHidden(utils.copy(options,{},excludeFields));
 			}
 			
 			var fg = $('<div class="form-group" />');
+			if(!$.isArray(options) && !$.isPlainObject(options)){
+				return fg.text(options);
+			}
 			
-			var labelText = utils.readValue(options,'label','');
-			var label = $('<label />').text(labelText);
-			if(options.type === 'radio' || options.type === 'checkbox'){
-				if(!options.isInline){
-					label.css("display","block");
+			var labelText = utils.readValue(options,'label',null);
+			var label = null;
+			if(labelText){
+				label = $('<label />').text(labelText);
+				if(options.type === 'radio' || options.type === 'checkbox'){
+					if(!options.isInline){
+						label.css("display","block");
+					}
 				}
 			}
 
 			var opts = utils.copy(options,{},excludeFields);
 			var inputDiv = curr.build(opts);
 			
-			if(options && options.postposition){
-				fg.append(inputDiv).append(label);
+			if(label){
+				if(options && options.postposition){
+					fg.append(inputDiv).append(label);
+				}else {
+					fg.append(label).append(inputDiv);
+				}
 			}else {
-				fg.append(label).append(inputDiv);
+				fg.append(inputDiv);
 			}
-			
+
 			var help = options && options.help;
 			if(help){
 				fg.append($('<small class="text-muted" />').text(help));
@@ -654,8 +662,8 @@ var BootstrapGenerator = HTMLGenerator.extend({
 		 * **/
 		this.formGroup = function(options){
 			var group = curr.basicFormGroup(options);
-			if(!group){
-				return;
+			if(!group || !group.is(".form-group")){
+				return group;
 			}
 			
 			if($.isArray(group)){
@@ -729,8 +737,12 @@ var BootstrapGenerator = HTMLGenerator.extend({
 			var rowElements = [];
 			$.each(rows,function(k,v){
 				var cl = 1;
-				if($.isArray(layout) && layout.length > k){
-					cl = layout[k];
+				if($.isArray(layout)){
+					if(layout.length > 0 && $.isNumeric(layout[0])){
+						cl = layout;
+					}else if(layout.length > k){
+						cl = layout[k];
+					}
 				}
 				
 				var cnames = defaultCss;
@@ -744,19 +756,27 @@ var BootstrapGenerator = HTMLGenerator.extend({
 						}
 					});
 				}
+				
+				console.log("cnames : " + cnames);
 
 				var els = curr.basicFormGroup(v);
 				if($.isArray(els)){
 					var row = $("<div class='form-row' />");
 					rowElements.push(row);
 					
+					var skipGroup = 0;
 					$.each(els,function(idx,group){
-						var css = defaultCss;
-						if($.isArray(cnames) && cnames.length > idx){
-							css = cnames[idx];
+						if(group.is(".form-group")){
+							var css = defaultCss;
+							var cssIdx = idx-skipGroup;
+							if($.isArray(cnames) && cnames.length > cssIdx){
+								css = cnames[cssIdx];
+							}
+							
+							group.addClass(css.toString());
+						}else {
+							skipGroup++;
 						}
-						
-						group.addClass(css);
 						row.append(group);
 					});
 				}else {
@@ -773,7 +793,6 @@ var BootstrapGenerator = HTMLGenerator.extend({
 		var fbody = curr.build(utils.copy(options,{tag:"div"},['groups','type','layout','label']));
 		fbody.addClass('form-body');
 		
-		var hiddenDiv = $("<div style='display:none;' />").appendTo(fbody);
 		var isHorizontalLayout = this.isHorizontalLayout(options);
 		var isInline = this.isInlineLayout(options);
 		
@@ -1181,8 +1200,6 @@ var BootstrapGenerator = HTMLGenerator.extend({
 				dataIndex++;
 			});
 		}
-		
-		log('options : ' + JSON.stringify(options));
 		
 		var hasDel = options.deleteButton;
 		if(hasDel && $.isArray(options.head.heading)){

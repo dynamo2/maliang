@@ -133,6 +133,11 @@ public class ModelDao<T extends MongodbModel> extends AbstractDao {
 		}
 	}
 	
+	public void clearArray(String oid,String arrayField) {
+		this.dbColl.update(new BasicDBObject("_id",new ObjectId(oid)), 
+				new BasicDBObject("$set",new BasicDBObject(arrayField,new ArrayList())));
+	}
+	
 	public void deleteArrayInnerFields(String innerId,String fname) {
 		this.dbColl.update(new BasicDBObject(fname+"._id",new ObjectId(innerId)), 
 				new BasicDBObject("$set",new BasicDBObject(fname+".$",null)));

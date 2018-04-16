@@ -109,6 +109,11 @@ function HtmlBuilder(){
 				.val(val)
 				.prop("checked",utils.eq(val,data.value));
 			
+			
+			if(data.checked){
+				radio.prop("checked",data.checked);
+			}
+			
 			//eles.push(radio);
 			
 			var label = $("<label />").append(this.label).prop("for",radio.prop('id'));

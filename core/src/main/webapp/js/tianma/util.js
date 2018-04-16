@@ -61,6 +61,38 @@ function Utils(){
 	};
 	
 	/***
+	 * 将自增长数组名：
+	 *    如：provice.0.city 返回 province.1.city
+	 * **/
+	this.nextArrayName = function(name){
+		if(!utils.isString(name))return;
+
+		var newName = '';
+		var ns = name.split(".");
+		if(ns.length > 1){
+			for(var i = 0; i<ns.length;i++){
+				var val = ns[i];
+				if(!val)continue;
+				
+				if(newName.length > 0){
+					newName += '.';
+				}
+				
+				if($.isNumeric(val)){
+					val = Number(val);
+					val++;
+				}
+				
+				newName += val;
+			}
+		}else {
+		    newName = name;
+		}
+		
+		return newName;
+	};
+	
+	/***
 	 * 将input.name转换成数组格式：
 	 *    如：provice.city 转换成 province.0.city
 	 * **/

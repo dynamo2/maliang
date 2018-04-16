@@ -80,6 +80,12 @@ public class BusinessController extends BasicController {
 		Map<String,Object> business = (Map<String,Object>)reqMap.get("business");
 		
 		System.out.println("------------ business : " + business);
+		
+		Object files = business.get("files");
+		Object id = business.get("id");
+		if(!Utils.isEmpty(files) && !Utils.isEmpty(id)){
+			this.businessDao.clearArray(id.toString(), "files");
+		}
 		this.businessDao.updateBySet(business);
 
 		Business nb = businessDao.getByID(business.get("id").toString());

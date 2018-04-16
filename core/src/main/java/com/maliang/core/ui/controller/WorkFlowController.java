@@ -225,6 +225,8 @@ public class WorkFlowController extends BasicController {
 		if (reqNames == null || reqNames.size() == 0) {
 			return reqMap;
 		}
+		
+		
 
 		for (String reqName : reqNames) {
 			JSONArray ja = (JSONArray) json.get(reqName);
@@ -241,6 +243,9 @@ public class WorkFlowController extends BasicController {
 			if(reqName.endsWith("[]")){
 				reqName = reqName.substring(0,reqName.length()-2);
 			}
+			
+			System.out.println("------------------ request.getParameter --------------------- ");
+			System.out.println("------------------ "+reqName+" : " + reqValue);
 			setValue(reqMap, reqName, reqValue);
 		}
 

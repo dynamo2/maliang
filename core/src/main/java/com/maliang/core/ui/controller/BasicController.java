@@ -134,7 +134,103 @@ public class BasicController {
 
 		return reqMap;
 	}
+	
+	/***
+	 * 解析数组表单数据的格式：
+	 * 		cookbook.motherStock.food,cookbook.motherStock.weight
+	 * 
+	 * ****/
+	protected static void setValue222(Map<String, Object> rootMap, String reqName,
+			Object reqValue) {
+		if (reqName == null)
+			return;
 
+		Object lastKey = null;
+		Object lastParent = rootMap;
+		Object parent = rootMap;
+		String[] parents = reqName.split("\\.");
+		for (int i = 0; i < parents.length; i++) {
+			String name = parents[i];
+			boolean last = i == parents.length - 1;
+
+			Integer index = null;
+			try {
+				index = Integer.parseInt(name);
+			} catch (Exception e) {
+				index = null;
+			}
+
+			if (index != null && index >= 0) {
+				List list = null;
+				if (parent instanceof List) {
+					list = (List) parent;
+				} else {
+					list = new ArrayList();
+
+					if (lastParent instanceof Map) {
+						((Map) lastParent).put(lastKey, list);
+					} else if (lastParent instanceof List) {
+						if (lastKey instanceof Integer) {
+							((List) lastParent).set((Integer) lastKey, list);
+						}
+					}
+				}
+
+				if (index >= list.size()) {
+					int ii = index - list.size();
+					while (ii-- >= 0) {
+						list.add(null);
+					}
+				}
+
+				if (last) {
+					list.set(index, reqValue);
+					break;
+				}
+
+				Object temp = list.get(index);
+				if (temp == null) {
+					temp = new HashMap();
+					list.set(index, temp);
+				}
+
+				parent = temp;
+				lastParent = list;
+				lastKey = index;
+			} else {
+				if (!(parent instanceof Map)) {
+					parent = new HashMap();
+					if (lastParent instanceof Map) {
+						((Map) lastParent).put(lastKey, parent);
+					} else if (lastParent instanceof List
+							&& lastKey instanceof Integer) {
+						((List) lastParent).set((Integer) lastKey, parent);
+					}
+				}
+
+				if (last) {
+					((Map) parent).put(name, reqValue);
+					break;
+				}
+
+				Object temp = ((Map) parent).get(name);
+				if (temp == null) {
+					temp = new HashMap<String, Object>();
+					((Map) parent).put(name, temp);
+				}
+
+				lastKey = name;
+				lastParent = parent;
+				parent = temp;
+			}
+		}
+	}
+
+	/***
+	 * 解析数组表单数据的格式：
+	 * 		cookbook.motherStock.0.food,cookbook.motherStock.0.weight
+	 * 
+	 * ****/
 	protected static void setValue(Map<String, Object> rootMap, String reqName,
 			Object reqValue) {
 		if (reqName == null)

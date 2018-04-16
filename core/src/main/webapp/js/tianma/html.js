@@ -26,29 +26,32 @@
     if(!(jObj || props)){
 	  return;
 	}
-
-    $.each(props,function(key,value){
-    	if(key == 'tag'){
-    		return true;
-    	}
-    	
-    	if(key == 'text'){
-    		jObj.text(value);
-    		return true;
-    	}
-    	
-    	if(key == 'html'){
-    		jObj.html(value);
-    		return true;
-    	}
-    	
-    	if(key == 'class'){
-    		jObj.addClass(value);
-    		return true;
-    	}
-    	
-    	jObj.attr(key,value);
-    });
     
+    if($.isPlainObject(props)){
+    	$.each(props,function(key,value){
+        	if(key == 'tag'){
+        		return true;
+        	}
+        	
+        	if(key == 'text'){
+        		jObj.text(value);
+        		return true;
+        	}
+        	
+        	if(key == 'html'){
+        		jObj.html(value);
+        		return true;
+        	}
+        	
+        	if(key == 'class'){
+        		jObj.addClass(value);
+        		return true;
+        	}
+        	
+        	try {
+        		jObj.attr(key,value);
+        	}catch(e){}
+        });
+    }    
 	return jObj;
   }

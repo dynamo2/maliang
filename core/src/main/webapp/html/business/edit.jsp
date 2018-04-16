@@ -387,6 +387,7 @@
 		}
 		
 		function showBasicEditer(){
+			$(".ui-tabs-vertical").css("width","80em");
 			basicEditerDialog.dialog("open");
 		}
 		
@@ -622,6 +623,7 @@
 			edit:function(tid){
 				var _ = aceEditor;
 				_.bindTextarea = $("#"+tid);
+				
 				
 				_.editor.setValue(_.bindTextarea.val());
 				_.bindTextarea.hide();
