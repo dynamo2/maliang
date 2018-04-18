@@ -3,6 +3,7 @@ package com.maliang.core.arithmetic.node;
 import java.util.Date;
 import java.util.Map;
 
+import com.maliang.core.arithmetic.Reader;
 import com.maliang.core.arithmetic.calculator.DateCalculator;
 
 public class Operand extends Node {
@@ -28,7 +29,13 @@ public class Operand extends Node {
 		}
 		
 		if(this.isString()){
-			String s = this.operand.substring(1,this.operand.length()-1);
+			String s = null;
+			if(this.isTripleQuotes()){
+				s = readTripleQuotes();
+			}else {
+				s = this.operand.substring(1,this.operand.length()-1);
+			}
+			
 			return ExpressionNode.doDoubleColon(s, paramsMap);
 		}
 		
@@ -56,7 +63,30 @@ public class Operand extends Node {
 	}
 	
 	public boolean isString(){
+		return (this.operand.startsWith("'") && this.operand.endsWith("'")) 
+				|| (this.operand.startsWith("'''") && this.operand.endsWith("'''"));
+	}
+	
+	public boolean isSingleQuotes(){
 		return this.operand.startsWith("'") && this.operand.endsWith("'");
+	}
+	
+	public boolean isTripleQuotes(){
+		return this.operand.startsWith("'''") && this.operand.endsWith("'''");
+	}
+	
+	private String readTripleQuotes(){
+		int sidx = 3;
+		if(sidx >= this.operand.length()){
+			return "";
+		}
+		
+		int eidx = this.operand.length()-3;
+		if(eidx < sidx){
+			eidx = sidx;
+		}
+		
+		return this.operand.substring(sidx,eidx);
 	}
 	
 	public String toString(){

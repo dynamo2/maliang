@@ -61,7 +61,7 @@ public class Substring {
 			return;
 		}
 		
-		int[] coors = readCoors();		
+		int[] coors = readCoors();
 		
 		this.startIndex = coors[0];
 		this.endIndex = coors[1];
@@ -107,7 +107,7 @@ public class Substring {
 	}
 	
 	/***
-	 * 是否是转义字符
+	 * 鏄惁鏄浆涔夊瓧绗�
 	 * **/
 	private boolean isEsc(String s,int i){
 		if(i >= 0){

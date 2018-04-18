@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.maliang.core.arithmetic.Reader;
 import com.maliang.core.arithmetic.Substring;
 import com.maliang.core.arithmetic.function.Function;
 
@@ -110,7 +111,11 @@ public class Parentheses extends Node{
 				}
 				
 				if(ch == '\''){
-					readString();
+					if(isTripleQuotes()){
+						this.readTripleQuotesString();
+					}else {
+						readString();
+					}
 					continue;
 				}
 				
@@ -158,6 +163,13 @@ public class Parentheses extends Node{
 			return source.charAt(this.cursor);
 		}
 		
+		private char readChar(int idx){
+			if(idx < this.source.length()){
+				return source.charAt(idx);
+			}
+			return (char)-1;
+		}
+		
 		private void readString(){
 			Substring sbs = new Substring(source,'\'',this.cursor);
 			if(sb == null){
@@ -165,6 +177,21 @@ public class Parentheses extends Node{
 			}
 			sb.append(sbs.getCompleteContent());
 			this.cursor = sbs.getEndIndex();
+		}
+		
+		private boolean isTripleQuotes(){
+			return this.readChar(this.cursor+1) == '\''  && this.readChar(this.cursor+2) == '\'';
+		}
+		
+		private void readTripleQuotesString(){
+			String sign = "'''";
+			Reader sbs = new Reader(source,"'''",this.cursor);
+			if(sb == null){
+				sb = new StringBuffer();
+			}
+			sb.append(sbs.getCompleteContent());
+			//sb.append(sbs);
+			this.cursor = sbs.getEndIndex()+sign.length()-1;
 		}
 		
 		private void addOperator(){
