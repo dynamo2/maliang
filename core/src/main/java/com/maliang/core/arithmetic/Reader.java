@@ -24,6 +24,7 @@ public class Reader {
 	private boolean isMatched = false;
 	private boolean nest = true;
 	
+	
 	public Reader(String source,String startSign,String endSign,int cursorIndex,boolean nest){
 		this.source = source;
 		this.startSign = startSign;
