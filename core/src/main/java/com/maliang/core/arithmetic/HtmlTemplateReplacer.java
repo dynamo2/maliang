@@ -14,6 +14,6 @@ public class HtmlTemplateReplacer extends Replacer {
 		mEnd.find(mStart.start()+5);
 		String label = this.source.substring(mStart.start()+5,mEnd.start());
 		
-		return "<div id='htmlTemplate-"+label+"' style='display:none' />";
+		return "<div id='htmlTemplate-"+label+"' style='display:none'></div>";
 	}
 }

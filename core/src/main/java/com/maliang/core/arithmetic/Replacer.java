@@ -18,18 +18,19 @@ public abstract class Replacer {
 		this.startRgx = sr;
 		this.endRgx = er;
 		
+		
 		this.pStart = Pattern.compile(startRgx);
 		this.pEnd = Pattern.compile(endRgx);
 	}
 	
 	/**
-	 * 计算标签内的内容，并返回
+	 * 璁＄畻鏍囩鍐呯殑鍐呭锛屽苟杩斿洖
 	 * ***/
 	public abstract String doReplace(Object obj);
 	
 	/***
-	 * 1. 解析标签表达式
-	 * 2. 计算表达式，并用计算结果替换标签表达式
+	 * 1. 瑙ｆ瀽鏍囩琛ㄨ揪寮�
+	 * 2. 璁＄畻琛ㄨ揪寮忥紝骞剁敤璁＄畻缁撴灉鏇挎崲鏍囩琛ㄨ揪寮�
 	 * **/
 	public String replace(Object obj){
 		if(this.source == null)return null;

@@ -193,7 +193,7 @@ public class ObjectMetadataController extends BasicController {
 		
 		String s = "{json:['form','metadata',"
 				+ "[['$id','','hidden',metadata.id,'[n]'],"
-					+ "['$project.id','项目',['select',each(projects){{key:this.id,label:this.name}}],metadata.project.id,'[n]'],"
+					+ "['$project.id','项目',['select',[{key:'',label:'无'}]+each(projects){{key:this.id,label:this.name}}],metadata.project.id,'[n]'],"
 					+ "['$name','名称','text',metadata.name,'[n]'],"
 					+ "['$label','标签','text',metadata.label,'[n]'],"
 					+ "['$modelType','模型结构',['select',[{key:'',label:'默认'},{key:'2',label:'Tree'}]],metadata.modelType,'[n]']]]}";

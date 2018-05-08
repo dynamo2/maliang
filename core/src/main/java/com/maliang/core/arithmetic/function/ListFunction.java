@@ -44,12 +44,26 @@ public class ListFunction {
 		return ((Object[])keyData)[index];
 	}
 	
+	
+	
 	public static boolean contains(Function function ,Map<String,Object> params){
 		Object keyVal = function.getKeyValue();
 		Object value = function.executeExpression(params);
 		
 		if(keyVal instanceof List){
+			if(value instanceof List) {
+				return ((List)keyVal).containsAll((List)value);
+			}
 			return ((List)keyVal).contains(value);
+		}
+		
+		if(keyVal instanceof String) {
+			if(Utils.isEmpty(value)) {
+				return false;
+			}
+			
+			int idx = ((String) keyVal).indexOf(value.toString());
+			return idx >= 0;
 		}
 
 		return keyVal != null && value != null && keyVal.equals(value);

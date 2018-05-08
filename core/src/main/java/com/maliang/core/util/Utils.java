@@ -163,6 +163,44 @@ public class Utils {
 		return nList;
 	}
 	
+	public static boolean isIntegers(Object obj) {
+		if(Utils.isEmpty(obj)) {
+			return false;
+		}
+		
+		boolean is = false;
+		for(Object o : toList(obj)) {
+			is = isInteger(o);
+			
+			if(!is) {
+				return false;
+			}
+		}
+		return true;
+	}
+	
+	public static boolean isInteger(Object obj) {
+		if(obj == null)return false;
+		
+		return obj instanceof Integer;
+	}
+	
+	public static boolean isNumbric(Object obj) {
+		boolean is = false;
+		for(Object o : toList(obj)) {
+			if(o instanceof Number) {
+				is = true;
+			}else {
+				is = false;
+			}
+			
+			if(!is) {
+				return false;
+			}
+		}
+		return true;
+	}
+	
 	public static boolean isEmpty(Object o){
 		if(o == null)return true;
 		

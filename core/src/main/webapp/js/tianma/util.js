@@ -18,6 +18,17 @@ Array.prototype.isEmpty = function(){
 function Utils(){
 	var _ = this;
 	
+	this.ajaxForm = function(form,fun){
+		var reqData = readFormDatas(form);
+		
+		$.ajax("/flows/ajax.htm",{
+			data:reqData,
+			dataType:'json',
+			type:'POST',
+			async:false
+		}).done(fun);
+	},
+	
 	this.put = function(obj,key,val){
 		if(!$.isPlainObject(obj)){
 			obj = {};
@@ -65,10 +76,25 @@ function Utils(){
 	 *    如：provice.0.city 返回 province.1.city
 	 * **/
 	this.nextArrayName = function(name){
+		return _.nextArrayName(name,-1);
+	};
+	
+	/***
+	 * 将自增长数组名：
+	 *    如：provice.0.city 返回 province.1.city
+	 * **/
+	this.nextArrayName = function(name,idx){
 		if(!utils.isString(name))return;
 
 		var newName = '';
 		var ns = name.split(".");
+		var iid = 0;
+		
+		if($.isNumeric(idx)){
+			idx = Number(idx);
+		}else {
+			idx = -1;
+		}
 		if(ns.length > 1){
 			for(var i = 0; i<ns.length;i++){
 				var val = ns[i];
@@ -79,8 +105,14 @@ function Utils(){
 				}
 				
 				if($.isNumeric(val)){
-					val = Number(val);
-					val++;
+					console.log('idx : ' + idx);
+					console.log('(idx < 0) : ' + (idx < 0));
+					console.log('(idx < 0 || iid == idx) : ' + (idx < 0 || iid == idx));
+					if(idx < 0 || iid == idx){
+						val = Number(val);
+						val++;
+					}
+					iid++;
 				}
 				
 				newName += val;

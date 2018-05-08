@@ -25,15 +25,15 @@
 		<script src="../js/tianma/component.js"></script>
 		<script src="../js/tianma/datatables.js"></script>
 		<script src="../js/tianma/form.js"></script>
-		<script src="../js/tianma/html.js?ddd"></script>
-		<script src="../js/tianma/util.js?sss"></script>
+		<script src="../js/tianma/html.js?d"></script>
+		<script src="../js/tianma/util.js?sddddddd"></script>
 		<script src="../js/tianma/bind.js"></script>
 		<script src="../js/tianma/build.js"></script>
-		<script src="../js/tianma/inputs.jsd"></script>
-		<script src="../html/business/tianma.js?dd"></script>
+		<script src="../js/tianma/inputs.js"></script>
+		<script src="../html/business/tianma.js?d"></script>
 		
-		<script src="../js/tianma/processor.js?ddhhddd"></script>
-		<script src="../js/tianma/bootstrapG.js?dddddddDddddddd"></script>
+		<script src="../js/tianma/processor.js?ddDDDdd"></script>
+		<script src="../js/tianma/bootstrapG.js?dsd"></script>
 		<script src="../js/tianma/metronic.js"></script>
 	
 

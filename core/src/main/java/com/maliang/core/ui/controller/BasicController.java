@@ -39,6 +39,8 @@ public class BasicController {
 	protected UCTypeDao uctypeDao = new UCTypeDao();
 	protected ProjectDao projectDao = new ProjectDao();
 	
+	org.springframework.beans.factory.BeanFactoryAware bw = null;
+	
 	static {
 		JSONUtils.getMorpherRegistry().registerMorpher(new ObjectIdMorpher());
 		defaultJsonConfig.registerJsonValueProcessor(ObjectId.class, new TOStringProcessor());
@@ -136,7 +138,7 @@ public class BasicController {
 	}
 	
 	/***
-	 * ½âÎöÊý×é±íµ¥Êý¾ÝµÄ¸ñÊ½£º
+	 * ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ÝµÄ¸ï¿½Ê½ï¿½ï¿½
 	 * 		cookbook.motherStock.food,cookbook.motherStock.weight
 	 * 
 	 * ****/
@@ -227,7 +229,7 @@ public class BasicController {
 	}
 
 	/***
-	 * ½âÎöÊý×é±íµ¥Êý¾ÝµÄ¸ñÊ½£º
+	 * ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ÝµÄ¸ï¿½Ê½ï¿½ï¿½
 	 * 		cookbook.motherStock.0.food,cookbook.motherStock.0.weight
 	 * 
 	 * ****/

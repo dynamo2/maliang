@@ -57,21 +57,20 @@ public class QueryFunction {
 	public static Object find(Function function,Map<String,Object> params){
 		Object operatedObj = function.getKeyValue();
 		
+		if(Utils.isEmpty(function.expression)) {
+			return operatedObj;
+		}
+		
 		if(Utils.isArray(operatedObj)){
-			if(operatedObj instanceof Collection){
-				operatedObj = ((Collection)operatedObj).toArray();
-			}
-
 			List<Object> resultList = new ArrayList<Object>();
-			Object[] dataList = (Object[])operatedObj;
 			
-			for(Object obj : dataList){
+			for(Object obj : Utils.toList(operatedObj)){
 				if(!(obj instanceof Map)){
 					continue;
 				}
 				
 				Map newParams = Utils.connect(params,(Map)obj);
-				Object ov = ArithmeticExpression.execute(function.expression, newParams);
+				Object ov = AE.execute(function.expression, newParams);
 				if(ov instanceof Boolean && (Boolean)ov){
 					resultList.add(obj);
 				}
@@ -119,5 +118,41 @@ public class QueryFunction {
 		}
 
 		return null;
+	}
+	
+	public static Object removeKey(Function function,Map<String,Object> params){
+		Object operatedObj = function.getKeyValue();
+		Object ov = AE.execute(function.expression, params);
+		
+		if(Utils.isIntegers(ov)) {
+			if(Utils.isArray(operatedObj)) {
+				List list = Utils.toList(operatedObj);
+				List result = new ArrayList();
+				List rks = Utils.toList(ov);
+				for(int i = 0; i < list.size(); i++) {
+					if(!rks.contains(i)) {
+						result.add(list.get(i));
+					}
+				}
+				
+				return result;
+			}
+			
+			return operatedObj;
+		}
+		
+		for(Object obj : Utils.toList(operatedObj,true)) {
+			if(obj instanceof Map) {
+				doRemoveKey((Map)obj,ov);
+			}
+		}
+
+		return operatedObj;
+	}
+	
+	private static void doRemoveKey(Map map,Object ks) {
+		for(Object k : Utils.toList(ks,true)) {
+			map.remove(k);
+		}
 	}
 }

@@ -9,7 +9,7 @@ import com.maliang.core.model.Trigger;
 import com.maliang.core.model.TriggerAction;
 
 public class ProjectDao extends ModelDao<Project> {
-	protected static String COLLECTION_NAME = "System";
+	protected static String COLLECTION_NAME = "Project";
 	//protected CollectionDao collectionDao = new CollectionDao();
 	
 	static {
@@ -18,6 +18,10 @@ public class ProjectDao extends ModelDao<Project> {
 	
 	public ProjectDao(){
 		super(COLLECTION_NAME,Project.class);
+	}
+	
+	public static void main(String[] args) {
+		Project project = null;
 	}
 	
 	

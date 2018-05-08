@@ -39,11 +39,11 @@ public class AbstractDao  {
 	protected static Map<String,Class> INNER_TYPE = new HashMap<String,Class>();
 	static {
 		mongoClient = new MongoClient();
-		db = mongoClient.getDB(DB_JIRA);
+		db = mongoClient.getDB(DB_TIANMA);
 		
-		SYSTEM_DB_COLLECTIONS.add("object_metadata");
+		SYSTEM_DB_COLLECTIONS.add("ObjectMetadata");
 		SYSTEM_DB_COLLECTIONS.add("Business");
-		SYSTEM_DB_COLLECTIONS.add("System");
+		SYSTEM_DB_COLLECTIONS.add("Project");
 		SYSTEM_DB_COLLECTIONS.add("UCType");
 	}
 

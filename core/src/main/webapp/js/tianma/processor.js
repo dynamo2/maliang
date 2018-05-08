@@ -250,6 +250,8 @@ var HTMLGenerator = Class.extend({
 	},
 	
 	htmlTemplate:function(opts){
+		
+		
 		var ele = $(opts.template);
 		var g = this;
 		
@@ -262,7 +264,8 @@ var HTMLGenerator = Class.extend({
 			if($.isArray(v) || $.isPlainObject(v)){
 				ve = g.build(v);
 			}else {
-				ve = $("<span />").text(v);
+				//ve = $("<span />").text(v);
+				ve = v;
 			}
 			
 			var tempDiv = ele.find("#htmlTemplate-"+k);

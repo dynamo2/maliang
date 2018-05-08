@@ -54,6 +54,10 @@ var BootstrapGenerator = HTMLGenerator.extend({
 			return this.row(opts);
 		}
 		
+		if(et === "column"){
+			return this.column(opts);
+		}
+		
 		if(et === "rows"){
 			return this.rows(opts);
 		}
@@ -662,7 +666,7 @@ var BootstrapGenerator = HTMLGenerator.extend({
 		 * **/
 		this.formGroup = function(options){
 			var group = curr.basicFormGroup(options);
-			if(!group || !group.is(".form-group")){
+			if(!group || !$(group).is(".form-group")){
 				return group;
 			}
 			
@@ -761,12 +765,12 @@ var BootstrapGenerator = HTMLGenerator.extend({
 
 				var els = curr.basicFormGroup(v);
 				if($.isArray(els)){
-					var row = $("<div class='form-row' />");
+					var row = $("<div class='row' />");
 					rowElements.push(row);
 					
 					var skipGroup = 0;
 					$.each(els,function(idx,group){
-						if(group.is(".form-group")){
+						if($(group).is(".form-group")){
 							var css = defaultCss;
 							var cssIdx = idx-skipGroup;
 							if($.isArray(cnames) && cnames.length > cssIdx){
@@ -815,24 +819,6 @@ var BootstrapGenerator = HTMLGenerator.extend({
 				});
 			}
 		}
-		
-		/*
-		if(options && options.groups && $.isArray(options.groups)){
-			$.each(options.groups,function(){
-				if(this.section){
-					$('<h3 class="form-section">'+this.section+'</h3>').appendTo(fbody);
-					var row = curr.formRow(this);
-					if(row){
-						fbody.append(row);
-					}
-				}else {
-					var group = curr.formGroup(this);
-					if(group){
-						fbody.append(group);
-					}
-				}
-			});
-		}*/
 
 		return fbody;
 	},
@@ -887,7 +873,7 @@ var BootstrapGenerator = HTMLGenerator.extend({
 		
 		var css = options && options.css;
 		if(!css){
-			css = "col-md-auto";
+			css = "col";
 		}
 		column.addClass(css);
 
@@ -919,12 +905,72 @@ var BootstrapGenerator = HTMLGenerator.extend({
 	row:function(options){
 		var _ = this;
 		
+		/**
+		 * 三种column-css格式:
+		 * 1. 数组： ['col-1','col','col-2']
+		 * 	  按顺序读取对应column的样式
+		 * 2. string： 'col font-weight-bold'
+		 *    所有的column均设置为统一样式
+		 * 3. {
+		 * 		0:'col-1',
+		 * 		1:'col',
+		 * 		2:'col-2'
+		 * 		d:'col',
+		 *    }
+		 *    d:默认的column样式
+		 *    (数字编号)：对应column编号的样式（从0开始）
+		 * 4. {
+		 * 		0:['col-2 font-weight-bold','col font-weight-bold','col-2 font-weight-bold'],
+                d:['col-2','col','col-2 text-danger']
+		 * 	  }
+		 * 	  d:默认的column样式组（解读方法参考：（1））
+		 *    (数字编号):对应row编号的column样式组（从0开始）
+		 *    
+		 * 注意：样式格式（数组[]或string）不要混用，不然解析结果不可预期
+		 * 
+		 * **/
+		this.readColumnCss = function(columnCss,colIdx,rowIdx){
+			if($.isArray(columnCss)){
+				if(colIdx >= columnCss.length){
+					colIdx = colIdx%columnCss.length;
+				}
+				return columnCss[colIdx]; 
+			}else if($.isPlainObject(columnCss)){
+				var defaultCss = columnCss["d"];
+				if($.isArray(defaultCss)){
+					var css = columnCss[rowIdx];
+					if(!css){
+						css = defaultCss;
+					}
+					
+					return _.readColumnCss(css,colIdx,rowIdx);
+				}else if(utils.isString(defaultCss)){
+					var css = columnCss[colIdx];
+					if(!css){
+						css = defaultCss;
+					}
+					return css;
+				}
+				
+				return columnCss[colIdx];
+			}else if(utils.isString(columnCss)){
+				return columnCss;
+			}
+			return "";
+		};
+
 		var body = options && options.body;
 		var columnCss = options && options['column-css'];
+		var rowCss = options && options['row-css'];
+		rowCss = rowCss && rowCss.toString();
+		
 		var rows = [];
+		
+		
 		if($.isArray(body)){
+			var rowIdx = 0;
 			$.each(body,function(){
-				var row = $("<div class='row' />");
+				var row = $("<div class='row' />").addClass(rowCss);
 				rows.push(row);
 				
 				var idx = 0;
@@ -938,19 +984,14 @@ var BootstrapGenerator = HTMLGenerator.extend({
 							body:this
 						};
 						
-						if($.isArray(columnCss)){
-							if(idx >= columnCss.length){
-								idx = idx%columnCss.length;
-							}
-							colOpts['css'] = columnCss[idx]; 
-						}else if(utils.isString(columnCss)){
-							colOpts['css'] = columnCss;
-						}
+						colOpts['css'] = _.readColumnCss(columnCss,idx,rowIdx);
 					}
 					
 					_.appendTo(row,colOpts);
 					idx++;
 				});
+				
+				rowIdx++;
 			});
 			
 		}
@@ -1226,8 +1267,6 @@ var BootstrapGenerator = HTMLGenerator.extend({
 		if(text == null || text == undefined){
 			text = '';
 		}
-		
-		console.log(' text : ' + text);
 		jqObj.text(text);
 	},
 	
@@ -1237,23 +1276,25 @@ var BootstrapGenerator = HTMLGenerator.extend({
 		var table = $("<table class='table' />");
 		_.attr(table,utils.copy(options,null,['head','body']));
 		
+		this.column = function(tr,data,colTag){
+			var column = $("<"+colTag+" />").appendTo(tr);
+			if($.isArray(data) || $.isPlainObject(data)){
+				column.append(_.build(data));
+			}else {
+				_.doText(column,data);
+			}
+			return column;
+		};
+		
 		this.tr = function(trDatas,colTag){
 			var tr = $('<tr />');
 			
 			if($.isArray(trDatas)){
 				$.each(trDatas,function(){
-					if($.isArray(this) || $.isPlainObject(this)){
-						$("<"+colTag+" />").appendTo(tr).append(_.build(this));
-					}else {
-						_.doText($("<"+colTag+" />").appendTo(tr),this);
-					}
+					_.column(tr,this,colTag);
 				});
 			}else {
-				if($.isPlainObject(this)){
-					$("<"+colTag+" />").appendTo(tr).append(_.build(this));
-				}else {
-					_.doText($("<"+colTag+" />").appendTo(tr),this);
-				}
+				_.column(tr,trDatas,colTag);
 			}
 
 			return tr;

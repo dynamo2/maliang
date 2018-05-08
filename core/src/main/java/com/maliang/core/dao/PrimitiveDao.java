@@ -28,8 +28,8 @@ import com.mongodb.WriteResult;
 public class PrimitiveDao {
 	protected static MongoClient mongoClient;
 	protected static DB db;
-	//protected static String DB_FILE = "tmide";
-	protected static String DB_FILE = "jira";
+	protected static String DB_FILE = "tianma";
+	//protected static String DB_FILE = "jira";
 	//protected static String DB_FILE = "tianma";
 	//private DBCollection collection = null;
 

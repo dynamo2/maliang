@@ -729,6 +729,8 @@ public class BasicDao extends AbstractDao{
 		ObjectMetadata metadata = this.metaDao.getByName(collName);
 		doModel(dataMap,metadata);
 		
+		System.out.println("collName : " + collName);
+		System.out.println("metadata : " + metadata);
 		return correctData(dataMap,metadata.getFields(),dealWithId,isDeep);
 	}
 	
@@ -917,12 +919,13 @@ public class BasicDao extends AbstractDao{
 	public Object correctFieldValue(ObjectField of,Object fieldValue,boolean dealWithId,boolean isDeep){
 		if(FieldType.ARRAY.is(of.getType())){
 			of.setType(of.getElementType());
-			
+
 			Object result = null;
 			if(fieldValue instanceof List){
 				List<Object> list = new ArrayList<Object>();
 				for(Object o : (List<Object>)fieldValue){
-					list.add(correctFieldValue(of,o,dealWithId,isDeep));
+					o = correctFieldValue(of,o,dealWithId,isDeep);
+					list.add(o);
 				}
 				result = list;
 			}else if(fieldValue instanceof Map){
@@ -1120,6 +1123,8 @@ public class BasicDao extends AbstractDao{
 							list.add(getLinkedObject(obj,field.getLinkedObject()));
 						}else if(FieldType.VARIABLE_LINK.is(field.getType())){
 							list.add(this.getVariableLinkedObject(fieldValue));
+						}else {
+							list = (List)fieldValue;
 						}
 						
 						dataMap.put(fieldName, list);

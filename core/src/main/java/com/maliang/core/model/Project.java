@@ -2,7 +2,7 @@ package com.maliang.core.model;
 
 import java.util.List;
 
-@Collection(name="System")
+@Collection(name="Project")
 public class Project extends MongodbModel{
 	String name;
 	String key;

@@ -204,7 +204,7 @@ public class Function {
 			//return null;
 		}
 		
-		if("contains".equalsIgnoreCase(key)){
+		if("has".equalsIgnoreCase(key)){
 			return ListFunction.contains(this, params);
 		}
 		
@@ -304,6 +304,10 @@ public class Function {
 			return QueryFunction.remove(this, params);
 		}
 		
+		if("removeKey".equals(key)){
+			return QueryFunction.removeKey(this, params);
+		}
+		
 		if("max".equals(key)){
 			//return MaxFunction.execute(this, params);
 			return AggregationFunction.max(this, params);
@@ -322,6 +326,10 @@ public class Function {
 			return GroupFunction.execute(this, params);
 		}
 		
+		if("regroup".equals(key)){
+			return GroupFunction.regroup(this, params);
+		}
+		
 		if("join".equals(key)){
 			return JoinFunction.execute(this, params);
 		}
@@ -330,8 +338,12 @@ public class Function {
 			return CohesionFunction.execute(this, params);
 		}
 		
+//		if("merge".equals(key)){
+//			return MergeFunction.execute(this, params);
+//		}
+		
 		if("merge".equals(key)){
-			return MergeFunction.execute(this, params);
+			return MergeFunction.merge(this, params);
 		}
 		
 		if("expand".equals(key)){
@@ -427,7 +439,7 @@ public class Function {
 		if(this.isDBFun() || this.isHtmlFun()){
 			return;
 		}
-		
+
 		if(key != null && key.contains(".")){
 			String kv = key.substring(0,key.lastIndexOf("."));
 			this.keyValue = ArithmeticExpression.execute(kv, params);

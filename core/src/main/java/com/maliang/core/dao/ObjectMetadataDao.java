@@ -7,6 +7,7 @@ import java.util.Map;
 
 import org.bson.types.ObjectId;
 
+import com.maliang.core.arithmetic.AE;
 import com.maliang.core.model.ObjectField;
 import com.maliang.core.model.ObjectMetadata;
 import com.maliang.core.model.Project;
@@ -16,7 +17,7 @@ import com.mongodb.BasicDBObject;
 
 public class ObjectMetadataDao  extends ModelDao<ObjectMetadata> {
 	
-	protected static String COLLECTION_NAME = "object_metadata";
+	protected static String COLLECTION_NAME = "ObjectMetadata";
 	
 	static {
 		INNER_TYPE.put("ObjectMetadata.fields",ObjectField.class);
@@ -147,10 +148,15 @@ public class ObjectMetadataDao  extends ModelDao<ObjectMetadata> {
 	public static void main(String[] args) {
 		
 		ObjectMetadataDao dao = new ObjectMetadataDao();
-		ObjectMetadata od = dao.getByName("Business");
+		
+		
+		ObjectMetadata od = dao.getByName("Product");
+		
+		String s = "pdb.showAll()";
+		Object val = AE.execute(s);
 		
 		System.out.println("================");
-		System.out.println(od);
+		System.out.println("val : " + val);
 		
 		
 	}

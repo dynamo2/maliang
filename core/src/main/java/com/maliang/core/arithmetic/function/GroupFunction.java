@@ -1,9 +1,14 @@
 package com.maliang.core.arithmetic.function;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+
+import javax.swing.event.ListSelectionEvent;
 
 import com.maliang.core.arithmetic.AE;
 import com.maliang.core.arithmetic.node.FunctionNode;
@@ -36,6 +41,13 @@ public class GroupFunction {
 		//System.out.println("g : " + s);
 		Object v = AE.execute(s,params);
 		System.out.println("v : " + v);
+		
+		
+		s = "addToParams({list:[['XS','S','M','L'],['红','白','黑','灰'],['小鸟','国字','花草'],['男','女']],list:list.regroup()})";
+		s = "addToParams({list:['S',['红','黑'],['刺绣','印花'],'男'],list:list.regroup()})";
+		
+		Object val = AE.execute(s);
+		System.out.println("---- val : " + val);
 	}
 	
 	public static Object execute(Function function,Map<String,Object> params){
@@ -49,6 +61,40 @@ public class GroupFunction {
 		compiler.execute(params);
 		
 		return compiler.getGroupResult();
+	}
+	
+	public static Object regroup(Function function,Map<String,Object> params) {
+		Object val = function.getKeyValue();
+		List list = Utils.toList(val);
+		List results = Utils.toList(list.get(0));
+		
+		for(int i = 1; i < list.size(); i++) {
+			List ls = Utils.toList(list.get(i));
+			
+			List temp = new ArrayList();
+			for(Object o : results) {
+				if(Utils.isEmpty(o)) {
+					continue;
+				}
+				
+				for(Object oo : ls) {
+					if(Utils.isEmpty(oo)) {
+						continue;
+					}
+					List lo = new ArrayList();
+					if(!(o instanceof List)) {
+						lo.add(o);
+					}else {
+						lo.addAll((List)o);
+					}
+					lo.add(oo);
+					temp.add(lo);
+				}
+			}
+			results = temp;
+		}
+		
+		return results;
 	}
 	
 	private static Object[] rootDatas(Function fun,Map<String,Object> params){
