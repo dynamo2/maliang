@@ -11,6 +11,7 @@ import java.util.Set;
 import com.maliang.core.arithmetic.Reader;
 import com.maliang.core.arithmetic.Substring;
 import com.maliang.core.arithmetic.function.Function;
+import com.maliang.core.arithmetic.function.UserFunction;
 
 public class Parentheses extends Node{
 	private final String source;
@@ -82,11 +83,19 @@ public class Parentheses extends Node{
 			for(;this.cursor< source.length(); this.cursor++){
 				char ch = readChar();
 				
+				/**
+				 * 解析注释代码
+				 * **/
+				if(ch == '/' && this.isAnnotation()){
+					readAnnotation();
+					continue;
+				}
+				
 				if(Operator.isOperator(ch)){
 					addOperator();
 					continue;
 				}
-				
+
 				if(ch == '('){
 					if(sb != null){
 						String key = readSbf();
@@ -109,7 +118,7 @@ public class Parentheses extends Node{
 					readFunction('[',']');
 					continue;
 				}
-				
+
 				if(ch == '\''){
 					if(isTripleQuotes()){
 						this.readTripleQuotesString();
@@ -164,10 +173,11 @@ public class Parentheses extends Node{
 		}
 		
 		private char readChar(int idx){
-			if(idx < this.source.length()){
-				return source.charAt(idx);
+			try {
+				return this.source.charAt(idx);
+			}catch(StringIndexOutOfBoundsException e) {
+				return '\0';
 			}
-			return (char)-1;
 		}
 		
 		private void readString(){
@@ -179,10 +189,25 @@ public class Parentheses extends Node{
 			this.cursor = sbs.getEndIndex();
 		}
 		
+		
+		
+		private boolean isAnnotation() {
+			return this.readChar(this.cursor) == '/' && this.readChar(this.cursor+1) == '*';
+		}
+		
+		private void readAnnotation(){
+			Reader sbs = new Reader(source,"/*","*/",this.cursor,false);
+//			if(sb == null){
+//				sb = new StringBuffer();
+//			}
+//			sb.append(sbs.getCompleteContent());
+			//sb.append(sbs);
+			this.cursor = sbs.getEndIndex()+"*/".length()-1;
+		}
+		
 		private boolean isTripleQuotes(){
 			return this.readChar(this.cursor+1) == '\''  && this.readChar(this.cursor+2) == '\'';
 		}
-		
 		private void readTripleQuotesString(){
 			String sign = "'''";
 			Reader sbs = new Reader(source,"'''",this.cursor);

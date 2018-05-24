@@ -4,8 +4,10 @@ import java.util.Map;
 
 import org.apache.commons.collections.map.LinkedMap;
 
+import com.maliang.core.arithmetic.AE;
 import com.maliang.core.arithmetic.ArithmeticExpression;
 import com.maliang.core.arithmetic.Substring;
+import com.maliang.core.exception.ReturnException;
 
 public class IfFunction {
 	private static final String DEFAULT_KEY = "DEFAULT";
@@ -39,11 +41,14 @@ public class IfFunction {
 		for(String key:logicCodes.keySet()){
 			Object val = ArithmeticExpression.execute(key, params);
 			if(val != null && val instanceof Boolean && (Boolean)val){
-				return ArithmeticExpression.execute(logicCodes.get(key), params);
+				
+				return AE.execute(logicCodes.get(key), params);
+				
 			}
 		}
 		
-		return ArithmeticExpression.execute(this.defaultBody, params);
+		return AE.execute(this.defaultBody, params);
+		
 	}
 	
 	public int getStartIndex(){

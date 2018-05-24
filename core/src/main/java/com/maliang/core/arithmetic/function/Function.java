@@ -4,9 +4,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Stack;
 
+import com.maliang.core.arithmetic.AE;
 import com.maliang.core.arithmetic.ArithmeticExpression;
 import com.maliang.core.arithmetic.Substring;
 import com.maliang.core.exception.Break;
+import com.maliang.core.exception.ReturnException;
+import com.maliang.core.exception.ThrowException;
 import com.maliang.core.service.BusinessService;
 import com.maliang.core.service.MapHelper;
 
@@ -25,6 +28,8 @@ public class Function {
 	private final int startIndex;
 	private int endIndex;
 	private IfFunction ifFunction;
+	private boolean isUserFunction;
+	private UserFunction userFunction;
 	
 	public Function(String k,String s,int startIndex){
 		this.key = k;
@@ -73,7 +78,7 @@ public class Function {
 			return null;
 		}
 		
-		return ArithmeticExpression.execute(this.expression, params);
+		return AE.execute(this.expression, params);
 	}
 	
 	public static void pushThis(Map<String,Object> params){
@@ -102,8 +107,19 @@ public class Function {
 	boolean isList(){
 		return key == null && this.body.startsWith("[") && this.body.endsWith("]");
 	}
-
+	
 	public Object execute(Map<String,Object> params){
+		try {
+			return this.doExecute(params);
+		}catch(ReturnException re) {
+			return re.excute(params);
+		}catch(ThrowException te) {
+			te.doThrow();
+			return null;
+		}
+	}
+
+	private Object doExecute(Map<String,Object> params){
 		this.executeKey(params);
 		
 		if(this.isMap()){
@@ -112,6 +128,10 @@ public class Function {
 		
 		if(this.isList()){
 			return ListFunction.execute(this, params);
+		}
+		
+		if("return".equalsIgnoreCase(key)){
+			throw new ThrowException(new ReturnException(this));
 		}
 		
 		if("isList".equalsIgnoreCase(key)){
@@ -377,6 +397,16 @@ public class Function {
 		if(this.isDBFun()){
 			return DBFunction.execute(this, params);
 		}
+		
+		if(this.isUserFunction) {
+			UserFunction.put(params, this.userFunction);
+			return null;
+		}
+		
+		try {
+			return doUserFunction(params);
+		}catch(Break be) {}
+		
 
 //		if(this.isHtmlFun()){
 //			return HtmlFunction.execute(this, params);
@@ -389,6 +419,16 @@ public class Function {
 		
 		return defaultValue(params);
 		//return ListFunction.execute(this, params);
+	}
+	
+	private Object doUserFunction(Map<String,Object> params) {
+		Object val = UserFunction.readFunction(params, key);
+		if(val == null) {
+			throw new Break();
+		}
+
+		UserFunction userFun = (UserFunction)val;
+		return userFun.execute(this, params);
 	}
 	
 	private Object defaultValue(Map<String,Object> params){
@@ -544,15 +584,15 @@ public class Function {
 			i = subs.getEndIndex();
 			subs = new Substring(this.source,')','{',i);
 			if(subs.isMatched()){
-				String space = subs.getInnerContent();
+				String space = subs.getInnerContent().trim();
 				
-				if(space.trim().isEmpty()){
-					subs = new Substring(this.source,'{','}',subs.getEndIndex());
-					if(subs.isMatched()){
-						this.body = subs.getInnerContent();
-					}
+				if(space.isEmpty()){
+					i = this.readBody(subs.getEndIndex());
+				}else if("::".equals(space)) {
+					i = this.readBody(subs.getEndIndex());
 					
-					i = subs.getEndIndex();
+					this.isUserFunction = true;
+					this.userFunction = new UserFunction(this.key,this.expression,this.body);
 				}
 			}
 		}else {
@@ -560,6 +600,15 @@ public class Function {
 		}
 		
 		this.endIndex = i;
+	}
+	
+	private int readBody(int startIndex) {
+		Substring subs = new Substring(this.source,'{','}',startIndex);
+		if(subs.isMatched()){
+			this.body = subs.getInnerContent();
+		}
+		
+		return subs.getEndIndex();
 	}
 	
 	public String toString(){

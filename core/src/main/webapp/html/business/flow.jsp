@@ -25,7 +25,7 @@
 		<script src="../js/tianma/component.js"></script>
 		<script src="../js/tianma/datatables.js"></script>
 		<script src="../js/tianma/form.js"></script>
-		<script src="../js/tianma/html.js?d"></script>
+		<script src="../js/tianma/html.js?dd"></script>
 		<script src="../js/tianma/util.js?sddddddd"></script>
 		<script src="../js/tianma/bind.js"></script>
 		<script src="../js/tianma/build.js"></script>

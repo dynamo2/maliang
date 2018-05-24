@@ -36,8 +36,10 @@ public class AssignFunction {
 	}
 	
 	private static Object set(Function fun,String key,Map<String,Object> params,boolean doSet){
+		
 		if(doSet && !Utils.isEmpty(key)){
 			Object newVal = fun.executeExpression(params);
+			
 			return set(key,newVal,params);
 		}
 		

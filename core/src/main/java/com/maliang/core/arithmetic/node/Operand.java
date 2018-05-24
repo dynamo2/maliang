@@ -3,7 +3,6 @@ package com.maliang.core.arithmetic.node;
 import java.util.Date;
 import java.util.Map;
 
-import com.maliang.core.arithmetic.Reader;
 import com.maliang.core.arithmetic.calculator.DateCalculator;
 
 public class Operand extends Node {
@@ -26,6 +25,10 @@ public class Operand extends Node {
 		
 		if(this.operand.equalsIgnoreCase("false")){
 			return false;
+		}
+		
+		if(this.isAnnotation()){
+			return null;
 		}
 		
 		if(this.isString()){
@@ -73,6 +76,10 @@ public class Operand extends Node {
 	
 	public boolean isTripleQuotes(){
 		return this.operand.startsWith("'''") && this.operand.endsWith("'''");
+	}
+	
+	public boolean isAnnotation(){
+		return this.operand.startsWith("/*") && this.operand.endsWith("*/");
 	}
 	
 	private String readTripleQuotes(){

@@ -3,9 +3,12 @@ package com.maliang.core.arithmetic.function;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.maliang.core.arithmetic.AE;
 import com.maliang.core.arithmetic.ArithmeticExpression;
+import com.maliang.core.arithmetic.Reader;
 import com.maliang.core.arithmetic.node.Parentheses;
 import com.maliang.core.service.MapHelper;
+import com.maliang.core.util.Utils;
 
 public class MapFunction {
 	public static Object execute(Function function ,Map<String,Object> params){
@@ -38,8 +41,57 @@ public class MapFunction {
 						*/
 		
 		//form = "{expiry_date:D'20150326 23:33:23'}";
-		Object formMap = ArithmeticExpression.execute(form, params);
-		System.out.println(formMap);
+		
+		
+//		Object formMap = ArithmeticExpression.execute(form, params);
+//		System.out.println(formMap);
+		
+		
+		
+		String s = "addToParams({pps:[{name:'33',total:null},ddd:fff,{name:'22',total:9},,{name:'11',total:9},{name:'88',total:0}],b:pps.findOne(name='22'),"
+				+ "isDisable(n,t,fname)::{[\r\n" + 
+				"        item.set(pps.findOne(n=name)),\r\n" + 
+				"        if(item.total.isNull() | item.total=0){\r\n" + 
+				"            s.set('disabled')\r\n" + 
+				"        }elseif(item.total<t){\r\n" + 
+				"            s.set('total < t')\r\n"+ 
+				"        }else {\r\n" + 
+				"            s.set('show')\r\n" + 
+				"        },\r\n" + 
+				"        return(s+'-'+t+'=='+fname)\r\n" + 
+				"    ]},i33:isDisable('33',3,'aaa'),i88:isDisable('88',8,'999'),i11:isDisable('11',88),i22:isDisable('22',2)})";
+		
+		
+		s = "addToParams({pps:[{name:'33',total:null},ddd(name,price)::{name+'--fff--'+price},{name:'22',total:9},,{name:'11',total:9},{name:'88',total:0}],b:pps.findOne(name='22'),"
+				+ "isDisable(n,t,fname)::{[\r\n" + 
+				"        item.set(pps.findOne(n=name)),\r\n" + 
+				"        if(item.total.isNull() | item.total=0){\r\n" + 
+				"            s.set('disabled')\r\n" + 
+				"        }elseif(item.total<t){\r\n" + 
+				"            s.set('total < t')\r\n"+ 
+				"        }else {\r\n" + 
+				"            s.set('show')\r\n" + 
+				"        },\r\n" + 
+				"        return(s+'-'+t+'=='+fname)\r\n" + 
+				"    ]},i33:isDisable('33',3,'aaa'),i88:isDisable('88',8,'999'),i11:isDisable('11',88),i22:isDisable('22',2),d111:ddd('ddd',99)})";
+		
+	
+		
+//		s = "{pps:[{name:'33',total:null},{name:'22',total:9},{name:'88',total:0}],b:pps.findOne(name='22'),"
+//				+ "isDisable(n)::{[\r\n" +  
+//				"        if(true){\r\n" + 
+//				"            s.set('disabled')\r\n" + 
+//				"        }else {\r\n" + 
+//				"            s.set('')\r\n" + 
+//				"        }\r\n,return(s)" + 
+//				"    ]},call:isDisable('33')}";
+		
+		Map<String,Object> ps = new HashMap<String,Object>();
+		Object obj = AE.execute(s,ps);
+		//System.out.println(ps);
+		System.out.println("-------------------------");
+		System.out.println("obj : "+obj);
+		
 		
 		//Substring sbs = new Substring("{name:'2009-3-9'}",'\'',0);
 		//System.out.println(sbs.getCompleteContent());
@@ -95,12 +147,39 @@ class MapCompiler {
 		for(; cursor < this.source.length();){
 			c = readChar();
 			
+			/**
+			 * 解析注释代码
+			 * **/
+			if(c == '/' && this.nextChar() == '*'){
+				Reader sbs = new Reader(source,"/*","*/",this.cursor-1,false);
+				this.cursor = sbs.getEndIndex()+"*/".length();
+				
+				continue;
+			}
+			
 			if(c == '}'){
 				return map;
 			}
+			
+			if(c == '('){
+				Reader r = new Reader(this.source,"(",")",this.cursor-1,true);
+				
+				this.sbf.append(r.getCompleteContent());
+				this.cursor = r.getEndIndex();
+				
+				continue;
+			}
+			
 			if(c == ':'){
 				key = read(sbf);
-				clearBuffer();
+				
+				if(this.nextChar() == ':') {
+					this.cursor = UserFunction.readUserFunction(params,this.source,key,this.cursor);
+					clearCache();
+				}else {
+					clearBuffer();
+				}
+				
 				continue;
 			}
 			
@@ -110,6 +189,7 @@ class MapCompiler {
 			}
 			
 			if(key != null){
+
 				Parentheses pt = Parentheses.compile(source, this.cursor-1, endChars);
 				Object value = null;
 				if(this.isExecute){
@@ -146,5 +226,12 @@ class MapCompiler {
 	}
 	private char readChar(){
 		return this.source.charAt(cursor++);
+	}
+	private char nextChar() {
+		try {
+			return this.source.charAt(cursor);
+		}catch(StringIndexOutOfBoundsException e) {
+			return '\0';
+		}
 	}
 }

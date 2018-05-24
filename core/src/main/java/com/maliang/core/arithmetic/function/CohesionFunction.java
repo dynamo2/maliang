@@ -14,6 +14,10 @@ import com.maliang.core.util.Utils;
 
 public class CohesionFunction {
 	public static void main(String[] args) {
+		
+	}
+	
+	public static void test() {
 		String s = "{orders:[{product:'神仙水',warehouse:'仓库1',brand:'sk2',num:100},"
 					+ "{product:'POLA极光焕采精华50克',warehouse:'仓库1',brand:'pola',num:100},"
 					+ "{product:'POLA新版黑BA面霜30克',warehouse:'仓库1',brand:'pola',num:100},"

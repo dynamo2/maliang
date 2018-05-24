@@ -48,6 +48,11 @@
         		return true;
         	}
         	
+        	if(key == 'data'){
+        		jObj.data(value);
+        		return true;
+        	}
+        	
         	try {
         		jObj.attr(key,value);
         	}catch(e){}

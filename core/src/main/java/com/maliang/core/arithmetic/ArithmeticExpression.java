@@ -27,7 +27,12 @@ public class ArithmeticExpression {
 		if(StringUtil.isEmpty(expre))return null;
 		
 		if(params == null) params = new HashMap<String,Object>();
-		Object value = MapHelper.readValue(params, expre);
+		expre = expre.trim();
+		Object value = null;
+		if(!expre.endsWith(")") && !expre.endsWith("]") && !expre.endsWith("}")) {
+			value = MapHelper.readValue(params, expre);
+		}
+
 		if(value == null){
 			Parentheses pt = Parentheses.compile(expre, 0);
 			value = pt.getValue(params);

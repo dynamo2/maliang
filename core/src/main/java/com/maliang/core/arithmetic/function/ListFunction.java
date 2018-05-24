@@ -62,6 +62,17 @@ public class ListFunction {
 				return false;
 			}
 			
+			if(value instanceof List) {
+				boolean has = false;
+				for(Object o : (List)value) {
+					has = ((String) keyVal).indexOf(o.toString()) >= 0;
+					if(!has) {
+						return false;
+					}
+				}
+				return true;
+			}
+			
 			int idx = ((String) keyVal).indexOf(value.toString());
 			return idx >= 0;
 		}
@@ -109,22 +120,14 @@ public class ListFunction {
 	}
 	
 	public static List<Object> toList(Function function ,Map<String,Object> params){
-		Object value = ArithmeticExpression.execute(function.getKey(), params);
+		Object value = AE.execute(function.getKey(), params);
 		if(value == null){
 			value = function.executeExpression(params);
 		}
 		
 		if(value == null)return null;
-		if(value instanceof List)return (List)value;
-		if(value instanceof Object[])return Arrays.asList((Object[])value);
 		
-		List<Object> l = new ArrayList<Object>();
-		l.add(value);
-		
-		Collection col = null;
-		Arrays a = null;
-		
-		return l;
+		return Utils.toList(value);
 	}
 	
 	public static String join(Function function ,Map<String,Object> params){
@@ -173,6 +176,7 @@ class ListCompiler {
 				return list;
 			}
 			
+			
 			if(c == ','){
 				continue;
 			}
@@ -188,5 +192,13 @@ class ListCompiler {
 	
 	private char readChar(){
 		return this.source.charAt(cursor++);
+	}
+	
+	private char nextChar() {
+		try {
+			return this.source.charAt(cursor);
+		}catch(StringIndexOutOfBoundsException e) {
+			return '\0';
+		}
 	}
 }
