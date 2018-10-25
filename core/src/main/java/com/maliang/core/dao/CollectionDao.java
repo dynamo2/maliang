@@ -83,6 +83,114 @@ public class CollectionDao extends BasicDao {
 		return this.build(this.buildDBQueryMap(map, null));
 	}
 	
+	/**
+	 * 初始化当前数据的ObjectId及其内嵌集合的ObjectId
+	 * **/
+	public void initObjectId(Map value, ObjectMetadata metadata){
+		doInitObjectId(value,false);
+		
+		for(ObjectField of:metadata.getFields()) {
+			Object fval = MapHelper.readValue(value,of.getName());
+			if(fval == null) {
+				continue;
+			}
+			
+			if(of.isInnerCollection()) {
+				if(fval instanceof Map) {
+					doInitObjectId((Map)fval,true);
+				}
+			}else if(of.isArray()) {
+				if(FieldType.INNER_COLLECTION.is(of.getElementType())) {
+					if(fval instanceof List) {
+						for(Object ov:(List)fval) {
+							if(ov instanceof Map) {
+								doInitObjectId((Map)ov,true);
+							}
+						}
+					}
+					
+					if(fval instanceof Map) {
+						doInitObjectId((Map)fval,true);
+					}
+				}
+			}
+		}
+	}
+	
+	private void doInitObjectId(Map value,boolean isInner) {
+		if(value == null) {
+			return;
+		}
+		
+		value.remove("id");
+		//value.remove("_id");
+		
+		value.put("_id",new ObjectId());
+		
+//		if(isInner) {
+//			value.put("id",new ObjectId());
+//		}else {
+//			value.put("_id",new ObjectId());
+//		}
+	}
+	
+	/**
+	 * 插入一条新数据
+	 * 不支持插入【空记录】
+	 * **/
+	public Map<String, Object> insert(Map value, String collName) {
+		if(value == null) {
+			return null;
+		}
+		
+		ObjectMetadata metadata = this.metaDao.getByName(collName);
+		if(metadata == null) {
+			return value;
+		}
+		
+		System.out.println("----- insert value : " + value);
+		
+		/**
+		 * 格式化数据
+		 * **/
+		this.formatData(value, metadata);
+		System.out.println("----- insert after formatData value : " + value);
+		
+		/**
+		 * 初始化数据及其内嵌记录的ObjectId
+		 * **/
+		this.initObjectId(value,metadata);
+		System.out.println("----- insert after initObjectId value : " + value);
+		
+		/**
+		 * 转换成DB模式的关联关系
+		 * **/
+		value = this.toDBCorrelation(value, metadata);
+		System.out.println("----- insert after toDBCorrelation value : " + value);
+		
+		BasicDBObject doc = this.toDBObject(value);
+		if (doc == null) {
+			return null;
+		}
+		
+		/**
+		 * 添加createdDate，modifiedDate
+		 * **/
+		doc.put("createdDate",new Date());
+		doc.put("modifiedDate",new Date());
+		
+		this.insertTrigger(value, collName);
+		this.getDBCollection(collName).save(doc);
+
+		value.put("id", doc.getObjectId("_id").toByteArray());
+		
+		/***
+		 * Log
+		 * **/
+		this.logDao.insertLog(doc,collName);
+
+		return toMap(doc, collName);
+	}
 	
 
 	public Map<String, Object> save(Map value, String collName) {
@@ -129,9 +237,24 @@ public class CollectionDao extends BasicDao {
 	}
 	
 	public int remove(String oid, String collName) {
+		ObjectMetadata meta = this.metaDao.getByName(collName);
+		if(this.treeDao.isTreeModel(meta)) {
+			this.treeDao.deleteTreeField(oid, collName, this);
+		}
+
 		WriteResult result = this.getDBCollection(collName).remove(
 				this.getObjectId(oid));
 		return result.getN();
+	}
+	
+	public void deleteIncludeChildren(String oid,String collName){
+		Map<String, Object> nodeDoc = this.getByID(oid, collName);
+		//System.out.println("------------- coll dao deleteIncludeChildren nodeDoc : " + nodeDoc );
+		
+		ObjectMetadata meta = this.metaDao.getByName(collName);
+		if(this.treeDao.isTreeModel(meta)) {
+			this.treeDao.deleteIncludeChildren(oid, collName, this);
+		}
 	}
 
 	public void removeAll(String collName) {
@@ -154,6 +277,23 @@ public class CollectionDao extends BasicDao {
 		}
 
 		return this.emptyResult();
+	}
+	
+	public void resetPath(String oid, String collName,boolean resetChildren) {
+		if(isTreeModel(collName)) {
+			this.treeDao.resetPath(oid,collName,resetChildren);
+		}
+	}
+	
+	public void resetPath(String collName) {
+		if(isTreeModel(collName)) {
+			this.treeDao.resetPath(collName);
+		}
+	}
+	
+	private boolean isTreeModel(String collName) {
+		ObjectMetadata meta = this.metaDao.getByName(collName);
+		return treeDao.isTreeModel(meta);
 	}
 	
 	public static void main(String[] args) {
@@ -386,50 +526,7 @@ public class CollectionDao extends BasicDao {
 		return this.readCursor(cursor, collName);
 	}
 
-	/**
-	 * update by $set
-	 * **/
-	public int update(Map qMap, Map sMap, String collName) {
-		return update(qMap,sMap,collName,"$set");
-	}
 	
-	/**
-	 * update by $set
-	 * **/
-	public int update(Map qMap, Map updateMap, String collName,String updateCmd) {
-		if(Utils.isEmpty(updateMap)){
-			return 0;
-		}
-		
-		BasicDBObject query = null;
-		if(qMap == null){
-			query = new BasicDBObject();
-		}else {
-			if(qMap instanceof BasicDBObject){
-				query = (BasicDBObject)qMap;
-			}else {
-				query = this.build(this.buildDBQueryMap(qMap, null));
-			}
-		}
-		
-		BasicDBObject updateVal = null;
-		if(updateMap instanceof BasicDBObject){
-			updateVal = (BasicDBObject)updateMap;
-		}else {
-			updateVal = this.build(this.buildDBQueryMap(updateMap, null));
-		}
-		
-		BasicDBObject updateObj = new BasicDBObject(updateCmd, updateVal);
-//		BasicDBObject modifiedDate = new BasicDBObject("modifiedDate",new Date());
-//		updateObj.put("$set", modifiedDate);
-		
-		DBCollection db = this.getDBCollection(collName);
-		WriteResult result  = db.updateMulti(query,updateObj);
-		
-		System.out.println("update UpsertedId : " + result.getUpsertedId());
-		
-		return result.getN();
-	}
 	
 	public int deleteArrayDocument(String collName,String arrayFieldName,String docId){
 		Map query = this.buildInnerGetMap(arrayFieldName, docId);
@@ -517,8 +614,14 @@ public class CollectionDao extends BasicDao {
 //		System.out.println("moveChildTree id query list : " + this.find(query, collName));
 //	}
 
-	public Map<String, Object> updateBySet(Map value, String collName) {
-		value = this.toDBModel(value, collName);
+	public Map<String, Object> updateBySet(Map value, String collName,boolean updateAllArray) {
+		ObjectMetadata metadata = this.metaDao.getByName(collName);
+		if(metadata == null) {
+			return value;
+		}
+		
+		this.formatData(value, metadata);
+		value = this.toDBCorrelation(value, metadata);
 		
 		/**
 		 * 触发器
@@ -531,9 +634,11 @@ public class CollectionDao extends BasicDao {
 		ObjectMetadata meta = this.metaDao.getByName(collName);
 		List<Map<String, BasicDBObject>> updates = new ArrayList<Map<String, BasicDBObject>>();
 		Map<String, Object> daoMap = buildUpdates(meta.getFields(), value,
-				null, updates, query,false);
+				null, updates, query,updateAllArray);
 		
 		updates.add(buildSetUpdateMap(query, daoMap));
+		
+		System.out.println("--------- updates : " + updates);
 		
 		/***
 		 * update log
@@ -715,6 +820,15 @@ public class CollectionDao extends BasicDao {
 		return query;
 	}
 	
+	protected List<Map<String,Object>> readCursor(DBCursor cursor,String collName){
+		List<Map<String,Object>> results = new ArrayList<Map<String,Object>>();
+		for(DBObject dob : cursor.toArray()){
+			results.add(toMap(dob,collName));
+		}
+		
+		return results;
+	}
+	
 	/**
 	 * 婢跺嫮鎮奙ap缁鐎烽弻銉嚄閺夆�叉娑擃厾娈戦弫鐗堝祦缁鐎�
 	 * **/
@@ -881,7 +995,7 @@ public class CollectionDao extends BasicDao {
 		for(String key : keys){
 			for(ObjectField of:lastFields){
 				if(of.getName().equals(key)){
-					if(FieldType.LINK_COLLECTION.is(of.getType())){
+					if(of.isLinkCollection()){
 						return true;
 					}
 					lastFields = of.getFields();
@@ -894,7 +1008,7 @@ public class CollectionDao extends BasicDao {
 	}
 
 	public void insertTrigger(Map<String,Object> insertValue, String collName) {
-		Map<String,Object> dbDataMap = this.correctData(insertValue, collName, false, true);
+		Map<String,Object> dbDataMap = this.formatData(insertValue, collName, false, true);
 		trigger(insertValue,dbDataMap,collName,Trigger.INSERT);
 	}
 	
@@ -1036,7 +1150,7 @@ public class CollectionDao extends BasicDao {
 			if(Utils.isEmpty(vals))continue;
 			
 			for(Map<String,Object> val:vals.values()){
-				this.updateBySet(val,k);
+				this.updateBySet(val,k,false);
 			}
 		}
 	}
@@ -1164,7 +1278,7 @@ public class CollectionDao extends BasicDao {
 				
 				if(FieldType.LINK_COLLECTION.is(of.getType())){
 					if(val != null && !(val instanceof Map)){
-						val = this.getLinkedObject(val.toString(), of.getLinkedObject());
+						val = this.delayLinkedObject(val.toString(), of.getLinkedObject());
 					}
 					
 					Map<String,Object> returnMap = newMap();

@@ -617,6 +617,10 @@
 				_.editor = ace.edit("editor");
 				_.editor.setTheme("ace/theme/twilight");
 				_.editor.session.setMode("ace/mode/javascript");
+				_.editor.setFontSize(16);
+
+				_.editor.setOption("wrap", "free");
+				_.editor.setOption("line-weight", "30px");
 				
 				_.editor.on("change",_.changeText);
 			},
@@ -657,6 +661,10 @@
 					_.editor = ace.edit("blockEditor");
 					_.editor.setTheme("ace/theme/twilight");
 					_.editor.session.setMode("ace/mode/javascript");
+					_.editor.setFontSize(16);
+					
+					//自动换行,设置为off关闭
+					_.editor.setOption("wrap", "free");
 					
 					_.editor.on("change",_.changeText);
 				},

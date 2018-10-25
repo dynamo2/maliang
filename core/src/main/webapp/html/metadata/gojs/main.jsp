@@ -29,9 +29,9 @@
 		<script src="../js/tianma/build.js"></script>
 		<!-- tianma business end -->
 		
-		<script src="../../html/metadata/gojs/js/tree.js?d"></script>
+		<script src="../../html/metadata/gojs/js/tree.js?ddd"></script>
 		<script src="../../html/metadata/gojs/js/metadata.js?d"></script>
-		<script src="../../html/metadata/gojs/js/main.js?ddddd"></script>
+		<script src="../../html/metadata/gojs/js/main.js?ddddddd"></script>
 		
 		<script src="../../html/business/tianma.js"></script>
 		<link href="../../html/business/style.css" rel="stylesheet" type="text/css"/> 
@@ -47,6 +47,7 @@
 			<div id="objectPanel">
 				<ul id="objectList" />
 			</div>
+			<p id="dbTable"></p>
 			<p><textarea id="print" style="width:800px;height:500px;"></textarea></p>
 		</div>
 		<div class="ui-layout-west">
@@ -388,6 +389,136 @@
 		function print(str){
 			$('#print').text(str);
 		}
+
+		
+		/************** DB Table start **************************/
+		
+		function readDBdatas(oid){
+			alert("readDBdatas : " + oid);
+			$.ajax({
+			    cache:true,
+			    type:"POST",
+			    dataType : 'json',
+			    url:'/metadata/dbDatas.htm',
+			    data:{oid:oid},
+			    async:false,
+			    success:function(result,status){
+			    	var data = JSON.parse(result.result);
+			    	html(data);
+			    	
+			    	console.log(JSON.stringify(result));
+			    }
+			});
+		}
+		
+		function tableList(list,cls){
+			
+			function readHead(){
+				var heads = [];
+				$.each(list,function(){
+					if($.isPlainObject(this)){
+						for(var k in this){
+							var isRepeat = false;
+							
+							$.each(heads,function(){
+								if(k == this){
+									isRepeat = true;
+									return;
+								}
+							});
+							
+							if(!isRepeat){
+								heads.push(k);
+							}
+						}
+					}
+				});
+				return heads;
+			}
+			
+			function createTHead(heads,thead){
+				if(heads.length > 0){
+					var tr = $("<tr />").appendTo(thead);
+					$.each(heads,function(){
+						var th = $("<th />").text(this).addClass(this).appendTo(tr);
+					});
+				}
+			}
+			
+			var table = $("<table class='table' />").addClass(cls);
+			
+			var thead = $("<thead />").appendTo(table);
+			var tbody = $("<tbody />").appendTo(table);
+			
+			var heads = readHead();
+			createTHead(heads,thead);
+			
+			$.each(list,function(){
+				var tr = $("<tr />").appendTo(tbody);
+				
+				var d = this;
+				if(heads.length > 0){
+					$.each(heads,function(){
+						valColumn(d[this],$('<td />').appendTo(tr));
+					});
+				}else {
+					valColumn(d,$('<td />').appendTo(tr));
+				}
+				
+			});
+			
+			return table;
+		}
+		
+		function html(data){
+			$("#dbTable").empty();
+			
+			var table = createElement(data,'table-bordered');
+			table.appendTo($("#dbTable"));
+		}
+		
+		function createElement(obj,tableCls){
+			if($.isArray(obj)){
+				return tableList(obj,tableCls);
+			}
+			
+			if($.isPlainObject(obj)){
+				return rows(obj);
+			}
+			return $("<p />").text(obj);
+		}
+		
+		
+		function rows(obj){
+			var rows = [];
+			for(var k in obj){
+				var row = $('<div class="row">');
+				
+				if(k.charAt(0) == '$'){
+					$('<div class="col-md-12"></div>').text(obj[k]).appendTo(row);
+				}else {
+					$('<div class="col-md-2"></div>').text(k).appendTo(row);
+					valColumn(obj[k],$('<div class="col-md-10" />').appendTo(row));
+				}
+				
+				rows.push(row);
+			}
+			return rows;
+		}
+		
+		function valColumn(val,col){
+			if(val == null || val == undefined){
+				val = "";
+			}
+			
+			var tt = createElement(val,'');
+			if(tt == null){
+				col.text(val);
+			}else {
+				col.append(tt);
+			}
+		}
+		/************** DB Table end **************************/
 		
 		</script>
 		

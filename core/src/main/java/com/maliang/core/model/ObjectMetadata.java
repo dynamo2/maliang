@@ -4,6 +4,8 @@ import java.util.List;
 
 public class ObjectMetadata extends MongodbModel {
 	public final static String TREE_MODEL_PARENT_KEY = "_parent";
+	public final static String TREE_MODEL_PARENT_ALIAS = "parent";
+	 
 	public final static String TREE_MODEL_PATH_KEY = "_path";
 	
 	private String name;
@@ -13,7 +15,7 @@ public class ObjectMetadata extends MongodbModel {
 	@Linked
 	private Project project;
 	
-	//Ä£ÐÍÀàÐÍ
+	//Ä£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	private Integer modelType;
 	
 	@Mapped(type=ObjectField.class)

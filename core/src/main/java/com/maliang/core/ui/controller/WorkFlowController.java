@@ -33,6 +33,12 @@ public class WorkFlowController extends BasicController {
 	BusinessService businessService = new BusinessService();
 	static Map<String, Map<String, String>> CLASS_LABELS = new HashMap<String, Map<String, String>>();
 	
+	@RequestMapping(value = "table.htm")
+	public String table(Model model, HttpServletRequest request) {
+		return "table";
+		
+	}
+	
 	@RequestMapping(value = "flow.htm")
 	public String flow(Model model, HttpServletRequest request) {
 		Workflow workFlow = null;
@@ -69,7 +75,7 @@ public class WorkFlowController extends BasicController {
 	}
 	
 	/***
-	 * ÉèÖÃ¾²Ì¬Êý¾Ý£ºCSS,JS,files£¨*.css,*.js£©
+	 * ï¿½ï¿½ï¿½Ã¾ï¿½Ì¬ï¿½ï¿½ï¿½Ý£ï¿½CSS,JS,filesï¿½ï¿½*.css,*.jsï¿½ï¿½
 	 * **/
 	private void setStaticData(Workflow flow,Model model){
 		String css = flow.getCss();
@@ -135,7 +141,7 @@ public class WorkFlowController extends BasicController {
 
 	private String executeResponse(Workflow flow, Map<String, Object> params) {
 		if(flow == null){
-			throw new TianmaException("Ò³Ãæ³ö´í£¡");
+			throw new TianmaException("Ò³ï¿½ï¿½ï¿½ï¿½ï¿½");
 		}
 		
 		Business business = (Business)Utils.getSessionValue(SessionUtil.BUSINESS);

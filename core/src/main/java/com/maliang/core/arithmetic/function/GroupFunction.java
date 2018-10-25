@@ -28,7 +28,7 @@ public class GroupFunction {
 		System.out.println("s : " + s);
 		Map params = (Map)AE.execute(s);
 		
-		Object[] exp = MapHelper.expand(Utils.toArray(params.get("orders")),"items.disributeItems".split("\\."));
+		List<Object> exp = MapHelper.expand(Utils.toList(params.get("orders")),"items.disributeItems".split("\\."));
 		for(Object obj:exp){
 			System.out.println("== " + obj);
 		}
@@ -237,18 +237,18 @@ public class GroupFunction {
 		return results;
 	}
 	
-	private static Object[] rootDatas(Function fun,Map<String,Object> params){
+	private static List<Object> rootDatas(Function fun,Map<String,Object> params){
 		String[] names = fun.getKeySource().split("\\.");
 		String rootName = names[0];
 		Object rootObj = MapHelper.readValue(params,rootName);
 		
-		rootObj = Utils.toArray(rootObj);
+		rootObj = Utils.toList(rootObj);
 
 		if(names.length > 2){
-			rootObj = MapHelper.expand((Object[])rootObj,Arrays.copyOfRange(names, 1, names.length-1));
+			rootObj = MapHelper.expand((List<Object>)rootObj,Arrays.copyOfRange(names, 1, names.length-1));
 		}
 		
-		return Utils.toArray(rootObj);
+		return (List<Object>)rootObj;
 	}
 	
 	static class GroupCompiler {

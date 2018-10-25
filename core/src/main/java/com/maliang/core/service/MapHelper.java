@@ -140,33 +140,39 @@ public class MapHelper {
 			return null;
 		}
 		
+		obj = doCall(obj);
 		if(keys.length == 0)return obj;
 		
 		Object value = obj;
 		for(String k:keys){
 			if(Utils.isArray(value)){
 				List tempVal = new ArrayList();
-
-				value = expand(Utils.toArray(value),new String[]{k});
-				for(Object item : (Object[])value){
-					Object val = doCall(readBeanValue(item,k));
+				
+				value = expand(Utils.toList(value),new String[]{k});
+				for(Object item : (List<Object>)value){
+					Object val = readBeanValue(item,k);
 					
-					// 待定
+					/**
+					 * 如果待返回的结果为List，默认剔除null元素
+					 * 
+					 * 该设计待定，可视具体需求而调整
+					 * ***/
 					if(val != null){
 						tempVal.add(val);
 					}
 				}
-				
-				value = null;
+
 				if(tempVal.size() > 0){
 					value = tempVal;
+				}else {
+					value = null;//new ArrayList();
 				}
 			}else {
-				value = doCall(readBeanValue(value,k));
+				value = readBeanValue(value,k);
 			}
 		}
 		
-		return doCall(value);
+		return value;
 	}
 
 	private static Object doCall(Object call){
@@ -183,39 +189,39 @@ public class MapHelper {
 		return call;
 	}
 	
-	public static Object[] expand(Object[] expandList,String[] names){
+	public static List<Object> expand(List<Object> expandList,String[] names){
 		if(Utils.isEmpty(expandList))return expandList;
 		if(Utils.isEmpty(names))return expandList;
 		
-		int end = 0;
 		List<Object> newDatas = new ArrayList<Object>();
 		for(Object obj:expandList){
 			obj = doCall(obj);
 			
 			boolean isExpand = false;
 			List<String> expands = new ArrayList<String>();
-			end = 0;
-			Object parent = obj;
-			for(String n: names){
-				expands.add(n);
-				Object val = MapHelper.readValue(parent,n);
-				MapHelper.setValue(parent,n,val);
-
-				if(val instanceof List){
+			Object parent = Utils.clone(obj);
+			for(int i = 0; i < names.length; i++){
+				String fieldName = names[i];
+				
+				expands.add(fieldName);
+				Object val = MapHelper.readValue(parent,fieldName);
+				if(val != null && val instanceof List){
+					
 					for(Object listObj : (List)val){
-						Object nd = Utils.clone(obj);
+						listObj = doCall(listObj);
 						
-						nd = doCall(nd);
-						
-						MapHelper.setValue(nd,expands,listObj);
-						newDatas.add(nd);
+						Object newV = Utils.clone(obj);
+						MapHelper.setValue(newV,expands,listObj);
+						newDatas.add(newV);
 					}
-
+					
+					if(i < names.length) {
+						newDatas = expand(newDatas,names);
+					}
+					
 					isExpand = true;
 					break;
 				}
-				
-				end++;
 				parent = val;
 			}
 
@@ -224,22 +230,69 @@ public class MapHelper {
 			}
 		}
 		
-		Object[] results = newDatas.toArray();
-		if(end < names.length){
-			results = expand(results,names);
-		}
-		
-		return results;
+		return newDatas;
 	}
 	
+	/***
+	 * expand()的冗余代码
+	 * 以后删除
+	 * ****/
+	public static Object[] expandArray(Object[] expandList,String[] names){
+		if(Utils.isEmpty(expandList))return expandList;
+		if(Utils.isEmpty(names))return expandList;
+		
+		List<Object> newDatas = new ArrayList<Object>();
+		for(Object obj:expandList){
+			obj = doCall(obj);
+			
+			boolean isExpand = false;
+			List<String> expands = new ArrayList<String>();
+			Object parent = Utils.clone(obj);
+			for(int i = 0; i < names.length; i++){
+				String fieldName = names[i];
+				
+				expands.add(fieldName);
+				Object val = MapHelper.readValue(parent,fieldName);
+				if(val != null && val instanceof List){
+					
+					for(Object listObj : (List)val){
+						listObj = doCall(listObj);
+						
+						Object newV = Utils.clone(obj);
+						MapHelper.setValue(newV,expands,listObj);
+						newDatas.add(newV);
+					}
+					
+					if(i < names.length) {
+						newDatas = Utils.toList(expandArray(Utils.toArray(newDatas),names));
+					}
+					
+					isExpand = true;
+					break;
+				}
+				parent = val;
+			}
+
+			if(!isExpand){
+				newDatas.add(obj);
+			}
+		}
+		
+		return newDatas.toArray();
+	}
+
 	@SuppressWarnings("rawtypes")
 	private static Object readBeanValue(Object obj,String fname){
 		if(obj == null)return null;
 		
+		Object val = null;
 		if(obj instanceof Map){
-			return ((Map)obj).get(fname);
+			val = ((Map)obj).get(fname);
+		}else {
+			val = BeanUtil.readValue(obj, fname);
 		}
-		return BeanUtil.readValue(obj, fname);
+		
+		return doCall(val);
 	}
 	
 	public static void setValue(Object obj,String name,Object keyValue){
@@ -255,10 +308,10 @@ public class MapHelper {
 	}
 	
 	public static void setValue(Object obj,String[] keys,Object keyValue){
+		keyValue = doCall(keyValue);
 		if(obj == null  || keys == null){
 			return;
 		}
-		
 		if(keys.length == 0)return;
 		
 		Object value = readValue(obj,Arrays.copyOf(keys,keys.length-1));
@@ -456,5 +509,58 @@ public class MapHelper {
 		private char readChar(){
 			return this.source.charAt(cursor++);
 		}
+	}
+	
+	
+	public static Object[] expand222222(Object[] expandList,String[] names){
+		if(Utils.isEmpty(expandList))return expandList;
+		if(Utils.isEmpty(names))return expandList;
+		
+		int end = 0;
+		List<Object> newDatas = new ArrayList<Object>();
+		for(Object obj:expandList){
+			obj = doCall(obj);
+			
+			boolean isExpand = false;
+			List<String> expands = new ArrayList<String>();
+			end = 0;
+
+			Object parent = Utils.clone(obj);
+			for(String fieldName: names){
+				
+				System.out.println("----- field name : " + fieldName);
+				expands.add(fieldName);
+				Object val = MapHelper.readValue(parent,fieldName);
+
+				if(val instanceof List){
+					System.out.println("------ val : " + val);
+					for(Object listObj : (List)val){
+						listObj = doCall(listObj);
+						
+						Object newV = Utils.clone(obj);
+						
+						MapHelper.setValue(newV,expands,listObj);
+						newDatas.add(newV);
+					}
+
+					isExpand = true;
+					break;
+				}
+				
+				end++;
+				parent = val;
+			}
+
+			if(!isExpand){
+				newDatas.add(obj);
+			}
+		}
+		
+		Object[] results = newDatas.toArray();
+		if(end < names.length){
+			results = expand222222(results,names);
+		}
+		
+		return results;
 	}
 }

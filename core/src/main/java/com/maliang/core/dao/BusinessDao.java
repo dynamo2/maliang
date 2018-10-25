@@ -87,7 +87,7 @@ public class BusinessDao extends ModelDao<Business> {
 	
 	/**
 	 * recursion:
-	 * 		true:Ìí¼Ó¸¸ÏîÄ¿Ìõ¼þ
+	 * 		true:ï¿½ï¿½Ó¸ï¿½ï¿½ï¿½Ä¿ï¿½ï¿½ï¿½ï¿½
 	 * **/
 	private BasicDBObject sysProjectQuery(boolean recursion){
 		Object bus = Utils.getSessionValue("SYS_BUSINESS");
@@ -157,8 +157,10 @@ public class BusinessDao extends ModelDao<Business> {
 	}
 	
 	public Map<String,Object> updateBySet(Map<String,Object> values){
-		values = this.collectionDao.correctData(values,COLLECTION_NAME,false,false);
-		return this.collectionDao.updateBySet(values, COLLECTION_NAME);
+		//values = this.collectionDao.formatData(values,COLLECTION_NAME,false,false);
+		values = this.collectionDao.formatData(values,COLLECTION_NAME);
+		
+		return this.collectionDao.updateBySet(values, COLLECTION_NAME,false);
 	}
 	
 	public Map<String,Object> save(Map<String,Object> values){

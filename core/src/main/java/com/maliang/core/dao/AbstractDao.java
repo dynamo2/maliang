@@ -5,6 +5,7 @@ import java.beans.IntrospectionException;
 import java.beans.Introspector;
 import java.beans.PropertyDescriptor;
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -79,8 +80,8 @@ public class AbstractDao  {
 		}
 		
 		Project testProject = new Project();
-		testProject.setKey("JIRA");
-		testProject.setId(new ObjectId("583d197675f52cd7f03a78dc"));
+		testProject.setKey("EB");
+		testProject.setId(new ObjectId("5adf31a89f7b032e782aa27c"));
 		return testProject;
 	}
 	
@@ -134,6 +135,12 @@ public class AbstractDao  {
 			PropertyDescriptor[] pds = beanInfo.getPropertyDescriptors();
 			
 			for(PropertyDescriptor pd : pds){
+				Method readMethod = pd.getReadMethod();
+				if(readMethod != null && readMethod.getName().startsWith("is")) {
+					//System.out.println("pd.getReadMethod().getName() : " + pd.getReadMethod().getName());
+					continue;
+				}
+				
 				//new code
 				String fname = pd.getName();
 				String dbName = fname;
@@ -195,7 +202,7 @@ public class AbstractDao  {
 				if(pd.getName().equalsIgnoreCase("id")){
 					value = dbObj.getObjectId("_id");
 				}
-				
+
 				pd.getWriteMethod().invoke(result,value);
 			}
 			

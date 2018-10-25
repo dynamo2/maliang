@@ -5,6 +5,7 @@ import java.util.Map;
 
 import com.maliang.core.arithmetic.ArithmeticExpression;
 import com.maliang.core.exception.TianmaException;
+import com.maliang.core.util.Utils;
 
 public class Check {
 	@SuppressWarnings("unchecked")
@@ -21,6 +22,11 @@ public class Check {
 		}
 		
 		throw new TianmaException(errMsg);
+	}
+	
+	public static Boolean isEmpty(Function function,Map<String,Object> params){
+		Object val = getValue(function,params);
+		return Utils.isEmpty(val);
 	}
 	
 	public static Boolean isNull(Function function,Map<String,Object> params){

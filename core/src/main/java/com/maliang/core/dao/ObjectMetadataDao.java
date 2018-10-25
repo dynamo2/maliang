@@ -41,13 +41,19 @@ public class ObjectMetadataDao  extends ModelDao<ObjectMetadata> {
 	}
 	
 	public ObjectMetadata getByName(String name){
+		Project project = null;
+		if(!this.isSystemCollection(name)){
+			project = getSessionProject();
+		}
+		
+		return this.getByName(name, project);
+	}
+	
+	public ObjectMetadata getByName(String name,Project project){
 		Map query = new HashMap();
 		query.put("name", name);
 		
-		if(!this.isSystemCollection(name)){
-			Project project = getSessionProject();
-			
-			//用于测试，暂时注释。调试完后解除注释
+		if(project != null){
 			query.put("project", project.getId().toString());
 		}
 		return this.findOne(new BasicDBObject(query));

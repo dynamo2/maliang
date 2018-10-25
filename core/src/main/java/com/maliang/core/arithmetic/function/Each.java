@@ -95,10 +95,8 @@ public class Each {
 		if(value == null){
 			return resultList;
 		}
-		
-		if(value instanceof Collection){
-			value = ((Collection)value).toArray();
-		}
+
+		value = Utils.toArray(value);
 		if(!(value instanceof Object[])){
 			throw new RuntimeException("Error parameter to each() function");
 		}

@@ -11,7 +11,9 @@
         http://www.springframework.org/schema/mvc
         http://www.springframework.org/schema/mvc/spring-mvc.xsd">
 
-	<context:component-scan base-package="com.maliang.core.ui.controller" />
+	<context:component-scan base-package="com.maliang.core.ui.controller"></context:component-scan>
+	<context:component-scan base-package="com.model.controller.web"></context:component-scan>
+	<context:component-scan base-package="com.model.controller.admin"></context:component-scan>
 	
 	<mvc:annotation-driven>
         <mvc:message-converters>
@@ -29,5 +31,16 @@
 	<bean class="org.springframework.web.servlet.view.InternalResourceViewResolver">  
        <property name="prefix" value="/html/"/>  
        <property name="suffix" value=".jsp"></property>  
-    </bean>  
+    </bean>
+    
+    
+	<bean id="multipartResolver"
+		class="org.springframework.web.multipart.commons.CommonsMultipartResolver">
+		<!-- 默认编码 -->
+		<property name="defaultEncoding" value="utf-8" />
+		<!-- 文件大小最大值 -->
+		<property name="maxUploadSize" value="10485760" />
+		<!-- 内存中的最大值 -->
+		<property name="maxInMemorySize" value="40960" />
+    </bean>
 </beans>

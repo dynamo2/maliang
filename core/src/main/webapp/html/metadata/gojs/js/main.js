@@ -326,6 +326,8 @@ function objectMetadataModel(){
 		}else {
 			_.showTab(omId);
 		}
+		
+		readDBdatas(omId);
 	};
 	
 	this.showTab = function(omId){

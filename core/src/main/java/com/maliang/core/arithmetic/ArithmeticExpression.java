@@ -29,9 +29,9 @@ public class ArithmeticExpression {
 		if(params == null) params = new HashMap<String,Object>();
 		expre = expre.trim();
 		Object value = null;
-		if(!expre.endsWith(")") && !expre.endsWith("]") && !expre.endsWith("}")) {
-			value = MapHelper.readValue(params, expre);
-		}
+//		if(!expre.endsWith(")") && !expre.endsWith("]") && !expre.endsWith("}")) {
+//			value = MapHelper.readValue(params, expre);
+//		}
 
 		if(value == null){
 			Parentheses pt = Parentheses.compile(expre, 0);

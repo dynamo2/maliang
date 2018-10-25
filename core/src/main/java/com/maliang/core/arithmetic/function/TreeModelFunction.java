@@ -5,6 +5,7 @@ import java.util.Map;
 import com.maliang.core.dao.CollectionDao;
 import com.maliang.core.model.ObjectMetadata;
 import com.maliang.core.service.MapHelper;
+import com.maliang.core.util.Utils;
 import com.mongodb.BasicDBObject;
 
 class TreeModelFunction {
@@ -56,6 +57,9 @@ class TreeModelFunction {
 		
 		Object id = MapHelper.readValue(value,"id");
 		String collName = (String)MapHelper.readValue(value,"_meta.type");
+		if(Utils.isEmpty(id) || Utils.isEmpty(collName)) {
+			return null;
+		}
 		
 		CollectionDao dao = new CollectionDao();
 		BasicDBObject query = new BasicDBObject();

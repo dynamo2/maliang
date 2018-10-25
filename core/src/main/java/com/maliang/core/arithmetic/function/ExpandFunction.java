@@ -32,17 +32,12 @@ public class ExpandFunction {
 		Object val = function.getKeyValue();
 		Object names = function.executeExpression(params);
 		
-		val = Utils.toArray(val);
+		val = Utils.toList(val);
 		if(names instanceof String && !StringUtil.isEmpty((String)names)){
-			val = MapHelper.expand((Object[])val, ((String)names).split("\\."));
+			val = MapHelper.expand((List<Object>)val, ((String)names).split("\\."));
 		}
 		
-		List<Object> results = new ArrayList<Object>();
-		for(Object o : (Object[])val){
-			results.add(o);
-		}
-
-		return results;
+		return val;
 	}
 	
 	static boolean match(String str,Map params){

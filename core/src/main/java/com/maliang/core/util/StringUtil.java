@@ -17,4 +17,12 @@ public class StringUtil {
 		
 		return null;
 	}
+	
+	public static String toString(Object obj) {
+		if(obj == null) {
+			return null;
+		}
+		
+		return obj.toString();
+	}
 }

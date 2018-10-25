@@ -300,6 +300,10 @@ public class Function {
 			return Check.isNull(this, params);
 		}
 		
+		if("isEmpty".equals(key)){
+			return Check.isEmpty(this, params);
+		}
+		
 		if("not".equals(key)){
 			return Check.not(this, params);
 		}

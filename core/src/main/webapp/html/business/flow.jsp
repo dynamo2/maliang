@@ -33,9 +33,26 @@
 		<script src="../html/business/tianma.js?d"></script>
 		
 		<script src="../js/tianma/processor.js?ddDDDdd"></script>
-		<script src="../js/tianma/bootstrapG.js?dsd"></script>
 		<script src="../js/tianma/metronic.js"></script>
-	
+		
+		<script src="../js/tianma/bootstrapG.js?dsdddddddd"></script>
+		<script src="../js/tianma/funs/form.js?ddddd"></script>
+		<script src="../js/tianma/funs/validate.js?dd"></script>
+		
+		<!-- jquery validate -->
+		<script src="https://cdn.jsdelivr.net/jquery.validation/1.16.0/jquery.validate.min.js"></script>
+		<script src="https://cdn.jsdelivr.net/jquery.validation/1.16.0/additional-methods.min.js"></script>
+		
+		
+		
+		<link rel="stylesheet" type="text/css" href="/static/metronic/theme/assets/global/plugins/bootstrap-summernote/summernote.css">
+		<script src="/static/metronic/theme/assets/global/plugins/bootstrap-summernote/summernote.min.js" type="text/javascript"></script>
+		
+		<script src="/static/js/tree.jquery.js" type="text/javascript"></script>
+		
+		
+		
+		
 
 		<!-- 
 		<script src="http://localhost:8080/static/metronic/theme/assets/global/plugins/bootstrap/js/bootstrap.min.js" type="text/javascript"></script>
@@ -57,7 +74,7 @@
 		<div id="dialog"><div id="dialogPanel" /></div>
 		
 		<script>
-		${js}
+		
 		
 		var ARRAY = [];
 		var EMPTY = ARRAY[-1];
@@ -312,6 +329,10 @@
 			return ele;
 		}
 		
+		</script>
+		
+		<script type="text/javascript">
+		${js}
 		</script>
 	</body>
 </html>

@@ -11,7 +11,12 @@ import org.apache.commons.lang.ArrayUtils;
 import org.bson.types.ObjectId;
 
 import com.maliang.core.arithmetic.function.MathFunction;
+import com.maliang.core.model.FieldType;
+import com.maliang.core.model.ObjectField;
+import com.maliang.core.model.ObjectMetadata;
+import com.maliang.core.model.Project;
 import com.maliang.core.service.MapHelper;
+import com.maliang.core.util.StringUtil;
 import com.maliang.core.util.Utils;
 import com.mongodb.AggregationOutput;
 import com.mongodb.BasicDBObject;
@@ -32,6 +37,9 @@ public class PrimitiveDao {
 	//protected static String DB_FILE = "jira";
 	//protected static String DB_FILE = "tianma";
 	//private DBCollection collection = null;
+	
+	protected ProjectDao projectDao = new ProjectDao();
+	protected ObjectMetadataDao metadataDao = new ObjectMetadataDao();
 
 	@SuppressWarnings("rawtypes")
 	protected static Map<String,Class> INNER_TYPE = new HashMap<String,Class>();
@@ -47,8 +55,21 @@ public class PrimitiveDao {
 	}
 	
 	public static void main(String[] args) {
-		PrimitiveDao dao = new PrimitiveDao();
-		dao.use();
+//		PrimitiveDao dao = new PrimitiveDao();
+//		dao.use();
+		
+		String collName = "EB_Product_items";
+		int index = collName.indexOf('_');
+		
+		String projectName = null;
+		String metadataName = null;
+		if(index > -1) {
+			projectName = collName.substring(0,index);
+			metadataName = collName.substring(index+1);
+			
+			System.out.println("projectName : " + projectName);
+			System.out.println("metadataName : " + metadataName);
+		}
 		
 		//CommandResult cr = db.command("Business.find()");
 		//System.out.println("cr : " + cr);
@@ -69,7 +90,7 @@ public class PrimitiveDao {
 		
 		//dao.rename(,"css","Business");
 		
-		dao.renameDocument("58e85b37f2a3bc01a3757402", "workflows.ddd", null, "Business");
+		//dao.renameDocument("58e85b37f2a3bc01a3757402", "workflows.ddd", null, "Business");
 		
 		
 		/**
@@ -377,7 +398,7 @@ public class PrimitiveDao {
 		BasicDBObject dbQuery = DaoHelper.dbQuery(query);
 		DBCursor cursor = dbc.find(dbQuery);
 		
-		return this.toList(cursor.iterator());
+		return this.toList(cursor.iterator(),coll);
 	}
 	
 	public List<Object> find(Map query,int size,boolean random,String coll){
@@ -428,7 +449,7 @@ public class PrimitiveDao {
 		AggregationOutput aout = dbc.aggregate(pipe);
 		Iterator<DBObject> ie = aout.results().iterator();
 		
-		return this.findOne(ie, 0).get(innerName);
+		return this.findOne(ie,collName, 0).get(innerName);
 	}
 	
 	public Map<String, Object> findOne(Map query, String collName,int index) {
@@ -445,7 +466,7 @@ public class PrimitiveDao {
 		}
 		AggregationOutput out = dbc.aggregate(pipeline);
 		
-		return this.toList(out.results().iterator());
+		return this.toList(out.results().iterator(),collName);
 	}
 	
 	private void removeId(Map data){
@@ -479,12 +500,83 @@ public class PrimitiveDao {
 	}
 	
 	
-	private List<Object> toList(Iterator<DBObject> ie) {
+	private List<Object> toList(Iterator<DBObject> ie,String collName) {
 		List<Object> results = new ArrayList<Object>();
 		while (ie.hasNext()) {
-			results.add(ie.next());
+			Object val = ie.next();
+			this.doMeta(val, collName);
+			
+			results.add(val);
 		}
 		return results;
+	}
+	
+	private void doMeta(Object val,String collName) {
+		if(val == null || !(val instanceof Map)) {
+			return;
+		}
+		
+		int index = collName.indexOf('_');
+		
+		String projectName = null;
+		String metadataName = collName;
+		Project project = null;
+		if(index > -1) {
+			projectName = collName.substring(0,index);
+			metadataName = collName.substring(index+1);
+			
+			project = this.projectDao.getByField("key", projectName);
+		}
+		
+		ObjectMetadata metadata = this.metadataDao.getByName(metadataName, project);
+		fillMeta((Map<String,Object>)val,metadata.getFields(),collName);
+	}
+	
+	private void fillMeta(Map<String,Object> data,List<ObjectField> fields,String collName) {
+		/****
+		 * _id
+		 * ***/
+		String ID_KEY = "_id";
+		Object idVal = data.get(ID_KEY);
+		Map<String,Object> newVal = new HashMap<String,Object>();
+		
+		newVal.put("__id",StringUtil.toString(idVal));
+		newVal.put("__collection_name", collName);
+		data.put(ID_KEY,newVal);
+		
+		for(ObjectField of : fields) {
+			String fname = of.getName();
+			Object fval = data.get(fname);
+			if(fval == null) {
+				continue;
+			}
+			
+			if(FieldType.LINK_COLLECTION.is(of.getType())) {
+				newVal = new HashMap<String,Object>();
+				newVal.put("__id",fval.toString());
+				newVal.put("__collection_name", of.getLinkedObject());
+				data.put(fname,fval);
+			}
+			
+			if(FieldType.INNER_COLLECTION.is(of.getType())) {
+				if(fval instanceof Map) {
+					String innerName = collName+"."+fname;
+					
+					fillMeta((Map<String,Object>)fval,of.getFields(),innerName);
+				}
+			}
+			
+			if(FieldType.ARRAY.is(of.getType()) && FieldType.INNER_COLLECTION.is(of.getElementType())) {
+				if(fval instanceof List) {
+					String innerName = collName+"."+fname;
+					for(Object ov:(List)fval) {
+						if(ov instanceof Map) {
+							fillMeta((Map<String,Object>)ov,of.getFields(),innerName);
+						}
+					}
+				}
+			}
+		}
 	}
 	
 	private BasicDBObject findOne(BasicDBObject idQuery, String collName,int index) {
@@ -495,10 +587,10 @@ public class PrimitiveDao {
 			index = 0;
 		}
 		
-		return this.findOne(cursor, index);
+		return this.findOne(cursor,collName, index);
 	}
 	
-	private BasicDBObject findOne(Iterator<DBObject> ie,int index) {
+	private BasicDBObject findOne(Iterator<DBObject> ie,String collName,int index) {
 		if(index < 0){
 			index = 0;
 		}
@@ -508,9 +600,11 @@ public class PrimitiveDao {
 		while (ie.hasNext()) {
 			result = (BasicDBObject) ie.next();
 			if(curr++ == index){
-				return result;
+				break;
 			}
 		}
+
+		this.doMeta((Map<String,Object>)result, collName);
 
 		return result;
 	}

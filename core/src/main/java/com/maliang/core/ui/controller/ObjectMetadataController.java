@@ -160,6 +160,38 @@ public class ObjectMetadataController extends BasicController {
 		return "/metadata/code";
 	}
 	
+	@RequestMapping(value = "dbDatas.htm")
+	@ResponseBody
+	public String dbDatas(HttpServletRequest request) {
+		String oid = request.getParameter("oid");
+		
+		System.out.println("----- dbDatas oid : " + oid);
+		ObjectMetadata omd = this.metadataDao.getByID(oid);
+		Project pjo = omd.getProject();
+		
+		String collName = omd.getName();
+		if(pjo != null) {
+			collName = pjo.getKey()+"_"+collName;
+		}
+		
+		System.out.println("----- dbDatas collName : " + collName);
+		
+		String code = "pdb."+collName+".find()";
+		Object result = null;
+		if(!StringUtil.isEmpty(code)){
+			result = AE.execute(code);
+		}
+		if(result == null){
+			result = "";
+		}
+		
+//		System.out.println("----------- code2 result -----------------");
+//		System.out.println(result);
+//		System.out.println("----------- code2 result end -----------------");
+		
+		return this.json(this.newMap("result",result.toString()));
+	}
+	
 	@RequestMapping(value = "code2.htm")
 	@ResponseBody
 	public String runCode(HttpServletRequest request) {

@@ -71,8 +71,7 @@ public class Utils {
 		
 		Map<Object,Object> newMap = new HashMap<Object,Object>();
 		for(Object k : map.keySet()){
-			Object val = clone(map.get(k));
-			newMap.put(k,val);
+			newMap.put(k,clone(map.get(k)));
 		}
 		return newMap;
 	}
@@ -82,9 +81,8 @@ public class Utils {
 		if(list.size() == 0)return new ArrayList<Object>();
 		
 		List<Object> newList = new ArrayList<Object>();
-		for(Object v:newList){
-			Object nv = clone(v);
-			newList.add(nv);
+		for(Object v:list){
+			newList.add(clone(v));
 		}
 		return newList;
 	}
@@ -144,10 +142,33 @@ public class Utils {
 			return (List<Object>)ob;
 		}
 		
+		if(ob instanceof Object[]) {
+			List list = new ArrayList();
+			for(Object ov:(Object[])ob) {
+				list.add(ov);
+			}
+			return list;
+		}
+		
 		List<Object> list = new ArrayList<Object>();
 		list.add(ob);
 		
 		return list;
+	}
+	
+	public static boolean toBoolean(Object val) {
+		if(val == null) {
+			return false;
+		}
+		
+		if(val instanceof Boolean) {
+			return (Boolean)val;
+		}
+		
+		if("true".equalsIgnoreCase(val.toString())) {
+			return true;
+		}
+		return false;
 	}
 	
 	public static List<Object> clearNull(List<Object> list){

@@ -29,8 +29,6 @@ public class ModelDao<T extends MongodbModel> extends AbstractDao {
 	public void save(T om) {
 		BasicDBObject doc = encode(om,true);
 
-		System.out.println("doc ------------ " + doc.toMap());
-		
 		if(om.getId() != null){
 			doc = new BasicDBObject("$set", doc);
 			

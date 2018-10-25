@@ -19,13 +19,16 @@ import com.maliang.core.model.ObjectMetadata;
 import com.maliang.core.model.Project;
 import com.maliang.core.model.UCType;
 import com.maliang.core.model.UCValue;
+import com.maliang.core.service.MR;
 import com.maliang.core.service.MapHelper;
 import com.maliang.core.util.StringUtil;
 import com.maliang.core.util.Utils;
 import com.mongodb.AggregationOutput;
 import com.mongodb.BasicDBObject;
+import com.mongodb.DBCollection;
 import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
+import com.mongodb.WriteResult;
 
 public class BasicDao extends AbstractDao{
 	private static String META_KEY = "_meta";
@@ -61,6 +64,21 @@ public class BasicDao extends AbstractDao{
 
 	public void save(BasicDBObject doc,String collName) {
 		this.getDBCollection(collName).save(doc);
+	}
+	
+	public Object delayInnerObject(final String collName,final String innerName,final String oid){
+		return new CallBack(){
+			private Object obj;
+			private int num = 0;
+			public Object doCall(){
+				if(obj == null && num < 3){
+					this.obj = getInnerObject(collName,innerName,oid);
+				}
+				
+				num++;
+				return this.obj;
+			}
+		};
 	}
 	
 	
@@ -104,6 +122,9 @@ public class BasicDao extends AbstractDao{
 		return this.find(bq, collName);
 	}
 	
+	/**
+	 * 添加project条件
+	 * **/
 	protected BasicDBObject projectQuery(BasicDBObject query,String collName){
 		if(this.isSystemCollection(collName)){
 			Project project = getSessionProject();
@@ -127,7 +148,8 @@ public class BasicDao extends AbstractDao{
 	protected List<Map<String,Object>> readCursor(DBCursor cursor,String collName){
 		List<Map<String,Object>> results = new ArrayList<Map<String,Object>>();
 		for(DBObject dob : cursor.toArray()){
-			results.add(toMap(dob,collName));
+			//results.add(toMap(dob,collName));
+			results.add(dob.toMap());
 		}
 		
 		return results;
@@ -177,6 +199,58 @@ public class BasicDao extends AbstractDao{
 		return returnObject;
 	}
 	
+	/**
+	 * update by $set
+	 * **/
+	public int update(Map qMap, Map sMap, String collName) {
+		return this.update(qMap, sMap, collName,"$set");
+	}
+	
+	/**
+	 * update by $set
+	 * **/
+	public int update(Map qMap, Map updateMap, String collName,String updateCmd) {
+		if(Utils.isEmpty(updateMap)){
+			return 0;
+		}
+		
+		BasicDBObject query = null;
+		if(qMap == null){
+			query = new BasicDBObject();
+		}else {
+			if(qMap instanceof BasicDBObject){
+				query = (BasicDBObject)qMap;
+			}else {
+				query = this.build(this.buildDBQueryMap(qMap, null));
+			}
+		}
+		
+		BasicDBObject updateVal = null;
+		if(updateMap instanceof BasicDBObject){
+			updateVal = (BasicDBObject)updateMap;
+		}else {
+			updateVal = this.build(this.buildDBQueryMap(updateMap, null));
+		}
+		
+		BasicDBObject updateObj = new BasicDBObject(updateCmd, updateVal);
+//		BasicDBObject modifiedDate = new BasicDBObject("modifiedDate",new Date());
+//		updateObj.put("$set", modifiedDate);
+		
+		DBCollection db = this.getDBCollection(collName);
+		WriteResult result  = db.updateMulti(query,updateObj);
+		
+		System.out.println("update UpsertedId : " + result.getUpsertedId());
+		
+		return result.getN();
+	}
+	
+	protected BasicDBObject toDBObject(Map<String,Object> query){
+		if(query == null || query.isEmpty()){
+			return null;
+		}
+		
+		return new BasicDBObject(query);
+	}
 	
 
 	protected BasicDBObject build(Map<String,Object> query){
@@ -488,14 +562,14 @@ public class BasicDao extends AbstractDao{
 			String key = preName+ff.getName();
 			Object value = innMap.get(ff.getName());
 			
-			if(FieldType.INNER_COLLECTION.is(ff.getType())){
+			if(ff.isInnerCollection()){
 				if(value != null && value instanceof Map && ((Map)value).size() > 0){
 					Map<String,Object> valMap = (Map<String,Object>)value;
 
 					Map<String,Object> m = buildUpdates(ff.getFields(),(Map<String,Object>)value,key,updates,updateQuery,mlevel);
 					daoMap.putAll(m);
 				}
-			}else if(FieldType.ARRAY.is(ff.getType()) && FieldType.INNER_COLLECTION.is(ff.getElementType())){
+			}else if(ff.isArray() && FieldType.INNER_COLLECTION.is(ff.getElementType())){
 				if(multilevelArray){
 					daoMap.put(key, value);
 					continue;
@@ -530,8 +604,10 @@ public class BasicDao extends AbstractDao{
 		
 		if(hasId(updateMap)){
 			String id = (String)updateMap.remove("id");
+			System.out.println("------ update map id : " + id);
+			
 			BasicDBObject currQuery = updateQuery;
-			if(id != null){
+			if(!Utils.isEmpty(id)){
 				currQuery = new BasicDBObject(fieldKey +"._id",new ObjectId(id));
 			}
 
@@ -583,9 +659,15 @@ public class BasicDao extends AbstractDao{
 		}
 		
 		if(obj instanceof Map){
-			if(((Map)obj).get("id") != null){
+			Object id = ((Map)obj).get("id");
+			if(id != null && id instanceof ObjectId) {
 				return true;
 			}
+			
+			try {
+				new ObjectId(id.toString());
+				return true;
+			}catch(Exception e) {}
 			
 			for(Object oo : ((Map)obj).values()){
 				if(hasId(oo)){
@@ -684,6 +766,10 @@ public class BasicDao extends AbstractDao{
 			return;
 		}
 		
+		if(!val.containsKey(ObjectMetadata.TREE_MODEL_PARENT_KEY) && !val.containsKey("parent")) {
+			return;
+		}
+		
 		ObjectField field = this.readObjectField(metadata.getFields(),ObjectMetadata.TREE_MODEL_PARENT_KEY);
 		String parentCollection = field.getLinkedObject();
 		
@@ -722,67 +808,54 @@ public class BasicDao extends AbstractDao{
 			doTreeModel(val,metadata);
 		}
 	}
-
-	public Map<String,Object> correctData(Map<String,Object> dataMap,String collName,boolean dealWithId,boolean isDeep){
-		if(dataMap == null)return null;
-		
-		ObjectMetadata metadata = this.metaDao.getByName(collName);
-		doModel(dataMap,metadata);
-		
-		System.out.println("collName : " + collName);
-		System.out.println("metadata : " + metadata);
-		return correctData(dataMap,metadata.getFields(),dealWithId,isDeep);
-	}
 	
 	/**
-	 * 灏嗘暟鎹浆鎹负DB瀛樺偍妯″紡
-	 * 1. 'id' (String绫诲瀷) 杞垚'_id'(ObjectId绫诲瀷)
-	 * 2. LINK_COLLECTION瀛楁绫诲瀷锛氬�艰嫢涓篗ap锛岃浆鎴恑d(String绫诲瀷)
-	 * 3. 鍘绘帀meta鏁版嵁
-	 * 4. 鍘绘帀list閲岀殑null鏁版嵁
-	 * ***/
-	public Map toDBModel(Map dataMap,String collName){
-		ObjectMetadata metadata = this.metaDao.getByName(collName);
+	 * 转换成DB模式的关联关系
+	 * **/
+	public Map toDBCorrelation(Map dataMap,ObjectMetadata metadata){
 		return toDBModel(dataMap,metadata.getFields());
 	}
 	
-	public Map toDBModel(Map dataMap,List<ObjectField> fields){
+	public Map toDBCorrelation(Map dataMap,List<ObjectField> fields){
 		Map<String,Object> newMap = new HashMap<String,Object>();
-		
-		if(!Utils.isEmpty(dataMap.get("id"))){
-			//newMap.put("_id",new ObjectId(dataMap.get("id").toString().trim()));
-			newMap.put("id",dataMap.get("id").toString());
+
+		if(dataMap.containsKey("id")){
+			Object val = MR.readValue(dataMap,"id");
+			MR.setValue(newMap,"id",val == null?null:val.toString());
 		}
-		
-		if(dataMap.get("_id") != null){
-			newMap.put("_id",dataMap.get("_id"));
-		}
-		
-		if(!newMap.containsKey("id") || !newMap.containsKey("_id")){
-			//newMap.put("_id",new ObjectId());
+
+		if(dataMap.containsKey("_id")){
+			MR.setValue(newMap,"_id",MR.readValue(dataMap,"_id"));
 		}
 		
 		for(ObjectField of : fields){
 			String fieldName = of.getName();
-			Object fieldValue = dataMap.get(fieldName);
-			if(fieldValue == null)continue;
-
-			fieldValue =  toDBModel(fieldValue,of);
-			newMap.put(fieldName,  fieldValue);
+			if(!dataMap.containsKey(fieldName)) {
+				continue;
+			}
+			
+			newMap.put(fieldName,  toDBModel(MR.readValue(dataMap, fieldName),of));
 		}
 		
 		return newMap;
 	}
 	
-	public Object toDBModel(Object fieldValue,ObjectField field){
+	/**
+	 * 转换成DB模式的关联关系
+	 * **/
+	public Object toDBCorrelation(Object fieldValue,ObjectField field){
+		if(fieldValue == null) {
+			return null;
+		}
+		
 		if(fieldValue instanceof UCValue){
 			fieldValue = ((UCValue)fieldValue).getValue();
 		}
 		
-		if(FieldType.LINK_COLLECTION.is(field.getType())){
-			if(fieldValue instanceof CallBack){
-				fieldValue = ((CallBack)fieldValue).doCall();
-			}
+		if(field.isLinkCollection()){
+//			if(fieldValue instanceof CallBack){
+//				fieldValue = ((CallBack)fieldValue).doCall();
+//			}
 			
 			if(fieldValue instanceof Map){
 				fieldValue = readObjectIdToString((Map)fieldValue);
@@ -808,7 +881,7 @@ public class BasicDao extends AbstractDao{
 			}
 		}
 		
-		if(FieldType.INNER_COLLECTION.is(field.getType())){
+		if(field.isInnerCollection()){
 			if(fieldValue instanceof Map){
 //				if(((Map) fieldValue).get("id") == null){
 //					((Map) fieldValue).put("id",new ObjectId().toString());
@@ -824,22 +897,150 @@ public class BasicDao extends AbstractDao{
 			}
 		}
 		
-		if(FieldType.ARRAY.is(field.getType())){
+		if(field.isArray()){
 			int type = field.getType();
-			
+
 			List temp = new ArrayList();
-			if(!Utils.isArray(fieldValue)){
-				temp.add(fieldValue);
-				fieldValue = temp;
+			fieldValue = Utils.toArray(fieldValue);
+			field.setType(field.getElementType());
+			if(!Utils.isEmpty(fieldValue)) {
+				for(Object arrObj:(Object[])fieldValue){
+					/**
+					 * 过滤“null”的数据
+					 * **/
+					if(arrObj == null)continue;
+					
+					temp.add(toDBModel(arrObj,field));
+				}
 			}
 			
-			temp = new ArrayList();
-			field.setType(field.getElementType());
-			for(Object arrObj:Utils.toArray(fieldValue)){
-				if(arrObj == null)continue;
-				
-				temp.add(toDBModel(arrObj,field));
+			
+			fieldValue = temp;
+			field.setType(type);
+		}
+		
+		return fieldValue;
+	}
+
+	
+	
+	/**
+	 * 灏嗘暟鎹浆鎹负DB瀛樺偍妯″紡
+	 * 1. 'id' (String绫诲瀷) 杞垚'_id'(ObjectId绫诲瀷)
+	 * 2. LINK_COLLECTION瀛楁绫诲瀷锛氬�艰嫢涓篗ap锛岃浆鎴恑d(String绫诲瀷)
+	 * 3. 鍘绘帀meta鏁版嵁
+	 * 4. 鍘绘帀list閲岀殑null鏁版嵁
+	 * ***/
+	public Map toDBModel(Map dataMap,String collName){
+		ObjectMetadata metadata = this.metaDao.getByName(collName);
+		return toDBModel(dataMap,metadata.getFields());
+	}
+	
+	public Map toDBModel(Map dataMap,ObjectMetadata metadata){
+//		ObjectId id = this.readObjectId(dataMap);
+//		dataMap.remove("id");
+//		MR.setValue(dataMap,"_id",id);
+		
+		return toDBModel(dataMap,metadata.getFields());
+	}
+	
+	public Map toDBModel(Map dataMap,List<ObjectField> fields){
+		Map<String,Object> newMap = new HashMap<String,Object>();
+
+		if(dataMap.containsKey("id")){
+			Object val = MR.readValue(dataMap,"id");
+			MR.setValue(newMap,"id",val == null?null:val.toString());
+		}
+
+		if(dataMap.containsKey("_id")){
+			MR.setValue(newMap,"_id",MR.readValue(dataMap,"_id"));
+		}
+		
+		for(ObjectField of : fields){
+			String fieldName = of.getName();
+			if(!dataMap.containsKey(fieldName)) {
+				continue;
 			}
+			
+			newMap.put(fieldName,  toDBModel(MR.readValue(dataMap, fieldName),of));
+		}
+		
+		return newMap;
+	}
+	
+	
+	
+	public Object toDBModel(Object fieldValue,ObjectField field){
+		if(fieldValue == null) {
+			return null;
+		}
+		
+		if(fieldValue instanceof UCValue){
+			fieldValue = ((UCValue)fieldValue).getValue();
+		}
+		
+		if(field.isLinkCollection()){
+//			if(fieldValue instanceof CallBack){
+//				fieldValue = ((CallBack)fieldValue).doCall();
+//			}
+			
+			if(fieldValue instanceof Map){
+				fieldValue = readObjectIdToString((Map)fieldValue);
+			}
+			
+			if(fieldValue != null && !(fieldValue instanceof String)){
+				fieldValue = fieldValue.toString();
+			}
+		}
+		
+		if(FieldType.VARIABLE_LINK.is(field.getType())){
+			if(fieldValue instanceof Map){
+				String id = readObjectIdToString((Map)fieldValue);
+				String mtype = readMetadataType((Map)fieldValue);
+				
+				if(!StringUtil.isEmpty(id) && !StringUtil.isEmpty(mtype)){
+					fieldValue = mtype+","+id;
+				}
+			}
+			
+			if(!(fieldValue instanceof String)){
+				fieldValue = null;
+			}
+		}
+		
+		if(field.isInnerCollection()){
+			if(fieldValue instanceof Map){
+//				if(((Map) fieldValue).get("id") == null){
+//					((Map) fieldValue).put("id",new ObjectId().toString());
+//				}
+				
+				fieldValue = toDBModel((Map)fieldValue,field.getFields());
+			}
+			
+			if(!(fieldValue instanceof Map)){
+				fieldValue = null;
+			}else {
+				((Map)fieldValue).remove(META_KEY);
+			}
+		}
+		
+		if(field.isArray()){
+			int type = field.getType();
+
+			List temp = new ArrayList();
+			fieldValue = Utils.toArray(fieldValue);
+			field.setType(field.getElementType());
+			if(!Utils.isEmpty(fieldValue)) {
+				for(Object arrObj:(Object[])fieldValue){
+					/**
+					 * 过滤“null”的数据
+					 * **/
+					if(arrObj == null)continue;
+					
+					temp.add(toDBModel(arrObj,field));
+				}
+			}
+			
 			
 			fieldValue = temp;
 			field.setType(type);
@@ -865,73 +1066,220 @@ public class BasicDao extends AbstractDao{
 		return MapHelper.readValue(dataMap.get(META_KEY),name);
 	}
 	
-	public String readObjectIdToString(Map dataMap){
-		Object id = MapHelper.readValue(dataMap, "id");
+	public ObjectId readObjectId(Map dataMap){
+		Object id = MR.readValue(dataMap, "id");
 		if(Utils.isEmpty(id)){
-			id = MapHelper.readValue(dataMap, "_id");
+			id = MR.readValue(dataMap, "_id");
 		}
 		
-		if(id != null){
-			return id.toString().trim();
+		if(id != null) {
+			if(id instanceof ObjectId) {
+				return (ObjectId)id;
+			}
+			try {
+				return new ObjectId(id.toString());
+			}catch(Exception e) {}
 		}
-		
 		return null;
-//		
-//		String id = StringUtil.getNotEmptyValue(dataMap,"id");
-//		if(id == null){
-//			id = StringUtil.getNotEmptyValue(dataMap,"_id");
-//		}
-//
-//		if(id != null){
-//			return id.trim();
-//		}
-//		
-//		return null;
 	}
 	
-	public Map<String,Object> correctData(Map<String,Object> dataMap,List<ObjectField> fields,boolean dealWithId,boolean isDeep){
+	public String readObjectIdToString(Map dataMap){
+		Object id = this.readObjectId(dataMap);
+		if(id == null) {
+			return null;
+		}
+		return id.toString();
+	}
+	
+	/***
+	 * 格式化数据：将数据匹配为ObjectMetadata所定义的类型
+	 * **/
+	public Map<String,Object> formatData(Map<String,Object> dataMap,String collName){
+		if(dataMap == null)return null;
+		
+		ObjectMetadata metadata = this.metaDao.getByName(collName);
+		return formatData(dataMap,metadata);
+	}
+	
+	/**
+	 * 格式化数据
+	 * **/
+	public Map<String,Object> formatData(Map<String,Object> dataMap,ObjectMetadata metadata){
+		doModel(dataMap,metadata);
+		return formatData(dataMap,metadata.getFields());
+	}
+	
+	public Map<String,Object> formatData(Map<String,Object> dataMap,List<ObjectField> fields){
+		if(dataMap == null)return null;
+		
+		for(ObjectField of : fields){
+			Object fval = MapHelper.readValue(dataMap,of.getName());
+			if(fval == null) {
+				continue;
+			}
+			
+			
+			
+			try {
+				dataMap.put(of.getName(), formatFieldValue(of,fval));
+			}catch(NullPointerException ne) {
+				System.out.println("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++");
+				System.out.println("--------------- formatData of : " + of.getName());
+				System.out.println("--------------- formatData of : " + of.getType());
+				ne.printStackTrace();
+			}
+			
+		}
+		return dataMap;
+	}
+	
+	public Object formatFieldValue(ObjectField of,Object fieldValue){
+		if(fieldValue == null) {
+			return null;
+		}
+		
+		if(of.isArray()){
+			of.setType(of.getElementType());
+
+			List<Object> result = new ArrayList<Object>();
+			if(fieldValue instanceof List){
+				for(Object o : (List<Object>)fieldValue){
+					result.add(formatFieldValue(of,o));
+				}
+			}else {
+				result.add(formatFieldValue(of,fieldValue));
+			}
+			
+			of.setType(FieldType.ARRAY.getCode());
+			return result;
+		}else if(of.isInnerCollection()){
+			if(fieldValue instanceof Map){
+				return formatData((Map<String,Object>)fieldValue,of.getFields());
+			}
+		}else if(of.isLinkCollection()){
+			if(fieldValue instanceof Map){
+				return formatData((Map<String,Object>)fieldValue,of.getLinkedObject());
+			}
+			return fieldValue;
+		}
+
+		return DaoHelper.correctFieldValue(of.getType(),fieldValue);
+	}
+	
+	public Map<String,Object> readLinkedCollection(Map<String,Object> dataMap,String collName){
+		ObjectMetadata metadata = this.metaDao.getByName(collName);
+		return this.readLinkedCollection(dataMap, metadata.getFields());
+	}
+	
+	public Map<String,Object> readLinkedCollection(Map<String,Object> dataMap,ObjectMetadata meta){
+		return this.readLinkedCollection(dataMap, meta.getFields());
+	}
+	
+	public Map<String,Object> readLinkedCollection(Map<String,Object> dataMap,List<ObjectField> fields){
+		if(dataMap == null)return null;
+		
+		for(ObjectField of : fields){
+			String fieldName = of.getName();
+			Object fieldValue = dataMap.get(fieldName);
+			if(fieldValue == null)continue;
+			
+			if(of.isLinkCollection()){
+				dataMap.put(fieldName, this.delayLinkedObject(fieldValue, of.getLinkedObject()));
+			}else if(of.isVariableLink()){
+				dataMap.put(fieldName, this.delayVariableLinkedObject(fieldValue));
+			}else if(of.isInnerCollection()) {
+				if(fieldValue instanceof Map) {
+					readLinkedCollection((Map<String,Object>)fieldValue,of.getFields());
+				}
+			}else if(of.isArray()) {
+				fieldValue = Utils.toList(fieldValue);
+				dataMap.put(fieldName, fieldValue);
+				
+				of.setType(of.getElementType());
+				
+				List<Object> result = new ArrayList<Object>();
+				for(Object ov : (List)fieldValue) {
+					if(of.isLinkCollection()) {
+						result.add(this.delayLinkedObject(ov, of.getLinkedObject()));
+						
+					}else if(of.isInnerCollection()) {
+						if(ov instanceof Map) {
+							readLinkedCollection((Map<String,Object>)ov,of.getFields());
+						}
+					}else if(of.isVariableLink()) {
+						result.add(this.delayLinkedObject(ov, of.getLinkedObject()));
+					}
+				}
+				
+				if(of.isLinkCollection() || of.isVariableLink()) {
+					dataMap.put(fieldName, result);
+				}
+				
+				of.setType(FieldType.ARRAY.getCode());
+			}
+		}
+		return dataMap;
+	}
+	
+	
+	
+	/***
+	 * 格式化数据：将数据转换为ObjectMetadata所定义的类型
+	 * **/
+	public Map<String,Object> formatData(Map<String,Object> dataMap,String collName,boolean dealWithId,boolean isDeep){
+		if(dataMap == null)return null;
+		
+		ObjectMetadata metadata = this.metaDao.getByName(collName);
+		doModel(dataMap,metadata);
+
+		return formatData(dataMap,metadata.getFields(),dealWithId,isDeep);
+	}
+	
+	public Map<String,Object> formatData(Map<String,Object> dataMap,List<ObjectField> fields,boolean toObjectId,boolean isDeep){
 		if(dataMap == null)return null;
 		
 		Map<String,Object> newMap = new HashMap<String,Object>();
-		Object id = dataMap.get("id");
-		if(!Utils.isEmpty(id)){
-			if(dealWithId){
-				if(id instanceof ObjectId){
-					newMap.put("_id",id);
-				}else {
-					newMap.put("_id",new ObjectId(id.toString().trim()));
-				}
-			}else {
-				newMap.put("id",id.toString());
-			}
-		}
+		this.fillObjectId(dataMap,newMap,toObjectId);
+//		Object id = dataMap.get("id");
+//		if(!Utils.isEmpty(id)){
+//			if(dealWithId){
+//				if(id instanceof ObjectId){
+//					newMap.put("_id",id);
+//				}else {
+//					newMap.put("_id",new ObjectId(id.toString().trim()));
+//				}
+//			}else {
+//				newMap.put("id",id.toString());
+//			}
+//		}
 
 		for(ObjectField of : fields){
 			String fieldName = of.getName();
 			Object fieldValue = dataMap.get(fieldName);
 			if(fieldValue == null)continue;
 			
-			newMap.put(fieldName, correctFieldValue(of,fieldValue,dealWithId,isDeep));
+			newMap.put(fieldName, formatFieldValue(of,fieldValue,toObjectId,isDeep));
 		}
 		return newMap;
 	}
 	
-	public Object correctFieldValue(ObjectField of,Object fieldValue,boolean dealWithId,boolean isDeep){
+	
+	
+	public Object formatFieldValue(ObjectField of,Object fieldValue,boolean dealWithId,boolean isDeep){
+		if(fieldValue == null) {
+			return null;
+		}
+		
 		if(FieldType.ARRAY.is(of.getType())){
 			of.setType(of.getElementType());
 
-			Object result = null;
+			List<Object> result = new ArrayList<Object>();
 			if(fieldValue instanceof List){
-				List<Object> list = new ArrayList<Object>();
 				for(Object o : (List<Object>)fieldValue){
-					o = correctFieldValue(of,o,dealWithId,isDeep);
-					list.add(o);
+					result.add(formatFieldValue(of,o,dealWithId,isDeep));
 				}
-				result = list;
-			}else if(fieldValue instanceof Map){
-				List<Object> list = new ArrayList<Object>();
-				list.add(correctFieldValue(of,fieldValue,dealWithId,isDeep));
-				result = list;
+			}else {
+				result.add(formatFieldValue(of,fieldValue,dealWithId,isDeep));
 			}
 			
 			of.setType(FieldType.ARRAY.getCode());
@@ -951,26 +1299,24 @@ public class BasicDao extends AbstractDao{
 					((Map) fieldValue).put("id",id);
 				}
 				
-				return correctData((Map<String,Object>)fieldValue,of.getFields(),dealWithId,isDeep);
+				return formatData((Map<String,Object>)fieldValue,of.getFields(),dealWithId,isDeep);
 			}
 		}
 		
 		if(FieldType.LINK_COLLECTION.is(of.getType())){
 			if(fieldValue instanceof Map){
-				return correctData((Map<String,Object>)fieldValue,of.getLinkedObject(),dealWithId,isDeep);
+				return formatData((Map<String,Object>)fieldValue,of.getLinkedObject(),dealWithId,isDeep);
 			}
-			
 			if(isDeep){
-				return this.getLinkedObject(fieldValue, of.getLinkedObject());
+				return this.delayLinkedObject(fieldValue, of.getLinkedObject());
 			}
-			
 			return fieldValue;
 		}
 
 		return DaoHelper.correctFieldValue(of.getType(),fieldValue);
 	}
 	
-	public Object getLinkedObject(final Object oid,final String collName){
+	public Object delayLinkedObject(final Object oid,final String collName){
 		if(oid instanceof String && !StringUtil.isEmpty((String)oid)){
 			final String linkOid = ((String)oid).trim();
 			
@@ -979,10 +1325,7 @@ public class BasicDao extends AbstractDao{
 				private int num = 0;
 				public Object doCall(){
 					if(obj == null && num < 3){
-						
 						this.obj = getByID(linkOid, collName);
-						
-						//System.out.println("---------- do callback : " + this.obj);
 					}
 					
 					num++;
@@ -994,7 +1337,6 @@ public class BasicDao extends AbstractDao{
 				}
 			};
 		}
-		
 		return oid;
 	}
 	
@@ -1007,7 +1349,7 @@ public class BasicDao extends AbstractDao{
 		return oid;
 	}
 	
-	public Object getVariableLinkedObject(Object fval){
+	public Object delayVariableLinkedObject(Object fval){
 		if(fval instanceof String){
 			String[] names = ((String)fval).split(",");
 			if(names.length == 2){
@@ -1017,9 +1359,11 @@ public class BasicDao extends AbstractDao{
 				String[] colls = coll.split("\\.");
 				String collName = colls[0];
 				if(colls.length > 1){
-					return this.getInnerObject(colls[0], colls[1], oid);
+					//return this.getInnerObject(colls[0], colls[1], oid);
+					return this.delayInnerObject(colls[0], colls[1], oid);
 				}else {
-					return this.getByID(oid, collName);
+					//return this.getByID(oid, collName);
+					return this.delayLinkedObject(oid, collName);
 				}
 			}
 		}
@@ -1080,6 +1424,21 @@ public class BasicDao extends AbstractDao{
 		
 		correctField(dataMap,metedata.getFields(),rootMeta(collName));
 	}
+	
+	private void fillObjectId(Map<String,Object> dataMap,Map<String,Object> newMap,boolean toObjectId) {
+		Object id = dataMap.get("id");
+		if(!Utils.isEmpty(id)){
+			if(toObjectId){
+				if(id instanceof ObjectId){
+					newMap.put("_id",id);
+				}else {
+					newMap.put("_id",new ObjectId(id.toString().trim()));
+				}
+			}else {
+				newMap.put("id",id.toString());
+			}
+		}
+	}
 
 	protected void correctField(Map<String,Object> dataMap,List<ObjectField> fields,Map meta){
 		objectIdToString(dataMap);
@@ -1090,9 +1449,9 @@ public class BasicDao extends AbstractDao{
 			Object fieldValue = dataMap.get(fieldName);
 			
 			if(FieldType.LINK_COLLECTION.is(field.getType())){
-				dataMap.put(fieldName, getLinkedObject(fieldValue,field.getLinkedObject()));
+				dataMap.put(fieldName, delayLinkedObject(fieldValue,field.getLinkedObject()));
 			}else if(FieldType.VARIABLE_LINK.is(field.getType())){
-				dataMap.put(fieldName, this.getVariableLinkedObject(fieldValue));
+				dataMap.put(fieldName, this.delayVariableLinkedObject(fieldValue));
 			}else if(FieldType.INNER_COLLECTION.is(field.getType())){
 				if(fieldValue instanceof DBObject){
 					fieldValue = ((DBObject)fieldValue).toMap();
@@ -1120,9 +1479,9 @@ public class BasicDao extends AbstractDao{
 							
 							list.add(obj);
 						}else if(FieldType.LINK_COLLECTION.is(field.getElementType())){
-							list.add(getLinkedObject(obj,field.getLinkedObject()));
+							list.add(delayLinkedObject(obj,field.getLinkedObject()));
 						}else if(FieldType.VARIABLE_LINK.is(field.getType())){
-							list.add(this.getVariableLinkedObject(fieldValue));
+							list.add(this.delayVariableLinkedObject(fieldValue));
 						}else {
 							list = (List)fieldValue;
 						}

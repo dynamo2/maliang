@@ -153,28 +153,31 @@ public class CollectionService {
 		return this.collectionDao.aggregateOne(query, this.collection);
 	}
 	
+	
 	//保存
-	public Map<String,Object> save(Object obj){
+	public Map<String,Object> save(Object obj,boolean updateAllArray){
 		if(obj == null || !(obj instanceof Map))return null;
 		
 		Map<String,Object> dataMap = (Map<String,Object>)obj;
-		//dataMap = this.collectionDao.toDBModel(dataMap, this.collection);
-		
-		System.out.println("-------- dataMap : " + dataMap);
 		if(hasId(dataMap)){// Update
-			dataMap = this.collectionDao.correctData(dataMap, this.collection,false,false);
+			/*
+			dataMap = this.collectionDao.formatData(dataMap, this.collection,false,false);
 			//dataMap = this.collectionDao.toDBModel(dataMap, this.collection);
+			*/
 			
-			return this.collectionDao.updateBySet(dataMap, this.collection);
+			System.out.println("------------- update formatData data: " + dataMap);
+			
+			return this.collectionDao.updateBySet(dataMap, this.collection,updateAllArray);
 		}else { // Save
-			dataMap = this.collectionDao.correctData(dataMap, this.collection,true,false);
+			/*
+			dataMap = this.collectionDao.formatData(dataMap, this.collection,true,false);
 			//dataMap = this.collectionDao.toDBModel(dataMap, this.collection);
 			return this.collectionDao.save(dataMap, this.collection);
+			*/
+			
+			return this.collectionDao.insert(dataMap, this.collection);
+			
 		}
-		
-		//System.out.println("-------- dataMap 2 : " + dataMap);
-		
-		//return dataMap;
 	}
 	
 	/**
@@ -222,24 +225,46 @@ public class CollectionService {
 		return this.collectionDao.remove(oid,this.collection);
 	}
 	
+	public int deleteIncludeChildren(String oid){
+		this.collectionDao.deleteIncludeChildren(oid,this.collection);
+		return 1;
+	}
+	
 	public int remove(Map<String,Object> query){
 		return this.collectionDao.remove(query,this.collection);
 	}
 	
-	private Map<String,Object> convert(Map<String,Object> dataMap){
-		return convert(dataMap,false);
+	public Object resetPath(String oid,boolean resetChildren){
+		this.collectionDao.resetPath(oid, this.collection, false);
+		return null;
+	}
+	
+	public Object resetPath(){
+		this.collectionDao.resetPath(this.collection);
+		return null;
+	}
+	
+	private Map<String,Object> format(Map<String,Object> dataMap){
+		return format(dataMap,false);
 	}
 	
 	private Map<String,Object> deepConvert(Map<String,Object> dataMap){
-		return convert(dataMap,true);
+		return format(dataMap,true);
 	}
 	
-	private Map<String,Object> convert(Map<String,Object> dataMap,boolean isDeep){
+	private Map<String,Object> format(Map<String,Object> dataMap,boolean loadLinked){
 		if(Utils.isEmpty(dataMap)){
 			return dataMap;
 		}
 		
-		return this.collectionDao.correctData(dataMap, this.collection,false,isDeep);
+		//return this.collectionDao.formatData(dataMap, this.collection,false,isDeep);
+		
+		this.collectionDao.formatData(dataMap, this.collection);
+		if(loadLinked) {
+			this.collectionDao.readLinkedCollection(dataMap, this.collection);
+		}
+		
+		return dataMap;
 	}
 	
 	public static void main(String[] args) {
@@ -293,16 +318,16 @@ public class CollectionService {
 			}
 		}
 		
-		if("convert".equals(method)){
+		if("format".equals(method)){
 			System.out.println("------- covert "+(Map<String,Object>)value);
 			if(value != null && value instanceof Map){
-				return this.convert((Map<String,Object>)value);
+				return this.format((Map<String,Object>)value);
 			}
 			
 			return null;
 		}
 		
-		if("deepConvert".equals(method)){
+		if("formatWithLinked".equals(method)){
 			if(value != null && value instanceof Map){
 				return this.deepConvert((Map<String,Object>)value);
 			}
@@ -313,6 +338,11 @@ public class CollectionService {
 		if("innerObjectById".equals(method)){
 			Object obj = this.innerObjectById(value);
 			return obj;
+		}
+		
+		if("deleteIncludeChildren".equals(method)){
+			String v = value==null?null:value.toString();
+			return this.deleteIncludeChildren(v);
 		}
 		
 		if("delete".equals(method) || "remove".equals(method) || "del".equals(method)){
@@ -381,11 +411,23 @@ public class CollectionService {
 				Map mval = new HashMap();
 				mval.put(innerName, value);
 				
-				this.save(mval);
+				this.save(mval,false);
 				return value;
 			}
 			
-			return this.save(value);
+			return this.save(value,false);
+		}
+		
+		if("saveAllArray".equals(method)){
+			if(isInner){
+				Map mval = new HashMap();
+				mval.put(innerName, value);
+				
+				this.save(mval,true);
+				return value;
+			}
+			
+			return this.save(value,true);
 		}
 		
 		if("aggregate".equals(method)){
@@ -425,6 +467,33 @@ public class CollectionService {
 			}
 			
 			return this.page(match,query,sort,page,innerName);
+		}
+		
+		if("resetPath".equals(method)){
+			if(Utils.isEmpty(value)) {
+				return this.resetPath();
+			}
+			
+			String oid = null;
+			boolean resetChildren = false;
+			if(value instanceof Map){
+				Object val = MapHelper.readValue(value,"id");
+				if(Utils.isEmpty(val)) {
+					return this.resetPath();
+				}
+				oid = val.toString();
+				
+				val = MapHelper.readValue(value,"resetChildren");
+				resetChildren = Utils.toBoolean(val);
+			}else {
+				oid = value.toString();
+			}
+			
+			if(Utils.isEmpty(oid)) {
+				return this.resetPath();
+			}
+			
+			return this.resetPath(oid,resetChildren);
 		}
 
 		/*

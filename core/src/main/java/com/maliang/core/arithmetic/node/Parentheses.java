@@ -11,7 +11,6 @@ import java.util.Set;
 import com.maliang.core.arithmetic.Reader;
 import com.maliang.core.arithmetic.Substring;
 import com.maliang.core.arithmetic.function.Function;
-import com.maliang.core.arithmetic.function.UserFunction;
 
 public class Parentheses extends Node{
 	private final String source;

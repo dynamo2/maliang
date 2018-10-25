@@ -15,6 +15,14 @@ public class ObjectField extends MongodbModel {
 	
 	@Mapped(type=ObjectField.class)
 	private List<ObjectField> fields;//鐢ㄤ簬type=inner
+	
+	/**
+	 * 存储类型
+	 * 用于第一层的arry[inner]类型:
+	 *    1：独立存储: 可以单独操作一条子记录
+	 *    2：整存整取：整个数组统一操作
+	 * **/
+	private Integer storeType = 1;
 
 	public String getName() {
 		return name;
@@ -63,6 +71,22 @@ public class ObjectField extends MongodbModel {
 	}
 	public void setFields(List<ObjectField> fields) {
 		this.fields = fields;
+	}
+	
+	public boolean isInnerCollection() {
+		return FieldType.INNER_COLLECTION.is(this.getType());
+	}
+	
+	public boolean isArray() {
+		return FieldType.ARRAY.is(this.getType());
+	}
+	
+	public boolean isLinkCollection() {
+		return FieldType.LINK_COLLECTION.is(this.getType());
+	}
+	
+	public boolean isVariableLink() {
+		return FieldType.VARIABLE_LINK.is(this.getType());
 	}
 }
 
