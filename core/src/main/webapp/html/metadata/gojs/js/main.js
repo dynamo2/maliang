@@ -421,11 +421,11 @@ function objectMetadataModel(){
 		if(editObj.type){
 			reqObj.type = editObj.type.value;
 			
-			if(reqObj.type == 8){   // linked object
+			if(reqObj.type == 8 || reqObj.type == 11){   // linked object
 				reqObj.linkedObject = editObj.type.linkedObject;
 			}else if(reqObj.type == 9){ // array
 				reqObj.elementType = editObj.type.elementType;
-				if(reqObj.elementType == 8){
+				if(reqObj.elementType == 8 || reqObj.elementType == 11){
 					reqObj.linkedObject = editObj.type.linkedObject;
 				}
 			}
@@ -473,7 +473,7 @@ function objectMetadataModel(){
 		var metadata = _.readRequestMetadata(omId);
 		metadata.id = omId;
 		
-		pt(ts(metadata));
+		//pt(ts(metadata));
 		
 		$.ajax("save2.htm",{
 			data:{metadata:JSON.stringify(metadata)},
@@ -691,7 +691,7 @@ function fieldsFromTab(fields){
 	var inputs = [];
 	$.each(fields,function(){
 		var type = this.type.value;
-		if(type == 8){
+		if(type == 8 || type == 11){
 			type = ['select',[{key:this.type.linkedObject,label:this.type.linkedObject}]];
 		}else if(type == 4){
 			type = "date";
@@ -884,13 +884,13 @@ function newEditTD(field){
 		var fields = [];
 		fields.push(field);
 		
-		if(field.value == 8){
+		if(field.value == 8 || field.value == 11){
 			fields.push(getLinkedObject(field.linkedObject));
 		}else if(field.value == 9){
 			var elementType = getElementType(field.elementType); 
 			fields.push(elementType);
 			
-			if(elementType.value == 8){
+			if(elementType.value == 8 || field.value == 11){
 				fields.push(getLinkedObject(field.linkedObject));
 			}
 		}
@@ -944,18 +944,24 @@ function buildEditInput(field){
 			var td = $(this).parents("td");
 			
 			if(val != 9){
-				if(val != 8){
+				if(val != 8 || val != 11){
 					removeField(td,"linkedObject");
 				}
 				removeField(td,"elementType");
 			}
 			
-			if(val != 8){
+			if(val != 8 || val != 11){
 				removeField(td,"linkedObject");
 			}
 			
-			if(val == 8){
-				appendField(td,getLinkedObject(null));
+			
+			
+			if(val == 8 || val == 11){
+				var linkedObject = getLinkedObject(null);
+				console.log("linkedObject : " + JSON.stringify(linkedObject));
+				appendField(td,linkedObject);
+				
+				//appendField(td,getLinkedObject(null));
 			}else if(val == 9){
 				appendField(td,getElementType(null));
 			}
@@ -967,7 +973,7 @@ function buildEditInput(field){
 			var val = $(this).val();
 			var td = $(this).parents("td");
 			
-			if(val == 8){
+			if(val == 8 || val == 11){
 				appendField(td,getLinkedObject(null));
 			}else {
 				removeField(td,"linkedObject");

@@ -8,7 +8,8 @@ public enum FieldType {
 	INNER_COLLECTION(7,"inner"),//内嵌集合
 	LINK_COLLECTION(8,"link"),//关联
 	ARRAY(9,"array"),//数组
-	VARIABLE_LINK(10,"variableLink");//可变关联
+	VARIABLE_LINK(10,"variableLink"),//可变关联,
+	RELATIVE_INNER(11,"relativeInner");//关联式的内嵌集合
 	
 	private int code = -1;
 	private String name;

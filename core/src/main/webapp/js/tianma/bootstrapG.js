@@ -205,6 +205,7 @@ var BootstrapGenerator = HTMLGenerator.extend({
         tabs:[
             {
                 nav:'宝贝详情',
+                active:true,
                 content:{
                     type:'div',
                     style:'width:1000px;padding-left:50px;',
@@ -234,17 +235,24 @@ var BootstrapGenerator = HTMLGenerator.extend({
 				cid = dateTime+'_'+(idx++);
 			}
 			
-			var liNav = $('<li><a href="#'+cid+'" data-toggle="tab">'+tabOpts.nav+'</a></li>');
+			var liNav = $('<li class="nav-item"></li>').appendTo(ulNav);
+			if(!tabOpts.nav){
+				var comp = curr.build(tabOpts);
+				comp.addClass("nav-link");
+				liNav.append(comp);
+				return;
+			}
+			
+			var navLink = $('<a class="nav-link" href="#'+cid+'" data-toggle="tab" />').text(tabOpts.nav).appendTo(liNav);
 			var divPane = $('<div class="tab-pane fade" id="'+cid+'" />');
 			this._fillIn(divPane,tabOpts.content);
 			
 			//active
 			if(tabOpts.active){
-				liNav.addClass('active');
-				divPane.addClass('active in');
+				liNav.find("a").addClass('active');
+				divPane.addClass('active show');
 			}
 			
-			ulNav.append(liNav);
 			divContent.append(divPane);
 		};
 		
@@ -1233,8 +1241,8 @@ var BootstrapGenerator = HTMLGenerator.extend({
 //	        $(function(){
 //	        	dateDIV.datepicker();
 //	        });
-	        
-	        //return dateDIV;
+//	        
+//	        return dateDIV;
 	        
 	        return $("<input class='form-control' type='date' />");
 	    };
@@ -1405,7 +1413,8 @@ var BootstrapGenerator = HTMLGenerator.extend({
 			if(inline){
 				checkDiv.addClass('custom-control-inline');
 			}
-			checkDiv.find('input').addClass('custom-control-input');
+			checkDiv.find('input[type="radio"]').addClass('custom-control-input');
+			checkDiv.find('input[type="checkbox"]').addClass('custom-control-input');
 			checkDiv.find('label').addClass('custom-control-label');
 			
 			return checkDiv;
@@ -1525,39 +1534,28 @@ var BootstrapGenerator = HTMLGenerator.extend({
 			return this.build(body);
 		};
 
+		var input = null;
 	    if(opts.type === "between"){
-	    	return this.between(opts);
-	    }
-	    
-	    if(opts.type === "date"){
-	    	return this.date(opts);
-	    }
-	    
-	    if(opts.type == "select2"){
+	    	input = this.between(opts);
+	    }else if(opts.type === "date"){
+	    	input = this.date(opts);
+	    }else if(opts.type == "select2"){
 	    	return this.select2(opts);
-	    }
-	    
-	    if(opts.type == "radio"){
+	    }else if(opts.type == "radio"){
 	    	return this.check(opts);
-	    }
-	    
-	    if(opts.type == "checkbox"){
+	    }else if(opts.type == "checkbox"){
 	    	return this.check(opts);
-	    }
-	    
-	    if(opts.type == "summernote"){
+	    }else if(opts.type == "summernote"){
 	    	return this.summernote(opts);
-	    }
-	    
-	    if(opts.type == "htmlEditor"){
+	    }else if(opts.type == "htmlEditor"){
 	    	return this.summernote(opts);
+	    }else if(opts.type == "number2"){
+	    	input = this.number2(opts);
+	    }else {
+	    	input = this._super(opts);
 	    }
 	    
-	    if(opts.type == "number2"){
-	    	return this.number2(opts);
-	    }
-	    
-	    var input = this._super(opts);
+	    //var input = this._super(opts);
 	    this.defaultClass(input);
 	    input = this.pend(input,opts);
 

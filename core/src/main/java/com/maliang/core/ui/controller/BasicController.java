@@ -51,6 +51,7 @@ public class BasicController {
 		JSONArray ja = (JSONArray)json.get(reqName);
 		
 		Map<String,Class> cmap = readClassMap(cls);
+		System.out.println("****************** readMongodbModel ja : "+ja);
 		System.out.println("****************** class map : "+cmap);
 
 		return (T)JSONObject.toBean(ja.getJSONObject(0), cls,readClassMap(cls));

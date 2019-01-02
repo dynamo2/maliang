@@ -116,7 +116,12 @@ function HtmlBuilder(){
 			
 			//eles.push(radio);
 			
-			var label = $("<label />").append(this.label).prop("for",radio.prop('id'));
+			var label = $("<label />").prop("for",radio.prop('id'));
+			if($.isPlainObject(this.label)){
+				label.append(generator.build(this.label));
+			}else {
+				label.text(this.label);
+			}
 			eles.push($("<div />").append(radio).append(label));
 		});
 		
@@ -277,6 +282,10 @@ function HtmlBuilder(){
 		
 		if($.isPlainObject(options.events)){
 			$.each(options.events,function(k,v){
+				var fun = eval(v);
+				
+				console.log(" on event : " + fun);
+				
 				ele.on(k,eval(v));
 			});
 		}

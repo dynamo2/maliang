@@ -214,7 +214,7 @@ public class ObjectMetadataController extends BasicController {
 	@RequestMapping(value = "edit3.htm")
 	@ResponseBody
 	public String edit3(String id,String pid) {
-		ObjectMetadata metadata = metadataDao.getByID(id);
+		ObjectMetadata metadata = metadataDao.getEditMeta(id);
 		if(metadata == null){
 			metadata = new ObjectMetadata();
 			metadata.setProject(this.projectDao.getByID(pid));
@@ -353,7 +353,7 @@ public class ObjectMetadataController extends BasicController {
 	@RequestMapping(value = "edit2.htm", method = RequestMethod.POST)
 	@ResponseBody
 	public String edit2(String id) {
-		ObjectMetadata metadata = metadataDao.getByID(id);
+		ObjectMetadata metadata = metadataDao.getEditMeta(id);
 
 		return jsonEditCode2(metadata);
 	}
@@ -525,7 +525,7 @@ public class ObjectMetadataController extends BasicController {
 		String resultJson = "";
 		ObjectMetadata metadata = null;
 		if (id != null && !id.trim().isEmpty()) {
-			metadata = metadataDao.getByID(id);
+			metadata = metadataDao.getEditMeta(id);
 		}else {
 			metadata = new ObjectMetadata();
 			

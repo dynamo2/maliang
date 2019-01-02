@@ -665,7 +665,7 @@ public class CollectionDao extends BasicDao {
 		/***
 		 * update log
 		 * ***/
-		this.logDao.updateLog(new ObjectId(id),logVal, collName);
+		//this.logDao.updateLog(new ObjectId(id),logVal, collName);
 
 		value.put("id", id);
 

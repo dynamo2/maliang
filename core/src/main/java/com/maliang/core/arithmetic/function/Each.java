@@ -95,6 +95,14 @@ public class Each {
 		if(value == null){
 			return resultList;
 		}
+		
+		if(value instanceof Integer && ((Integer)value) > 0) {
+			Integer[] tempVal = new Integer[((Integer)value)];
+			for(int i = 0; i < ((Integer)value); i++) {
+				tempVal[i] = i;
+			}
+			value = tempVal;
+		}
 
 		value = Utils.toArray(value);
 		if(!(value instanceof Object[])){

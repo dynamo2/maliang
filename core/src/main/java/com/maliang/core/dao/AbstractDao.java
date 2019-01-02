@@ -95,9 +95,13 @@ public class AbstractDao  {
 		return (BasicDBObject)db.getCollection(collName).findOne(this.getObjectId(oid));
 	}
 	
-	protected BasicDBObject getObjectId(String oid){
+	protected BasicDBObject getObjectId(Object oid){
+		if(oid instanceof ObjectId) {
+			return new BasicDBObject("_id",(ObjectId)oid);
+		}
+		
 		try {
-			return new BasicDBObject("_id",new ObjectId(oid));
+			return new BasicDBObject("_id",new ObjectId(oid.toString()));
 		}catch(IllegalArgumentException e){
 			return new BasicDBObject("_id",new ObjectId());
 		}

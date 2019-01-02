@@ -19,6 +19,16 @@ public class DaoHelper {
 	public final static DateFormat timestampFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 	public final static DateFormat timeFormat = new SimpleDateFormat("HH:mm:ss");
 	
+	public static void main(String[] args) {
+		
+		try {
+			Date date = dateFormat.parse("2018-11-01");
+			System.out.println("--- date : " + date.toGMTString());
+		}catch(ParseException ee){
+			ee.printStackTrace();
+		}
+	}
+	
 	public static Object correctFieldValue(int ftype,Object value){
 		if(FieldType.DOUBLE.is(ftype)){
 			if(value instanceof Double){

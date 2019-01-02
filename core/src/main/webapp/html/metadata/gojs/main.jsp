@@ -31,7 +31,7 @@
 		
 		<script src="../../html/metadata/gojs/js/tree.js?ddd"></script>
 		<script src="../../html/metadata/gojs/js/metadata.js?d"></script>
-		<script src="../../html/metadata/gojs/js/main.js?ddddddd"></script>
+		<script src="../../html/metadata/gojs/js/main.js?ddddd"></script>
 		
 		<script src="../../html/business/tianma.js"></script>
 		<link href="../../html/business/style.css" rel="stylesheet" type="text/css"/> 
@@ -328,7 +328,7 @@
 								});
 							}
 						}
-
+						
 						metadataModel.ajaxSaveMetadata(omId);
 						
 						$(this).dialog("close");

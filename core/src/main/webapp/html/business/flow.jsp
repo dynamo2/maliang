@@ -30,13 +30,13 @@
 		<script src="../js/tianma/bind.js"></script>
 		<script src="../js/tianma/build.js"></script>
 		<script src="../js/tianma/inputs.js"></script>
-		<script src="../html/business/tianma.js?d"></script>
+		<script src="../html/business/tianma.js?ddd"></script>
 		
-		<script src="../js/tianma/processor.js?ddDDDdd"></script>
+		<script src="../js/tianma/processor.js?dddDDDddDdd"></script>
 		<script src="../js/tianma/metronic.js"></script>
 		
-		<script src="../js/tianma/bootstrapG.js?dsdddddddd"></script>
-		<script src="../js/tianma/funs/form.js?ddddd"></script>
+		<script src="../js/tianma/bootstrapG.js?dd"></script>
+		<script src="../js/tianma/funs/form.js?dddddd"></script>
 		<script src="../js/tianma/funs/validate.js?dd"></script>
 		
 		<!-- jquery validate -->

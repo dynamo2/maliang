@@ -1,6 +1,5 @@
 package com.maliang.core.dao;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -8,11 +7,13 @@ import java.util.Map;
 import org.bson.types.ObjectId;
 
 import com.maliang.core.arithmetic.AE;
+import com.maliang.core.model.FieldType;
 import com.maliang.core.model.ObjectField;
 import com.maliang.core.model.ObjectMetadata;
 import com.maliang.core.model.Project;
 import com.maliang.core.model.Trigger;
 import com.maliang.core.model.TriggerAction;
+import com.maliang.core.util.Utils;
 import com.mongodb.BasicDBObject;
 
 public class ObjectMetadataDao  extends ModelDao<ObjectMetadata> {
@@ -40,6 +41,30 @@ public class ObjectMetadataDao  extends ModelDao<ObjectMetadata> {
 		this.treeDao.removeTreeFields(meta);
 	}
 	
+	public ObjectMetadata getEditMeta(String oid){
+		return this.getByID(oid,false);
+	}
+	
+	public ObjectMetadata getEditMeta(ObjectId oid){
+		return this.getByID(oid,false);
+	}
+	
+	public ObjectMetadata getByID(String oid){
+		return this.findOne(this.getObjectId(oid),true);
+	}
+	
+	public ObjectMetadata getByID(ObjectId oid){
+		return this.findOne(this.getObjectId(oid),true);
+	}
+	
+	public ObjectMetadata getByID(String oid,boolean appendRelative){
+		return this.findOne(this.getObjectId(oid),appendRelative);
+	}
+	
+	public ObjectMetadata getByID(ObjectId oid,boolean appendRelative){
+		return this.findOne(this.getObjectId(oid),appendRelative);
+	}
+	
 	public ObjectMetadata getByName(String name){
 		Project project = null;
 		if(!this.isSystemCollection(name)){
@@ -56,11 +81,32 @@ public class ObjectMetadataDao  extends ModelDao<ObjectMetadata> {
 		if(project != null){
 			query.put("project", project.getId().toString());
 		}
-		return this.findOne(new BasicDBObject(query));
+		return this.findOne(new BasicDBObject(query),true);
 	}
 	
-	public ObjectMetadata findOne(BasicDBObject query){
+	private void appendRelativeFields(List<ObjectField> fields) {
+		if(Utils.isEmpty(fields)) {
+			return;
+		}
+		
+		for(ObjectField of : fields) {
+			if(of.isRelativeInner() || (of.isArray() && FieldType.RELATIVE_INNER.is(of.getElementType()))) {
+				
+				ObjectMetadata tm = this.getByName(of.getLinkedObject());
+				
+				of.setFields(tm.getFields());
+			}else if(of.isInnerCollection() || (of.isArray() && FieldType.INNER_COLLECTION.is(of.getElementType()))) {
+				this.appendRelativeFields(of.getFields());
+			}
+		}
+	}
+	
+	public ObjectMetadata findOne(BasicDBObject query,boolean appendRelative){
 		ObjectMetadata meta = super.findOne(query);
+		
+		if(appendRelative) {
+			appendRelativeFields(meta.getFields());
+		}
 		
 		if(treeDao.isTreeModel(meta)){
 			List<ObjectField> tFields = treeDao.treeFields(meta.getName());

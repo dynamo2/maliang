@@ -88,6 +88,14 @@ public class ObjectField extends MongodbModel {
 	public boolean isVariableLink() {
 		return FieldType.VARIABLE_LINK.is(this.getType());
 	}
+	
+	public boolean isRelativeInner() {
+		return FieldType.RELATIVE_INNER.is(this.getType());
+	}
+	
+	public boolean isInner() {
+		return this.isInnerCollection() || this.isRelativeInner();
+	}
 }
 
 /*

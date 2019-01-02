@@ -85,6 +85,7 @@ public class BasicDao extends AbstractDao{
 	public Map<String,Object> getInnerObject(String collName,String innerName,String oid){
 		List<DBObject> pipe = new ArrayList<DBObject>();
 		
+		System.out.println("------ oid : " + oid);
 		BasicDBObject query = new BasicDBObject(innerName+"._id",new ObjectId(oid));
 		
 		pipe.add(new BasicDBObject("$match",query));
@@ -562,14 +563,14 @@ public class BasicDao extends AbstractDao{
 			String key = preName+ff.getName();
 			Object value = innMap.get(ff.getName());
 			
-			if(ff.isInnerCollection()){
+			if(ff.isInner()){
 				if(value != null && value instanceof Map && ((Map)value).size() > 0){
 					Map<String,Object> valMap = (Map<String,Object>)value;
 
 					Map<String,Object> m = buildUpdates(ff.getFields(),(Map<String,Object>)value,key,updates,updateQuery,mlevel);
 					daoMap.putAll(m);
 				}
-			}else if(ff.isArray() && FieldType.INNER_COLLECTION.is(ff.getElementType())){
+			}else if(ff.isArray() && (FieldType.INNER_COLLECTION.is(ff.getElementType()) || FieldType.RELATIVE_INNER.is(ff.getElementType()))){
 				if(multilevelArray){
 					daoMap.put(key, value);
 					continue;
@@ -1152,7 +1153,7 @@ public class BasicDao extends AbstractDao{
 			
 			of.setType(FieldType.ARRAY.getCode());
 			return result;
-		}else if(of.isInnerCollection()){
+		}else if(of.isInner()){
 			if(fieldValue instanceof Map){
 				return formatData((Map<String,Object>)fieldValue,of.getFields());
 			}

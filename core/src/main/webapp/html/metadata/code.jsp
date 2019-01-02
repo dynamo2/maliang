@@ -138,11 +138,21 @@
 			    	}
 			    	
 			    	
+			    	console.log("dbdatas : " + JSON.stringify(dbdatas));
 			    	
-			    	
+			    	/*
 			    	BootstrapDialog.show({
 			            message: 'dddd'//createElement(dbdatas,'table-bordered')
 			        });
+			    	*/
+			    	
+			    	var detailBody = $("#detailModal").find(".modal-body");
+			    	detailBody.empty();
+			    	detailBody.append(createElement(dbdatas,'table-bordered'));
+			    	
+			    	$("#detailModal").modal("show");
+			    	
+			    	
 			    	
 			    	/*
 			    	var tarEle = $("#exampleModalCenter").find(".modal-body");
@@ -258,7 +268,7 @@
 		
 		function textColumn(text){
 			if(text == null || text == undefined)text = "";
-			var column = $("<p class='text-truncate' style='max-width:150px;' data-toggle='popover' />").text(text);
+			var column = $("<p class='text-truncate' data-toggle='popover' />").text(text);
 			
 			column.popover({
 				container:'body',
@@ -320,7 +330,7 @@
 				aid.click(function(){
 					console.log(JSON.stringify(obj));
 					getDBdata(obj);
-					//$("#exampleModalCenter").modal('show');
+					//$("#detailModal").modal('show');
 				});
 				
 				rows.push(row);
@@ -346,6 +356,10 @@
 		function valColumn(val,col){
 			if(val == null || val == undefined){
 				val = "";
+			}
+			
+			if($.isArray(val)){
+				val = "展开";
 			}
 			
 			var tt = createElement(val,'');
@@ -393,9 +407,10 @@
 		}
 		
 		.tableBlock td {
-			padding:8px 10px;
+			//padding:8px 10px;
 			border-bottom:1px dashed #ccc;
-			max-width:700px;
+			//max-width:700px;
+			width:auto;
 		}
 		
 		.tableBlock .label {
@@ -411,14 +426,16 @@
 		
 		.tableList {
 			background-color:#ccc;
-			width:100%;
+			//width:100%;
+			width:auto;
 		}
 		
 		.tableList td,.tableList th{
-			padding:8px 10px;
+			//padding:8px 10px;
 			background-color:#fff;
-			min-width:150px;
+			//min-width:150px;
 			border:0px;
+			width:auto;
 		}
 		
 		.tableList a{
@@ -507,7 +524,7 @@
 	})(jQuery);
 	
 	$(function(){
-		$("#exampleModalCenter").modal();
+		$("#myLargeModalLabel111").modal();
 	});
 	
 	// 调用方式
@@ -523,8 +540,8 @@
 <style>
 
 </style>
-<div class="modal fade" id="exampleModalCenter" tabindex="-1" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered" role="document">
+<div class="modal fade bd-example-modal-lg" id="detailModal" tabindex="-1" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+  <div class="modal-dialog  modal-lg" role="document">
     <div class="modal-content modal-lg">
       <div class="modal-header">
         <h5 class="modal-title" id="exampleModalLongTitle"></h5>
@@ -542,7 +559,6 @@
   </div>
 </div>
 
-	
 	
 	<!-- 
 
