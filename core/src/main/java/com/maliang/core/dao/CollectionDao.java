@@ -620,8 +620,11 @@ public class CollectionDao extends BasicDao {
 			return value;
 		}
 		
+		System.out.println("--------- updates formatData 1 : " + value);
 		this.formatData(value, metadata);
 		value = this.toDBCorrelation(value, metadata);
+		
+		System.out.println("--------- updates formatData 2 : " + value);
 		
 		/**
 		 * 触发器

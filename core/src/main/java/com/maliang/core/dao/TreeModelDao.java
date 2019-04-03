@@ -272,7 +272,8 @@ public class TreeModelDao {
 	 * **/
 	public void updateChildrenPaths(Map<String,Object> oldVal,
 			Map<String,Object> newVal,ObjectMetadata meta,CollectionDao dao){
-		if(!isTreeModel(meta) || sameParent(oldVal,newVal)){
+		String newPid = this.readStringID(this.readParent(newVal));
+		if(!isTreeModel(meta) || newPid == null || sameParent(oldVal,newVal)){
 			return;
 		}
 		

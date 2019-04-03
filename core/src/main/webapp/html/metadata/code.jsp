@@ -33,7 +33,7 @@
 		<script src="../js/tianma/component.js"></script>
 		<script src="../js/tianma/form.js"></script>
 		<script src="../js/tianma/html.js"></script>
-		<script src="../js/tianma/util.js"></script>
+		<script src="../js/tianma/util.js?d"></script>
 		<script src="../js/tianma/bind.js"></script>
 		<script src="../js/tianma/build.js"></script>
 		<script src="../html/business/tianma.js"></script>
@@ -46,13 +46,25 @@
 		
 		<script src="https://cdn.bootcss.com/popper.js/1.12.9/umd/popper.min.js"></script> 
 		<script src="https://cdn.bootcss.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
+		
+		
+<!-- Latest compiled and minified CSS -->
+<link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/bootstrap-table/1.13.1/bootstrap-table.min.css">
+
+<!-- Latest compiled and minified JavaScript -->
+<script src="//cdnjs.cloudflare.com/ajax/libs/bootstrap-table/1.13.1/bootstrap-table.min.js"></script>
+
+<!-- Latest compiled and minified Locales -->
+<script src="//cdnjs.cloudflare.com/ajax/libs/bootstrap-table/1.13.1/locale/bootstrap-table-zh-CN.min.js"></script>
     </head>
     <body>
     	
    		<div class="ui-layout-center">
 			<h1 id="title">代码编辑器 
 				<button onclick="run();">执行</button>
-				<button style="margin-left:15px;" onclick="readDBdatas('5adf31cf9f7b032e782aa27e');">Product</button></h1>
+				<button style="margin-left:15px;" onclick="readDBdatas('5adf31cf9f7b032e782aa27e');">Product</button>
+				
+			</h1>
 			<form id="codeForm">
 	   			<textarea id="code" name="code"></textarea>
 	   		</form>
@@ -120,8 +132,81 @@
 			});
 		}
 		
+		function toGetCode(datas){
+			return "pdb."+datas['__collection_name']+".get('"+datas['__id']+"')";
+		}
+		
+		
+		function toRemoveCode(datas){
+			/**
+			
+			
+pdb.EB_SetMeal.update({
+    query:{_id:oid('5c1a208a9f7b033467b2c2f7')},
+    update:{
+        $pull:{
+            items:{
+                _id:oid('5c2efb929f7b033fd6303e98')
+            }
+        }
+    }
+})
+			***/
+			
+			
+			var collName = datas['__collection_name'];
+			var oid = datas['__id'];
+			
+			var dbOption = {};
+			var names = collName.split(".");
+			dbOption.collName = names[0];
+			if(names > 1){
+				dbOption.inner = names[1];
+			}
+			
+			
+			
+			var code = `pdb.EB_SetMeal.update({
+			    query:{_id:oid('{oid}')},
+			   	update:{
+				   $pull:{
+			            items:{
+			                _id:oid('{innerId}')
+			            }
+			        }
+			   }
+			})`;
+			
+			//return "pdb."+datas['__collection_name']+".remove('"+datas['__id']+"')";
+			return code;
+		}
+		
+		function removeDBdata(reqData){
+			var code = toRemoveCode(reqData);//"pdb."+reqData['__collection_name']+".get('"+reqData['__id']+"')";
+			var detailBody = $("#detailModal").find(".modal-body");
+	    	detailBody.empty();
+	    	detailBody.text(code);
+	    	
+	    	
+			$.ajax({
+			    cache:true,
+			    type:"POST",
+			    dataType : 'json',
+			    url:'/metadata/code2.htm',
+			    data:{code:code},
+			    async:false,
+			    success:function(result,status){
+			    	var detailBody = $("#detailModal").find(".modal-body");
+			    	detailBody.empty();
+			    	detailBody.text(code+"\n\n"+JSON.stringify(result.result));
+			    	
+			    	$("#detailModal").modal("show");
+			    }
+			});
+		}
+		
 		function getDBdata(reqData){
-			var code = "pdb."+reqData['__collection_name']+".get('"+reqData['__id']+"')";
+			var code = toGetCode(reqData);//"pdb."+reqData['__collection_name']+".get('"+reqData['__id']+"')";
 			$.ajax({
 			    cache:true,
 			    type:"POST",
@@ -137,22 +222,27 @@
 			    		dbdatas = result.result;
 			    	}
 			    	
-			    	
-			    	console.log("dbdatas : " + JSON.stringify(dbdatas));
-			    	
-			    	/*
-			    	BootstrapDialog.show({
-			            message: 'dddd'//createElement(dbdatas,'table-bordered')
-			        });
-			    	*/
-			    	
 			    	var detailBody = $("#detailModal").find(".modal-body");
 			    	detailBody.empty();
 			    	detailBody.append(createElement(dbdatas,'table-bordered'));
 			    	
+			    	var detailTitle = $("#detailModal").find(".modal-title");
+			    	detailTitle.empty();
+			    	detailTitle.text(reqData['__collection_name']);
+			    	
+			    	var refreshBtn = $("<button class='btn btn-info ml-2' />").text("刷新");
+			    	refreshBtn.click(function(){
+			    		getDBdata(reqData);
+			    	});
+			    	detailTitle.after(refreshBtn);
+			    	
+			    	var removeBtn = $("<button class='btn btn-info ml-2' />").text("删除");
+			    	removeBtn.click(function(){
+			    		removeDBdata(reqData);
+			    	});
+			    	refreshBtn.after(removeBtn);
+			    	
 			    	$("#detailModal").modal("show");
-			    	
-			    	
 			    	
 			    	/*
 			    	var tarEle = $("#exampleModalCenter").find(".modal-body");
@@ -176,9 +266,7 @@
 			    data:$("#codeForm").serialize(),
 			    async:false,
 			    success:function(result,status){
-			    	//$("#result").val(ts(result.result));
-			    	//var val = JSON.stringify(result.result, null, 4);
-			    	//showResult.setValue(val);
+			    	console.log("run result : " + result.result);
 			    	
 			    	showResult.setValue(result.result);
 			    	try {
@@ -225,7 +313,7 @@
 				}
 			}
 			
-			var table = $("<table class='table' />").addClass(cls);
+			var table = $("<table class='table'  data-toggle='table' />").addClass(cls);
 			
 			var thead = $("<thead />").appendTo(table);
 			var tbody = $("<tbody />").appendTo(table);
@@ -246,6 +334,9 @@
 				}
 				
 			});
+			
+			//table.bootstrapTable({});
+			//console.log("table  bootstrapTable");
 			
 			return table;
 		}
@@ -358,9 +449,10 @@
 				val = "";
 			}
 			
+			/*
 			if($.isArray(val)){
 				val = "展开";
-			}
+			}*/
 			
 			var tt = createElement(val,'');
 			if(tt == null){
@@ -545,6 +637,7 @@
     <div class="modal-content modal-lg">
       <div class="modal-header">
         <h5 class="modal-title" id="exampleModalLongTitle"></h5>
+        
         <button type="button" class="close" data-dismiss="modal" aria-label="Close">
           <span aria-hidden="true">&times;</span>
         </button>

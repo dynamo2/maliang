@@ -32,10 +32,10 @@
 		<script src="../js/tianma/inputs.js"></script>
 		<script src="../html/business/tianma.js?ddd"></script>
 		
-		<script src="../js/tianma/processor.js?dddDDDddDdd"></script>
+		<script src="../js/tianma/processor.js?dddddDDDddDdd"></script>
 		<script src="../js/tianma/metronic.js"></script>
 		
-		<script src="../js/tianma/bootstrapG.js?dd"></script>
+		<script src="../js/tianma/bootstrapG.js?dddddddddd"></script>
 		<script src="../js/tianma/funs/form.js?dddddd"></script>
 		<script src="../js/tianma/funs/validate.js?dd"></script>
 		

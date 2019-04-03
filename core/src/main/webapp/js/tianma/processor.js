@@ -85,7 +85,7 @@ function reload(element,newOption){
 }
 
 var HTMLGenerator = Class.extend({
-	inputTypes:["text","textarea","number2","summernote","password","htmlEditor","hidden","between","radio","date","select","select2","checkbox","button","submit","reset"],
+	inputTypes:["text","textarea","number2","summernote","password","htmlEditor","hidden","between","radio","date","number","month","week","time","datetime","select","select2","checkbox","button","submit","reset"],
 	
 	isInput:function(tn){
 		return utils.hasName(this.inputTypes,tn);

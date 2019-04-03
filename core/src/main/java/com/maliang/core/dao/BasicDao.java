@@ -152,7 +152,6 @@ public class BasicDao extends AbstractDao{
 			//results.add(toMap(dob,collName));
 			results.add(dob.toMap());
 		}
-		
 		return results;
 	}
 	
@@ -449,7 +448,7 @@ public class BasicDao extends AbstractDao{
 				}
 				
 				if(FieldType.LINK_COLLECTION.is(field.getElementType())){
-					List<Object> oldItems = (List<Object>)ov;
+					//List<Object> oldItems = (List<Object>)ov;
 				}
 				continue;
 			}
@@ -1453,7 +1452,7 @@ public class BasicDao extends AbstractDao{
 				dataMap.put(fieldName, delayLinkedObject(fieldValue,field.getLinkedObject()));
 			}else if(FieldType.VARIABLE_LINK.is(field.getType())){
 				dataMap.put(fieldName, this.delayVariableLinkedObject(fieldValue));
-			}else if(FieldType.INNER_COLLECTION.is(field.getType())){
+			}else if(field.isInner()){
 				if(fieldValue instanceof DBObject){
 					fieldValue = ((DBObject)fieldValue).toMap();
 					dataMap.put(fieldName, fieldValue);
@@ -1467,7 +1466,7 @@ public class BasicDao extends AbstractDao{
 				if(fieldValue instanceof List){
 					List list = new ArrayList();
 					for(Object obj : (List)fieldValue){
-						if(FieldType.INNER_COLLECTION.is(field.getElementType())){
+						if(FieldType.INNER_COLLECTION.is(field.getElementType()) || FieldType.RELATIVE_INNER.is(field.getElementType())){
 							if(obj instanceof DBObject){
 								obj = ((DBObject)obj).toMap();
 								//correctField((Map<String,Object>)fieldValue,field.getFields(),meta(meta,field));

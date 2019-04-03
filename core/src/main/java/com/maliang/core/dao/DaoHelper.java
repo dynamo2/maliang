@@ -12,6 +12,7 @@ import java.util.Map;
 import org.bson.types.ObjectId;
 
 import com.maliang.core.model.FieldType;
+import com.maliang.core.util.Utils;
 import com.mongodb.BasicDBObject;
 
 public class DaoHelper {
@@ -60,14 +61,21 @@ public class DaoHelper {
 			}
 
 			try {
-				return timestampFormat.parse(value.toString().trim());
-			}catch(ParseException e){
-				try {
-					return dateFormat.parse(value.toString().trim());
-				}catch(ParseException ee){
-					return null;
-				}
+				return Utils.parseDate(value.toString());
+			}catch(Exception e){
+				return null;
 			}
+				
+
+//			try {
+//				return timestampFormat.parse(value.toString().trim());
+//			}catch(ParseException e){
+//				try {
+//					return dateFormat.parse(value.toString().trim());
+//				}catch(ParseException ee){
+//					return null;
+//				}
+//			}
 		}
 		
 		if(FieldType.STRING.is(ftype)){

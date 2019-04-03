@@ -15,6 +15,35 @@ Array.prototype.isEmpty = function(){
 	return this.length == 0;
 };
 
+String.prototype.format = function() {
+    
+    var args, 
+        ret = '',
+        type = Object.prototype.toString.call(arguments[0]);
+
+    if (type == "[object Object]") { 
+        args = arguments;
+    } else if (type == "[object Array]") {
+        type = Object.prototype.toString.call(arguments[0][0]);
+        if (type == "[object Object]" || type == "[object Array]") { 
+            args = arguments[0];
+        } else {
+            args = arguments;
+        }
+    } else {
+        args = [arguments];
+    }
+
+    for (var i in args) {
+        var a = args[i];
+        ret += this.replace(/{([\w]+?)}/g, function(all, match) {
+            return a[match];
+        });
+    }
+    
+    return ret;
+}
+
 function Utils(){
 	var _ = this;
 	

@@ -37,6 +37,23 @@ public class Utils {
 		return parseDate(dateVal);
 	}
 	
+	public static void main(String[] args) {
+		Date d = Utils.parseDate("14:00");
+		System.out.println("d : " + d);
+	}
+	
+	public static Date parseDate(Object dateVal){
+		if(dateVal == null) {
+			return null;
+		}
+		
+		if(dateVal instanceof Date) {
+			return (Date)dateVal;
+		}
+		
+		return parseDate(dateVal.toString());
+	}
+	
 	public static Date parseDate(String dateVal){
 		List<String> formats =new ArrayList<String>();
 //		formats.add("yyyyMMdd HH:mm:ss");
@@ -46,8 +63,9 @@ public class Utils {
 		formats.add("yyyy-MM-dd");
 		formats.add("yyyy/MM/dd HH:mm:ss");
 		formats.add("yyyy/MM/dd");
-		formats.add("yyyy骞碝M鏈坉d鏃� HH:mm:ss");
-		formats.add("yyyy骞碝M鏈坉d鏃�");
+		formats.add("yyyy年M月d日 HH:mm:ss");
+		formats.add("yyyy年M月d日");
+		formats.add("HH:mm");
 		
 		for(String f: formats){
 			try {

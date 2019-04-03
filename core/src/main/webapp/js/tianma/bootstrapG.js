@@ -1229,14 +1229,20 @@ var BootstrapGenerator = HTMLGenerator.extend({
 //	    };
 	    
 	    this.date = function(opts){
+	    	var realType = opts.type;
+	    	
 	    	opts.type = "text";
 	        var input = curr.input(opts);
 	        input.addClass("form-control input-sm");
-	        input.prop("readonly",true);
+	        input.prop("type",realType);
+	        input.val(opts.value);
 	        
-	        var dateDIV = $('<div class="input-group date date-picker margin-bottom-5" data-provide="datepicker" data-date-format="dd/mm/yyyy" />');
-	        var dbnt = $('<span class="input-group-btn"><button class="btn btn-sm default" type="button"><i class="fa fa-calendar"></i></button></span>');
-	        dateDIV.append(input).append(dbnt);//.append($('<span class="input-group-addon"><i class="glyphicon glyphicon-th"></i></span>'));
+	        return input;
+//	        input.prop("readonly",true);
+	        
+//	        var dateDIV = $('<div class="input-group date date-picker margin-bottom-5" data-provide="datepicker" data-date-format="dd/mm/yyyy" />');
+//	        var dbnt = $('<span class="input-group-btn"><button class="btn btn-sm default" type="button"><i class="fa fa-calendar"></i></button></span>');
+//	        dateDIV.append(input).append(dbnt);//.append($('<span class="input-group-addon"><i class="glyphicon glyphicon-th"></i></span>'));
 	        
 //	        $(function(){
 //	        	dateDIV.datepicker();
@@ -1244,7 +1250,7 @@ var BootstrapGenerator = HTMLGenerator.extend({
 //	        
 //	        return dateDIV;
 	        
-	        return $("<input class='form-control' type='date' />");
+//	        return $("<input class='form-control' type='date' />");
 	    };
 	    
 	    /**
@@ -1533,11 +1539,17 @@ var BootstrapGenerator = HTMLGenerator.extend({
 			}
 			return this.build(body);
 		};
+		
+		this.isDateType = function(type){
+			if(!type)return false;
+			
+			return type === "date" || type === "month" || type === "week" || type === "time" || type === "datetime"
+		};
 
 		var input = null;
 	    if(opts.type === "between"){
 	    	input = this.between(opts);
-	    }else if(opts.type === "date"){
+	    }else if(this.isDateType(opts && opts.type)){
 	    	input = this.date(opts);
 	    }else if(opts.type == "select2"){
 	    	return this.select2(opts);

@@ -1,5 +1,6 @@
 package com.maliang.core.arithmetic.function;
 
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -10,9 +11,15 @@ public class Between {
 			return false;
 		}
 		
+		
+		
 		try {
 			Comparable comp = (Comparable)operatedObj;
 			Object value = function.executeExpression(params);
+			
+			if(comp instanceof Date) {
+				return DateFunction.between(comp,value);
+			}
 
 			if(value instanceof List){
 				Comparable min = null;
